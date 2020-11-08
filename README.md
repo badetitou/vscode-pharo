@@ -1,0 +1,1 @@
+# vscode-pharo-ls-client
