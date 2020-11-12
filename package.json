@@ -1,6 +1,6 @@
 {
-	"name": "lsp-sample",
-	"description": "A language server example",
+	"name": "pharo-language-server",
+	"description": "Pharo language server",
 	"author": "Microsoft Corporation",
 	"license": "MIT",
 	"version": "1.0.0",
@@ -17,7 +17,7 @@
 		"vscode": "^1.43.0"
 	},
 	"activationEvents": [
-		"onLanguage:plaintext"
+		"onLanguage:pharo"
 	],
 	"main": "./client/out/extension",
 	"contributes": {
@@ -43,7 +43,21 @@
 					"description": "Traces the communication between VS Code and the language server."
 				}
 			}
-		}
+		},
+		"languages": [
+			{
+				"id": "pharo",
+				"aliases": [
+					"Pharo",
+					"smalltalk",
+					"SmallTalk",
+                    "smalltalk"
+		    	],
+				"extensions": [
+					".st"
+				]
+			}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
