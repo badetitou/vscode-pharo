@@ -39,8 +39,7 @@ async function createServerWithSocket(pharoPath, context) {
     dls = child_process.spawn(pharoPath.trim(), [
         process.env.HOME + '/Pharo/images/LSP2/LSP2.image', 'st', context.asAbsolutePath('client/src/res/run-server.st')
     ]);
-    console.log('here');
-    await sleep(10000);
+    await sleep(8000); // Wait that the Pharo server start
     socket = net.connect({ port: 4000, host: '127.0.0.1' }, () => {
         // 'connect' listener.
         console.log('connected to server!');
