@@ -15,7 +15,7 @@ let socket;
 async function activate(context) {
     // If the extension is launched in debug mode then the debug server options are used
     // Otherwise the run options are used
-    let serverOptions = () => createServerWithSocket('pharo', context);
+    let serverOptions = () => createServerWithSocket(vscode.workspace.getConfiguration('pharo').get('pathToVM'), context);
     // Options to control the language client
     let clientOptions = {
         // Register the server for plain text documents
@@ -37,7 +37,7 @@ exports.deactivate = deactivate;
 async function createServerWithSocket(pharoPath, context) {
     let dls;
     dls = child_process.spawn(pharoPath.trim(), [
-        process.env.HOME + '/Pharo/images/LSP2/LSP2.image', 'st', context.asAbsolutePath('client/src/res/run-server.st')
+        vscode.workspace.getConfiguration('pharo').get('pathToImage'), 'st', context.asAbsolutePath('client/src/res/run-server.st')
     ]);
     await sleep(8000); // Wait that the Pharo server start
     socket = net.connect({ port: 4000, host: '127.0.0.1' }, () => {

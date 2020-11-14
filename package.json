@@ -23,15 +23,27 @@
 	"contributes": {
 		"configuration": {
 			"type": "object",
-			"title": "Example configuration",
+			"title": "Pharo",
 			"properties": {
-				"languageServerExample.maxNumberOfProblems": {
+				"pharo.pathToVM": {
+					"scope": "window",
+					"type":"string",
+					"default": "pharo",
+					"description": "The Pharo VM that will be used to run the Pharo Image holding the Pharo Language server. You should select a VM that can run the selected image"
+				},
+				"pharo.pathToImage": {
+					"scope": "window",
+					"type":"string",
+					"default": "/home/badetitou/Pharo/images/LSP2/LSP2.image",
+					"description": "The Pharo Image that can run the Pharo Language server (https://github.com/badetitou/Pharo-LanguageServer)."
+				},
+				"pharo.maxNumberOfProblems": {
 					"scope": "resource",
 					"type": "number",
 					"default": 100,
 					"description": "Controls the maximum number of problems produced by the server."
 				},
-				"languageServerExample.trace.server": {
+				"pharo.trace.server": {
 					"scope": "window",
 					"type": "string",
 					"enum": [
