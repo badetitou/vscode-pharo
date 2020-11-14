@@ -51,11 +51,19 @@
 					"Pharo",
 					"smalltalk",
 					"SmallTalk",
-                    "smalltalk"
-		    	],
+					"smalltalk"
+				],
 				"extensions": [
 					".st"
-				]
+				],
+				"configuration": ".language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "pharo",
+				"scopeName": "source.pharo",
+				"path": "./syntaxes/pharo.tmLanguage.json"
 			}
 		]
 	},
@@ -63,7 +71,7 @@
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -b",
 		"watch": "tsc -b -w",
-		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
+		"postinstall": "cd client && npm install && cd ..",
 		"test": "sh ./scripts/e2e.sh"
 	},
 	"devDependencies": {
