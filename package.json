@@ -1,17 +1,17 @@
 {
 	"name": "pharo-language-server",
 	"description": "Pharo language server",
-	"author": "Microsoft Corporation",
+	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "1.0.0",
+	"version": "0.0.1",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Microsoft/vscode-extension-samples"
+		"url": "https://github.com/badetitou/vscode-pharo"
 	},
-	"publisher": "vscode-samples",
-	"categories": [],
+	"publisher": "badetitou",
+	"categories": ["Formatters", "Programming Languages", "Snippets"],
 	"keywords": [
-		"multi-root ready"
+		"pharo smalltalk"
 	],
 	"engines": {
 		"vscode": "^1.43.0"
@@ -27,14 +27,14 @@
 			"properties": {
 				"pharo.pathToVM": {
 					"scope": "window",
-					"type":"string",
-					"default": "pharo",
+					"type": "string",
+					"default": "D:/Users/benoit.verhaeghe/Documents/Pharo/vms/80-x64/Pharo.exe",
 					"description": "The Pharo VM that will be used to run the Pharo Image holding the Pharo Language server. You should select a VM that can run the selected image"
 				},
 				"pharo.pathToImage": {
 					"scope": "window",
-					"type":"string",
-					"default": "/home/badetitou/Pharo/images/LSP2/LSP2.image",
+					"type": "string",
+					"default": "D:/Users/benoit.verhaeghe/Documents/Pharo/images/LSP/LSP.image",
 					"description": "The Pharo Image that can run the Pharo Language server (https://github.com/badetitou/Pharo-LanguageServer)."
 				},
 				"pharo.maxNumberOfProblems": {
