@@ -6,38 +6,48 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deactivate = exports.activate = void 0;
 const vscode = require('vscode');
-const net = require("net");
 const vscode_1 = require("vscode");
-const child_process = require("child_process");
 const vscode_languageclient_1 = require("vscode-languageclient");
+const requirements = require("./requirements");
+const net = require("net");
+const child_process = require("child_process");
 let client;
 let socket;
 async function activate(context) {
-    // If the extension is launched in debug mode then the debug server options are used
-    // Otherwise the run options are used
-    let serverOptions = () => createServerWithSocket(vscode.workspace.getConfiguration('pharo').get('pathToVM'), context);
-    // Options to control the language client
-    let clientOptions = {
-        // Register the server for plain text documents
-        documentSelector: [{ scheme: 'file', language: 'pharo' }],
-        synchronize: {
-            // Notify the server about file changes to '.clientrc files contained in the workspace
-            fileEvents: vscode_1.workspace.createFileSystemWatcher('**/.clientrc')
-        }
-    };
-    // Create the language client and start the client.
-    client = new vscode_languageclient_1.LanguageClient('pharoServerExample', 'Pharo Server Example', serverOptions, clientOptions);
-    // Start the client. This will also launch the server
-    context.subscriptions.push(client.start());
+    return requirements.resolveRequirements().catch(error => {
+        vscode_1.window.showErrorMessage(error.message, error.label).then((selection) => {
+            if (error.label && error.label === selection && error.command) {
+                vscode_1.commands.executeCommand(error.command, error.commandParam);
+            }
+        });
+    }).then(async (requirements) => {
+        // If the extension is launched in debug mode then the debug server options are used
+        // Otherwise the run options are used
+        let serverOptions = () => createServerWithSocket(requirements.pathToVM, requirements.pathToImage, context);
+        // Options to control the language client
+        let clientOptions = {
+            // Register the server for plain text documents
+            documentSelector: [{ scheme: 'file', language: 'pharo' }],
+            synchronize: {
+                // Notify the server about file changes to '.clientrc files contained in the workspace
+                fileEvents: vscode_1.workspace.createFileSystemWatcher('**/.clientrc')
+            }
+        };
+        // Create the language client and start the client.
+        client = new vscode_languageclient_1.LanguageClient('pharoServerExample', 'Pharo Server Example', serverOptions, clientOptions);
+        // Start the client. This will also launch the server
+        context.subscriptions.push(client.start());
+        vscode_1.window.showInformationMessage('Client started');
+    });
 }
 exports.activate = activate;
 function deactivate() {
 }
 exports.deactivate = deactivate;
-async function createServerWithSocket(pharoPath, context) {
+async function createServerWithSocket(pharoPath, pathToImage, context) {
     let dls;
     dls = child_process.spawn(pharoPath.trim(), [
-        vscode.workspace.getConfiguration('pharo').get('pathToImage'), 'st', context.asAbsolutePath('client/src/res/run-server.st')
+        pathToImage, 'st', context.asAbsolutePath('client/src/res/run-server.st')
     ]);
     await sleep(8000); // Wait that the Pharo server start
     socket = net.connect({ port: 4000, host: '127.0.0.1' }, () => {
