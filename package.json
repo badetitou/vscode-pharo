@@ -36,23 +36,6 @@
 					"type": "string",
 					"default": "D:/Users/benoit.verhaeghe/Documents/Pharo/images/LSP/LSP.image",
 					"description": "The Pharo Image that can run the Pharo Language server (https://github.com/badetitou/Pharo-LanguageServer)."
-				},
-				"pharo.maxNumberOfProblems": {
-					"scope": "resource",
-					"type": "number",
-					"default": 100,
-					"description": "Controls the maximum number of problems produced by the server."
-				},
-				"pharo.trace.server": {
-					"scope": "window",
-					"type": "string",
-					"enum": [
-						"off",
-						"messages",
-						"verbose"
-					],
-					"default": "off",
-					"description": "Traces the communication between VS Code and the language server."
 				}
 			}
 		},
