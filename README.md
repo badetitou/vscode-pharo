@@ -7,6 +7,7 @@ A Pharo client extension for VSCode.
 		- [Generic feature](#generic-feature)
 		- [Supported Language Server feature](#supported-language-server-feature)
 		- [Additional feature](#additional-feature)
+	- [Installation](#installation)
 	- [Thanks](#thanks)
 
 ## Features
@@ -29,6 +30,16 @@ We present here the existing features
 2. Execute and show the result
 3. Execute and print the result
 4. Show the current server version
+
+## Installation
+
+To install the extension:
+
+1. Install [vscode](https://code.visualstudio.com/)
+2. Install the Pharo extension
+3. Download a Pharo Language Server image
+4. Download a VM (headless or not) for the image
+5. Set up the Pharo extension property
 
 ## Thanks
 
