@@ -100,7 +100,18 @@
 					"group": "Pharo@1"
 				}
 			]
-		}
+		},
+		"keybindings": 
+		[
+			{
+				"command": "pharo.showIt",
+				"key": "ctrl+alt+i"
+			},
+			{
+				"command": "pharo.printIt",
+				"key": "ctrl+alt+p"
+			}
+		]
 	},
 	"scripts": {
 		"compile": "tsc -b",

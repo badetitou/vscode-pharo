@@ -69,19 +69,16 @@ function commandPharoExtensionVersion() {
 
 function commandPharoPrintIt() {
 	let selection = editor.selection;
-	console.log(selection);
 	client.sendRequest('command:printIt', {"line": editor.document.getText(selection)}).then( (result: string) => {
 		editor.edit(editBuilder => {
 			editBuilder.replace( new vscode.Selection(selection.end, selection.end), ' "' + result + '" ');
 		})
-		window.showInformationMessage('edited');
 	}).catch((error) => window.showErrorMessage(error));
 }
 
 function commandPharoShowIt() {
 	client.sendRequest('command:printIt', {"line": editor.document.getText(editor.selection)}).then( (result: string) => {
 		window.showInformationMessage(result);
-		
 	}).catch((error) => window.showErrorMessage(error));
 }
 
