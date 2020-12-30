@@ -14,6 +14,7 @@ const child_process = require("child_process");
 let client;
 let socket;
 async function activate(context) {
+    // Testing Pharo can be used
     return requirements.resolveRequirements().catch(error => {
         vscode_1.window.showErrorMessage(error.message, error.label).then((selection) => {
             if (error.label && error.label === selection && error.command) {
@@ -21,29 +22,49 @@ async function activate(context) {
             }
         });
     }).then(async (requirements) => {
-        // If the extension is launched in debug mode then the debug server options are used
-        // Otherwise the run options are used
-        let serverOptions = () => createServerWithSocket(requirements.pathToVM, requirements.pathToImage, context);
-        // Options to control the language client
-        let clientOptions = {
-            // Register the server for plain text documents
-            documentSelector: [{ scheme: 'file', language: 'pharo' }],
-            synchronize: {
-                // Notify the server about file changes to '.clientrc files contained in the workspace
-                fileEvents: vscode_1.workspace.createFileSystemWatcher('**/.clientrc')
-            }
-        };
-        // Create the language client and start the client.
-        client = new vscode_languageclient_1.LanguageClient('pharoServerExample', 'Pharo Server Example', serverOptions, clientOptions);
+        // Create the pharo language server client
+        client = createPharoLanguageServer(requirements, context);
         // Start the client. This will also launch the server
         context.subscriptions.push(client.start());
         vscode_1.window.showInformationMessage('Client started');
+        // Create new command
+        createCommands(context);
     });
 }
 exports.activate = activate;
+function createCommands(context) {
+    const command = 'pharo.extensionVersion';
+    context.subscriptions.push(vscode.commands.registerCommand(command, commandPharoExtensionVersion));
+}
 function deactivate() {
 }
 exports.deactivate = deactivate;
+/*
+ * Section with extension commands
+ */
+function commandPharoExtensionVersion() {
+    client.sendRequest("command:version").then((result) => {
+        console.log(result);
+        vscode_1.window.showInformationMessage(result + '');
+    });
+}
+/*
+ * Section with function for Pharo Language Server
+ */
+function createPharoLanguageServer(requirements, context) {
+    let serverOptions = () => createServerWithSocket(requirements.pathToVM, requirements.pathToImage, context);
+    // Options to control the language client
+    let clientOptions = {
+        // Register the server for plain text documents
+        documentSelector: [{ scheme: 'file', language: 'pharo' }],
+        synchronize: {
+            // Notify the server about file changes to '.clientrc files contained in the workspace
+            fileEvents: vscode_1.workspace.createFileSystemWatcher('**/.clientrc')
+        }
+    };
+    // Create the language client and start the client.
+    return new vscode_languageclient_1.LanguageClient('pharoServerExample', 'Pharo Server Example', serverOptions, clientOptions);
+}
 async function createServerWithSocket(pharoPath, pathToImage, context) {
     let dls;
     dls = child_process.spawn(pharoPath.trim(), [

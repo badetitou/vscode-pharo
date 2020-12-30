@@ -17,7 +17,8 @@
 		"vscode": "^1.43.0"
 	},
 	"activationEvents": [
-		"onLanguage:pharo"
+		"onLanguage:pharo",
+		"onCommand:pharo.extensionVersion"
 	],
 	"main": "./client/out/extension",
 	"contributes": {
@@ -28,13 +29,13 @@
 				"pharo.pathToVM": {
 					"scope": "window",
 					"type": "string",
-					"default": "D:/Users/benoit.verhaeghe/Documents/Pharo/vms/80-x64/Pharo.exe",
+					"default": "pharo",
 					"description": "The Pharo VM that will be used to run the Pharo Image holding the Pharo Language server. You should select a VM that can run the selected image"
 				},
 				"pharo.pathToImage": {
 					"scope": "window",
 					"type": "string",
-					"default": "D:/Users/benoit.verhaeghe/Documents/Pharo/images/LSP/LSP.image",
+					"default": "/home/badetitou/Pharo/images/LSP2/LSP2.image",
 					"description": "The Pharo Image that can run the Pharo Language server (https://github.com/badetitou/Pharo-LanguageServer)."
 				},
 				"pharo.maxNumberOfProblems": {
@@ -77,6 +78,12 @@
 				"scopeName": "source.pharo",
 				"path": "./syntaxes/pharo.tmLanguage.json"
 			}
+		],
+		"commands": [
+			{
+				"command": "pharo.extensionVersion",
+				"title": "Show Pharo Language Server Version"
+			  }
 		]
 	},
 	"scripts": {
