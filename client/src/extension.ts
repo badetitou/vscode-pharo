@@ -48,6 +48,7 @@ function createCommands(context: ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.extensionVersion', commandPharoExtensionVersion));
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.printIt', commandPharoPrintIt));
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.showIt', commandPharoShowIt));
+	context.subscriptions.push(vscode.commands.registerCommand('pharo.save', commandPharoSave));
 }
 
 
@@ -84,6 +85,11 @@ function commandPharoShowIt() {
 	}).catch((error) => window.showErrorMessage(error));
 }
 
+function commandPharoSave() {
+	client.sendRequest('command:save').then( (result: string) => {
+		window.showInformationMessage(result);
+	}).catch((error) => window.showErrorMessage(error));
+}
 
 /*
  * Section with function for Pharo Language Server

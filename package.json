@@ -70,6 +70,10 @@
 				"title": "Show Pharo Language Server Version"
 			},
 			{
+				"command": "pharo.save",
+				"title": "Save the Pharo image"
+			},
+			{
 				"command": "pharo.printIt",
 				"title": "Print the result of selected lines"
 			},
