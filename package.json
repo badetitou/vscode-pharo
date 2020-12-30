@@ -41,7 +41,7 @@
 				"pharo.pathToImage": {
 					"scope": "window",
 					"type": "string",
-					"default": "/home/badetitou/Pharo/images/LSP2/LSP2.image",
+					"default": "",
 					"description": "The Pharo Image that can run the Pharo Language server (https://github.com/badetitou/Pharo-LanguageServer)."
 				}
 			}
@@ -102,9 +102,12 @@
 		}
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -b",
-		"test": "sh ./scripts/e2e.sh"
+		"test": "sh ./scripts/e2e.sh",
+		"vscode:prepublish": "webpack --mode production",
+		"webpack": "webpack --mode development",
+		"webpack-dev": "webpack --mode development --watch",
+		"test-compile": "tsc -p ./"
 	},
 	"dependencies": {
 		"vscode-languageclient": "^6.1.3",
