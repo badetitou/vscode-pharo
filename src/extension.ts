@@ -120,7 +120,7 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 async function createServerWithSocket(pharoPath: string, pathToImage: string, context: ExtensionContext) {
     let dls: child_process.ChildProcess;
 	dls = child_process.spawn(pharoPath.trim(), [
-		pathToImage, 'st', context.asAbsolutePath('client/src/res/run-server.st')
+		pathToImage, 'st', context.asAbsolutePath('/src/res/run-server.st')
 	]);
 
 	await sleep(8000); // Wait that the Pharo server start
