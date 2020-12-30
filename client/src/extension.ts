@@ -4,17 +4,18 @@
  * ------------------------------------------------------------------------------------------ */
 
 const vscode = require('vscode');
-import { workspace, ExtensionContext, extensions, commands, window } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Selection } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
-	ServerOptions,
-	TransportKind
+	ServerOptions
 } from 'vscode-languageclient';
 import * as requirements from './requirements';
 import * as net from 'net';
 import * as child_process from 'child_process';
 import * as lc from 'vscode-languageclient';
+
+const editor = vscode.window.activeTextEditor;
 
 let client: LanguageClient;
 let socket: net.Socket;
@@ -44,8 +45,9 @@ export async function activate(context: ExtensionContext) {
 }
 
 function createCommands(context: ExtensionContext) {
-	const command = 'pharo.extensionVersion';
-	context.subscriptions.push(vscode.commands.registerCommand(command, commandPharoExtensionVersion));
+	context.subscriptions.push(vscode.commands.registerCommand('pharo.extensionVersion', commandPharoExtensionVersion));
+	context.subscriptions.push(vscode.commands.registerCommand('pharo.printIt', commandPharoPrintIt));
+	context.subscriptions.push(vscode.commands.registerCommand('pharo.showIt', commandPharoShowIt));
 }
 
 
@@ -58,11 +60,28 @@ export function deactivate() {
  */
 
 function commandPharoExtensionVersion() {
-	client.sendRequest("command:version").then( (result) => {
+	client.sendRequest("command:version").then((result: string) => {
 		console.log(result);
-		window.showInformationMessage(result + '');
+		window.showInformationMessage(result);
 	});
-	
+}
+
+function commandPharoPrintIt() {
+	let selection = editor.selection;
+	console.log(selection);
+	client.sendRequest('command:printIt', {"line": editor.document.getText(selection)}).then( (result: string) => {
+		editor.edit(editBuilder => {
+			editBuilder.replace( new vscode.Selection(selection.end, selection.end), ' "' + result + '" ');
+		})
+		window.showInformationMessage('edited');
+	}).catch((error) => window.showErrorMessage(error));
+}
+
+function commandPharoShowIt() {
+	client.sendRequest('command:printIt', {"line": editor.document.getText(editor.selection)}).then( (result: string) => {
+		window.showInformationMessage(result);
+		
+	}).catch((error) => window.showErrorMessage(error));
 }
 
 

@@ -18,7 +18,9 @@
 	},
 	"activationEvents": [
 		"onLanguage:pharo",
-		"onCommand:pharo.extensionVersion"
+		"onCommand:pharo.extensionVersion",
+		"onCommand:pharo.printIt",
+		"onCommand:pharo.showIt"
 	],
 	"main": "./client/out/extension",
 	"contributes": {
@@ -66,8 +68,30 @@
 			{
 				"command": "pharo.extensionVersion",
 				"title": "Show Pharo Language Server Version"
-			  }
-		]
+			},
+			{
+				"command": "pharo.printIt",
+				"title": "Print the result of selected lines"
+			},
+			{
+				"command": "pharo.showIt",
+				"title": "Show the result of selected lines"
+			}
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"command": "pharo.showIt",
+					"when": "editorLangId == pharo",
+					"group": "Pharo@1"
+				},
+				{
+					"command": "pharo.printIt",
+					"when": "editorLangId == pharo",
+					"group": "Pharo@1"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
