@@ -22,18 +22,18 @@ We present here the existing features
 
 1. Code highlighting
 
-![Highlighting](docs/img/highlighting.png)
+![Highlighting](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/highlighting.png)
 
 ### Supported Language Server feature
 
 1. Code formatting
 2. Hover
 
-![Hover](docs/img/hover.png)
+![Hover](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/hover.png)
 
 3. Auto-completion
 
-![Auto-Completion](docs/img/Auto-completion.png)
+![Auto-Completion](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/Auto-completion.png)
 
 ### Additional feature
 
