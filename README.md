@@ -41,7 +41,13 @@ The additional feature can be access using the command palette of VSCode
 
 1. Save the Pharo image
 2. Execute and show the result
+
+![Inspect gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/inspectResult.gif)
+
 3. Execute and print the result
+
+![Print gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/printResult.gif)
+
 4. Show the current server version
 5. Saving a tonel file in VSCode, save the corresponding methods/class in the Pharo image
 

@@ -101,8 +101,7 @@
 				}
 			]
 		},
-		"keybindings": 
-		[
+		"keybindings": [
 			{
 				"command": "pharo.showIt",
 				"key": "ctrl+alt+i"
