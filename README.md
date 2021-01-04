@@ -48,8 +48,12 @@ The additional feature can be access using the command palette of VSCode
 
 ![Print gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/printResult.gif)
 
-4. Show the current server version
-5. Saving a tonel file in VSCode, save the corresponding methods/class in the Pharo image
+4. Keep variable state
+
+![Keep Variable state gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/keep-variable-state.gif)
+
+5. Show the current server version
+6. Saving a tonel file in VSCode, save the corresponding methods/class in the Pharo image
 
 ## Installation
 
