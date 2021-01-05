@@ -107,8 +107,8 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 
 	// Create the language client and start the client.
 	return new LanguageClient(
-		'pharoServerExample',
-		'Pharo Server Example',
+		'pharoLanguageServer',
+		'Pharo Language Server',
 		serverOptions,
 		clientOptions
 	);
