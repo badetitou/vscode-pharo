@@ -15,8 +15,6 @@ import * as net from 'net';
 import * as child_process from 'child_process';
 import * as lc from 'vscode-languageclient';
 
-const editor = vscode.window.activeTextEditor;
-
 let client: LanguageClient;
 let socket: net.Socket;
 
@@ -68,6 +66,7 @@ function commandPharoExtensionVersion() {
 }
 
 function commandPharoPrintIt() {
+	let editor = vscode.window.activeTextEditor;
 	let selection = editor.selection;
 	client.sendRequest('command:printIt', {"line": editor.document.getText(selection)}).then( (result: string) => {
 		editor.edit(editBuilder => {
@@ -77,6 +76,7 @@ function commandPharoPrintIt() {
 }
 
 function commandPharoShowIt() {
+	let editor = vscode.window.activeTextEditor;
 	client.sendRequest('command:printIt', {"line": editor.document.getText(editor.selection)}).then( (result: string) => {
 		window.showInformationMessage(result);
 	}).catch((error) => window.showErrorMessage(error));
