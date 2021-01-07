@@ -36,7 +36,7 @@ We present here the existing features
 
 3. Auto-completion
 
-![Auto-Completion](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/Auto-completion.png)
+![Auto-Completion](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/Auto-completion.gif)
 
 ### Additional feature
 
