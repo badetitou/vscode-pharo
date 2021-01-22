@@ -14,8 +14,10 @@ import * as requirements from './requirements';
 import * as net from 'net';
 import * as child_process from 'child_process';
 import * as lc from 'vscode-languageclient';
+import { activateDebug } from './activateDebug'
+import { DebugAdapterFactory } from './debugFactory'
 
-let client: LanguageClient;
+export let client: LanguageClient;
 let socket: net.Socket;
 
 export async function activate(context: ExtensionContext) {
@@ -38,6 +40,10 @@ export async function activate(context: ExtensionContext) {
 	
 		// Create new command
 		createCommands(context);
+
+		// Create debugguer
+		let factory = new DebugAdapterFactory();
+		activateDebug(context, factory);
 	})
 
 }
