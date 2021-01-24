@@ -15,11 +15,4 @@ export class DebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory
 		return new vscode.DebugAdapterServer(await port, 'localhost');
 	}
 
-	dispose() {
-		// if (this.server) {
-		// 	this.server.close();
-		// de}
-	}
-
-
 }
