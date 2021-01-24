@@ -6,6 +6,7 @@ A Pharo client extension for VSCode.
 - [Features](#features)
 	- [Generic feature](#generic-feature)
 	- [Supported Language Server feature](#supported-language-server-feature)
+	- [Debug Adapter Protocol feature](#debug-adapter-protocol-feature)
 	- [Additional feature](#additional-feature)
 - [Installation](#installation)
 - [Thanks](#thanks)
@@ -38,6 +39,14 @@ We present here the existing features
 
 ![Auto-Completion](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/Auto-completion.gif)
 
+### Debug Adapter Protocol feature
+
+1. Break on halt
+   1. Show the stack
+   2. Show the variables
+   3. Add watch
+
+![Break on halt](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/breakOnHalt.gif)
 ### Additional feature
 
 The additional feature can be access using the command palette of VSCode
