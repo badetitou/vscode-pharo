@@ -5,6 +5,7 @@
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
 	"version": "0.0.7",
+	"icon": "icon.png",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/badetitou/vscode-pharo"
