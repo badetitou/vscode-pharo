@@ -16,6 +16,7 @@ import * as child_process from 'child_process';
 import * as lc from 'vscode-languageclient';
 import { activateDebug } from './activateDebug'
 import { DebugAdapterFactory } from './debugFactory'
+import { MoosebookContentProvider } from './moosebookProvider';
 
 export let client: LanguageClient;
 let socket: net.Socket;
@@ -44,6 +45,10 @@ export async function activate(context: ExtensionContext) {
 		// Create debugguer
 		let factory = new DebugAdapterFactory();
 		activateDebug(context, factory);
+
+		// Create Moosebook
+		const moosebookContentProvider = new MoosebookContentProvider();
+		context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('moosebook', moosebookContentProvider));
 	})
 
 }

@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
-import { window } from 'vscode';
 import { client } from './extension';
-import * as Net from 'net';
 
 export class DebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
 
