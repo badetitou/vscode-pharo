@@ -89,6 +89,9 @@ To install the extension:
 4. Download a [VM](https://files.pharo.org/vm/pharo-spur64-headless/) (headless or not) for the image
 5. Set up the Pharo extension property
    1. pharo.pathToVM: is the path to the VM executable
+      1. Windows: `C:\path\to\pharo.exe`
+      2. Linux: `/path/to/pharo`
+      3. MacOS: `/path/to/Pharo.app/Contents/MacOS/Pharo`
    2. pharo.pathToImage: is the absolute path to the image
 
 ## Thanks
