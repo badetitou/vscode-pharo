@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.0.8
+
+This update comes from the release of the Pharo-LanguageServer. Thus, most of the code modification can be found in the server repository.
+
+### Users
+
+#### LSP
+
+- You can now format tonel file
+- Chinese characters are supported (best utf-8 support)
+- We fix a bug with signature help
+
+### Developers
+
+I introduce a proposed branch with the proposed API of VSCode.
+It includes the support of VSCode Notebook.
 ## v0.0.7
 
 This update comes from the release of the [Pharo-LanguageServer](https://github.com/badetitou/Pharo-LanguageServer).
