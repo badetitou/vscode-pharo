@@ -21,6 +21,10 @@ It includes the support of VSCode Notebook.
 This update comes from the release of the [Pharo-LanguageServer](https://github.com/badetitou/Pharo-LanguageServer).
 Thus, most of the code modification can be found in the server repository.
 
+### Misc
+
+- add a logo to the extension
+
 ### Users
 
 #### DAP
