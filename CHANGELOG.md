@@ -16,14 +16,15 @@ This update comes from the release of the Pharo-LanguageServer. Thus, most of th
 
 I introduce a proposed branch with the proposed API of VSCode.
 It includes the support of VSCode Notebook.
-## v0.0.7
-
-This update comes from the release of the [Pharo-LanguageServer](https://github.com/badetitou/Pharo-LanguageServer).
-Thus, most of the code modification can be found in the server repository.
 
 ### Misc
 
 - add a logo to the extension
+
+## v0.0.7
+
+This update comes from the release of the [Pharo-LanguageServer](https://github.com/badetitou/Pharo-LanguageServer).
+Thus, most of the code modification can be found in the server repository.
 
 ### Users
 
