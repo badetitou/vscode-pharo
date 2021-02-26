@@ -31,15 +31,19 @@ We present here the existing features
 
 ![Format gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/format.gif)
 
-2. Hover
+2. Tonel file formatting
+
+![Tonel file formatting](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/format-tonel.gif)
+
+3. Hover
 
 ![Hover](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/hover.png)
 
-3. Auto-completion
+4. Auto-completion
 
 ![Auto-Completion](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/Auto-completion.gif)
 
-4. Help with method signature
+5. Help with method signature
 
 ![Signature help gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/signatureHelp.gif)
 
