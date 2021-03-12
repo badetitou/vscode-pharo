@@ -154,6 +154,12 @@
 				"command": "extension.pharo-debug.debugEditorContents",
 				"when": "resourceLangId == pharo"
 			}
+		],
+		"snippets": [
+			{
+				"language": "pharo",
+				"path": "./snippets/snippets.json"
+			}
 		]
 	},
 	"scripts": {
