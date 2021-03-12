@@ -10,7 +10,7 @@
 		"body": "{ #category : #${1:accessing} }\n${2:Object} class >> ${3:methodName} [\n\t$4\n]",
 		"description": "New method in tonel file",
 		"scope": "source.pharo"
-	},,
+	},
 	"nclass": {
 		"prefix": "nclass",
 		"body": "Class {\n\t #name: ${1:MyClassName},\n\t#superclass : ${2:Object},\n\t#instVars: [ $3],\n\t#category : #'${4:PackageName}'\n}",
