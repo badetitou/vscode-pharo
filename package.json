@@ -188,7 +188,8 @@
 		"vscode:prepublish": "webpack --mode production",
 		"webpack": "webpack --mode development",
 		"webpack-dev": "webpack --mode development --watch",
-		"test-compile": "tsc -p ./"
+		"test-compile": "tsc -p ./",
+		"get-proposed": "npx vscode-dts dev"
 	},
 	"dependencies": {
 		"vscode-debugadapter": "^1.43.0",

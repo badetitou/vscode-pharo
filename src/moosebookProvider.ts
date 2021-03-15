@@ -1,11 +1,10 @@
 import * as vscode from 'vscode';
-import { WorkspaceEdit } from 'vscode';
 import { Moosebook } from './moosebook';
 
 interface RawNotebookCell {
 	language: string;
 	value: string;
-	kind: vscode.CellKind;
+	kind: vscode.NotebookCellKind;
 	editable?: boolean;
 }
 
@@ -29,7 +28,7 @@ export class MoosebookContentProvider implements  vscode.NotebookContentProvider
 					this.register(
 						docKey,
 						project,
-						key => document.cells.some(cell => cell.uri.toString() === key) || (key === docKey),
+						key => document.cells.some(cell => cell.index.toString() === key) || (key === docKey),
 					);
 				}
 			}),
@@ -49,7 +48,7 @@ export class MoosebookContentProvider implements  vscode.NotebookContentProvider
 		});
 	}
 
-	public lookupMoosebook(keyOrUri: string | vscode.Uri | undefined): Moosebook | undefined {
+	public lookupMoosebook(keyOrUri: string | number | vscode.Uri | undefined): Moosebook | undefined {
 		if (keyOrUri) {
 			let key: string;
 			if (typeof keyOrUri === 'string') {
@@ -81,18 +80,16 @@ export class MoosebookContentProvider implements  vscode.NotebookContentProvider
 		}
 
 		const notebookData: vscode.NotebookData = {
-			languages: ['pharo'],
-			metadata: { cellRunnable: true },
+			metadata: new vscode.NotebookDocumentMetadata().with({ editable: true }),
 			cells: raw.map(item => ({
+				kind: item.kind,
 				source: item.value,
 				language: item.language,
-				cellKind: item.kind,
 				outputs: [],
-				metadata: {
+				metadata: new vscode.NotebookCellMetadata().with({
 					editable: true,
-					runnable: true,
 					breakpointMargin: false
-				 }
+				 })
 			}))
 		};
 		return notebookData;
@@ -120,7 +117,7 @@ export class MoosebookContentProvider implements  vscode.NotebookContentProvider
 
 		let output = '';
 		let error: Error | undefined;
-		const moosebook = this.lookupMoosebook(cell.uri);
+		const moosebook = this.lookupMoosebook(cell.index);
 		if (moosebook) {
 			try {
 				output = await moosebook.eval(cell);
@@ -164,8 +161,8 @@ export class MoosebookContentProvider implements  vscode.NotebookContentProvider
 		let contents: RawNotebookCell[] = [];
 		for (let cell of document.cells) {
 			contents.push({
-				kind: cell.cellKind,
-				language: cell.language,
+				kind: cell.kind,
+				language: cell.document.languageId,
 				value: cell.document.getText(),
 			});
 		}
