@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.0.9
+
+- Add three snippets
+  - `nmethod` allows you to create easily a new instance side method in a tonel file
+  - `ncmethod` allows you to create easily a new class side method in a tonel file
+  - `nclass` allows you to define the class of a tonel file
+- Improve the documentation
+
 ## v0.0.8
 
 This update comes from the release of the Pharo-LanguageServer. Thus, most of the code modification can be found in the server repository.
