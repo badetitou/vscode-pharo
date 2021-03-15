@@ -12,6 +12,7 @@ interface ProjectAssociation {
 	(key: string): boolean;
 }
 
+
 export class MoosebookContentProvider implements  vscode.NotebookContentProvider, vscode.NotebookKernel {
 	readonly id = 'moosebookKernel';
 	public label = 'Moosebook Kernel';
@@ -115,7 +116,7 @@ export class MoosebookContentProvider implements  vscode.NotebookContentProvider
 
 	public async executeCell(_document: vscode.NotebookDocument, cell: vscode.NotebookCell): Promise<void> {
 
-		let output = '';
+		let output = {mimetype: 'text/html', content: 'error... '};
 		let error: Error | undefined;
 		const moosebook = this.lookupMoosebook(cell.index);
 		if (moosebook) {
@@ -125,11 +126,12 @@ export class MoosebookContentProvider implements  vscode.NotebookContentProvider
 				error = e;
 			}
 		}
+
 		const edit = new vscode.WorkspaceEdit();
 		edit.replaceNotebookCellOutput(_document.uri, cell.index, [{
 			outputs: [{
-				mime: 'text/html',
-				value: output
+				mime: output.mimetype,
+				value: output.content
 			}],
 			id: cell.index + ''
 		}])

@@ -6,6 +6,12 @@
 import * as vscode from 'vscode';
 import { client } from './extension';
 
+interface PharoResponse {
+	mimetype: string,
+	content: string
+}
+
+
 export class Moosebook implements vscode.Disposable {
 
 
@@ -25,9 +31,9 @@ export class Moosebook implements vscode.Disposable {
 
 	}
 
-	public async eval(cell: vscode.NotebookCell): Promise<string> {
+	public async eval(cell: vscode.NotebookCell): Promise<PharoResponse> {
 		// Eval
-		return client.sendRequest('command:printIt', {"line": cell.document.getText()}).then( (result: string) => {
+		return client.sendRequest('command:notebookPrintIt', {"line": cell.document.getText()}).then( (result: PharoResponse) => {
 			return result;
 		}).catch((error) => { throw new Error(error);
 		});
