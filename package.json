@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "0.0.7",
+	"version": "0.0.9",
 	"icon": "icon.png",
 	"enableProposedApi": true,
 	"repository": {
@@ -162,6 +162,12 @@
 			{
 				"command": "extension.pharo-debug.debugEditorContents",
 				"when": "resourceLangId == pharo"
+			}
+		],
+		"snippets": [
+			{
+				"language": "pharo",
+				"path": "./snippets/snippets.json"
 			}
 		],
 		"notebookProvider": [

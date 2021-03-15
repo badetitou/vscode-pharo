@@ -31,15 +31,19 @@ We present here the existing features
 
 ![Format gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/format.gif)
 
-2. Hover
+2. Tonel file formatting
+
+![Tonel file formatting](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/format-tonel.gif)
+
+3. Hover
 
 ![Hover](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/hover.png)
 
-3. Auto-completion
+4. Auto-completion
 
 ![Auto-Completion](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/Auto-completion.gif)
 
-4. Help with method signature
+5. Help with method signature
 
 ![Signature help gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/signatureHelp.gif)
 
@@ -89,6 +93,9 @@ To install the extension:
 4. Download a [VM](https://files.pharo.org/vm/pharo-spur64-headless/) (headless or not) for the image
 5. Set up the Pharo extension property
    1. pharo.pathToVM: is the path to the VM executable
+      1. Windows: `C:\path\to\pharo.exe`
+      2. Linux: `/path/to/pharo`
+      3. MacOS: `/path/to/Pharo.app/Contents/MacOS/Pharo`
    2. pharo.pathToImage: is the absolute path to the image
 
 ## Thanks

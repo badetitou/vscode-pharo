@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.0.9
+
+- Add three snippets
+  - `nmethod` allows you to create easily a new instance side method in a tonel file
+  - `ncmethod` allows you to create easily a new class side method in a tonel file
+  - `nclass` allows you to define the class of a tonel file
+- Improve the documentation
+
+## v0.0.8
+
+This update comes from the release of the Pharo-LanguageServer. Thus, most of the code modification can be found in the server repository.
+
+### Users
+
+#### LSP
+
+- You can now format tonel file
+- Chinese characters are supported (best utf-8 support)
+- We fix a bug with signature help
+
+### Developers
+
+I introduce a proposed branch with the proposed API of VSCode.
+It includes the support of VSCode Notebook.
+
+### Misc
+
+- add a logo to the extension
+
 ## v0.0.7
 
 This update comes from the release of the [Pharo-LanguageServer](https://github.com/badetitou/Pharo-LanguageServer).
