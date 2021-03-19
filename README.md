@@ -21,31 +21,36 @@ We present here the existing features
 
 ### Generic feature
 
-1. Code highlighting
+**Code highlighting**
 
 ![Highlighting](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/highlighting.png)
 
 ### Supported Language Server feature
 
-1. Code formatting
+**Code formatting**
 
 ![Format gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/format.gif)
 
-2. Tonel file formatting
+**Tonel file formatting**
 
 ![Tonel file formatting](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/format-tonel.gif)
 
-3. Hover
+**Hover**
 
 ![Hover](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/hover.png)
 
-4. Auto-completion
+**Auto-completion**
 
 ![Auto-Completion](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/Auto-completion.gif)
 
-5. Help with method signature
+**Help with method signature**
 
 ![Signature help gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/signatureHelp.gif)
+
+**Diagnostics**
+
+![Diagnostics gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/diagnostics.gif)
+
 
 ### Debug Adapter Protocol feature
 
