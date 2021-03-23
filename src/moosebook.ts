@@ -34,6 +34,8 @@ export class Moosebook implements vscode.Disposable {
 	public async eval(cell: vscode.NotebookCell): Promise<PharoResponse> {
 		// Eval
 		return client.sendRequest('command:notebookPrintIt', {"line": cell.document.getText()}).then( (result: PharoResponse) => {
+			if (result.mimetype == 'error')
+			throw new Error(result.content);
 			return result;
 		}).catch((error) => { throw new Error(error);
 		});

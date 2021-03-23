@@ -19,6 +19,8 @@ export class MoosebookContentProvider implements  vscode.NotebookContentProvider
 
 	private readonly _associations = new Map<string, [ProjectAssociation, Moosebook]>();
 	private _localDisposables: vscode.Disposable[] = [];
+	supportedLanguages?: string[] = ['pharo'];
+	private _executionOrder = 0;
 
 	constructor() {
 		this._localDisposables.push(
@@ -48,6 +50,58 @@ export class MoosebookContentProvider implements  vscode.NotebookContentProvider
 			}
 		});
 	}
+
+	interrupt?(document: vscode.NotebookDocument): void {
+		throw new Error('Method not implemented.');
+	}
+
+	async executeCellsRequest(document: vscode.NotebookDocument, ranges: vscode.NotebookCellRange[]) {
+		const cells: vscode.NotebookCell[] = [];
+		for (let range of ranges) {
+			for (let i = range.start; i < range.end; i++) {
+				cells.push(document.cells[i]);
+			}
+		}
+		this._executeCells(cells);
+	}
+
+	private async _executeCells(cells: vscode.NotebookCell[]): Promise<void> {
+		for (const cell of cells) {
+			const execution = vscode.notebook.createNotebookCellExecutionTask(cell.notebook.uri, cell.index, this.id)!;
+			await this._doExecuteCell(execution);
+		}
+	}
+
+	private async _doExecuteCell(execution: vscode.NotebookCellExecutionTask): Promise<void> {
+
+		execution.executionOrder = ++this._executionOrder;
+		execution.start({ startTime: Date.now() });
+
+		let output = {mimetype: 'text/html', content: 'error... '};
+		let error: Error | undefined;
+		const moosebook = this.lookupMoosebook(execution.cell.index);
+		try {
+			output = await moosebook.eval(execution.cell);
+		} catch(err) {
+			execution.replaceOutput([new vscode.NotebookCellOutput([
+				new vscode.NotebookCellOutputItem('application/x.notebook.error-traceback', {
+					ename: err instanceof Error && err.name || 'error',
+					evalue: err instanceof Error && err.message || JSON.stringify(err, undefined, 4),
+					traceback: []
+				})
+			])]);
+			execution.end({ success: false });
+			return;
+		}
+	
+
+		execution.replaceOutput([new vscode.NotebookCellOutput([
+			new vscode.NotebookCellOutputItem(output.mimetype, output.content)])]);
+		execution.end({ success: true });
+	}
+
+
+
 
 	public lookupMoosebook(keyOrUri: string | number | vscode.Uri | undefined): Moosebook | undefined {
 		if (keyOrUri) {
@@ -110,48 +164,6 @@ export class MoosebookContentProvider implements  vscode.NotebookContentProvider
 
 	async backupNotebook(document: vscode.NotebookDocument, context: vscode.NotebookDocumentBackupContext, _cancellation: vscode.CancellationToken): Promise<vscode.NotebookDocumentBackup> {
 		return { id: '', delete: () => {} };
-	}
-
-
-
-	public async executeCell(_document: vscode.NotebookDocument, cell: vscode.NotebookCell): Promise<void> {
-
-		let output = {mimetype: 'text/html', content: 'error... '};
-		let error: Error | undefined;
-		const moosebook = this.lookupMoosebook(cell.index);
-		if (moosebook) {
-			try {
-				output = await moosebook.eval(cell);
-			} catch(e) {
-				error = e;
-			}
-		}
-
-		const edit = new vscode.WorkspaceEdit();
-		edit.replaceNotebookCellOutput(_document.uri, cell.index, [{
-			outputs: [{
-				mime: output.mimetype,
-				value: output.content
-			}],
-			id: cell.index + ''
-		}])
-		// edit.replaceNotebookCellMetadata(_document.uri, cell.index, metadata);
-        vscode.workspace.applyEdit(edit);
-		
-	}
-
-	public cancelCellExecution(_document: vscode.NotebookDocument, _cell: vscode.NotebookCell): void {
-		// not yet supported
-	}
-
-	public async executeAllCells(document: vscode.NotebookDocument): Promise<void> {
-	  for (const cell of document.cells) {
-		await this.executeCell(document, cell);
-	  }
-	}
-
-	cancelAllCellsExecution(_document: vscode.NotebookDocument): void {
-		// not yet supported
 	}
 
 	public dispose() {
