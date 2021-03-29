@@ -1,12 +1,12 @@
 .vscode
 node_modules/
-/out/
+out/
 src/
 /textFixture
 scripts/
 tsconfig.json
 webpack.config.js
-myTests/
+samples/
 docs/
 *.vsix
 .gitignore
