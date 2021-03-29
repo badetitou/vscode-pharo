@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-const vscode = require('vscode');
+import * as vscode from 'vscode';
 import { workspace, ExtensionContext, commands, window, Selection } from 'vscode';
 import {
 	LanguageClient,
@@ -23,6 +23,7 @@ let socket: net.Socket;
 
 export async function activate(context: ExtensionContext) {
 	// Testing Pharo can be used
+	console.info('Start Pharo Language extension');
 	return requirements.resolveRequirements().catch(error => {
 		window.showErrorMessage(error.message, error.label).then((selection) => {
 			if (error.label && error.label === selection && error.command) {
@@ -47,6 +48,7 @@ export async function activate(context: ExtensionContext) {
 		activateDebug(context, factory);
 
 		// Create Moosebook
+		console.info('Start moosebook');
 		const moosebookContentProvider = new MoosebookContentProvider();
 		context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('moosebook', moosebookContentProvider));
 	})

@@ -1,7 +1,4 @@
-
-import { workspace, Uri, env, window, ConfigurationTarget, commands, ExtensionContext } from 'vscode';
-
-const vscode = require('vscode');
+import * as vscode from 'vscode';
 
 export interface RequirementsData {
     pathToVM: string;

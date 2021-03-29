@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "0.0.10",
+	"version": "0.0.11",
 	"icon": "icon.png",
 	"enableProposedApi": true,
 	"repository": {
@@ -22,7 +22,7 @@
 		"pharo smalltalk"
 	],
 	"engines": {
-		"vscode": "^1.49.0"
+		"vscode": "1.55.0-insider"
 	},
 	"activationEvents": [
 		"onDebugResolve:pharodb",
@@ -31,7 +31,6 @@
 		"onCommand:pharo.printIt",
 		"onCommand:pharo.showIt",
 		"onCommand:extension.pharo-debug.debugEditorContents",
-		"onNotebookEditor:moosebook",
 		"onNotebook:moosebook"
 	],
 	"main": "./out/extension",
