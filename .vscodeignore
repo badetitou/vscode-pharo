@@ -1,10 +1,10 @@
 .vscode
 node_modules/
-out/
+/out/
 src/
 /textFixture
 scripts/
-/tsconfig.json
+tsconfig.json
 webpack.config.js
 myTests/
 docs/
