@@ -13,7 +13,7 @@ interface ProjectAssociation {
 }
 
 
-export class MoosebookContentProvider implements  vscode.NotebookContentProvider, vscode.NotebookKernel {
+export class MoosebookContentProvider implements  vscode.NotebookContentProvider, vscode.NotebookKernel, vscode.NotebookKernelProvider {
 	readonly id = 'moosebookKernel';
 	public label = 'Moosebook Kernel';
 
@@ -42,13 +42,10 @@ export class MoosebookContentProvider implements  vscode.NotebookContentProvider
 				}
 			}),
 		);
-		vscode.notebook.registerNotebookKernelProvider({
-			viewType: 'moosebook',
-		}, {
-			provideKernels: () => {
-				return [this];
-			}
-		});
+	}
+
+	provideKernels() {
+		return [this];
 	}
 
 	interrupt?(document: vscode.NotebookDocument): void {

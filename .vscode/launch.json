@@ -9,7 +9,7 @@
 			"runtimeExecutable": "${execPath}",
 			"args": ["--extensionDevelopmentPath=${workspaceRoot}", 
 				"${workspaceFolder}/samples"],
-			"outFiles": ["${workspaceRoot}/out/**/*.js"],
+			"outFiles": ["${workspaceRoot}/dist/**/*.js"],
 			"preLaunchTask": {
 				"type": "npm",
 				"script": "compile"

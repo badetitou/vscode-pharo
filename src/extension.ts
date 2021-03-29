@@ -50,6 +50,7 @@ export async function activate(context: ExtensionContext) {
 		// Create Moosebook
 		console.info('Start moosebook');
 		const moosebookContentProvider = new MoosebookContentProvider();
+		context.subscriptions.push(vscode.notebook.registerNotebookKernelProvider({ viewType: 'moosebook' }, moosebookContentProvider));
 		context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('moosebook', moosebookContentProvider));
 	})
 
