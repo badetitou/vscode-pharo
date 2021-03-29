@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.0.10
+
+- Support Language Server Protocol diagnostics
+
 ## v0.0.9
 
 - Add three snippets
