@@ -100,18 +100,16 @@ export class MoosebookContentProvider implements  vscode.NotebookContentProvider
 
 
 
-	public lookupMoosebook(keyOrUri: string | number | vscode.Uri | undefined): Moosebook | undefined {
-		if (keyOrUri) {
-			let key: string;
-			if (typeof keyOrUri === 'string') {
-				key = keyOrUri;
-			} else {
-				key = keyOrUri.toString();
-			}
-			for (let [association, value] of this._associations.values()) {
-				if (association(key)) {
-					return value;
-				}
+	public lookupMoosebook(keyOrUri: string | number | vscode.Uri): Moosebook | undefined {
+		let key: string;
+		if (typeof keyOrUri === 'string') {
+			key = keyOrUri;
+		} else {
+			key = keyOrUri.toString();
+		}
+		for (let [association, value] of this._associations.values()) {
+			if (association(key)) {
+				return value;
 			}
 		}
 		return undefined;
