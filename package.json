@@ -5,6 +5,7 @@
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
 	"version": "0.0.11",
+	"preview": true,
 	"icon": "icon.png",
 	"enableProposedApi": true,
 	"repository": {
@@ -185,8 +186,6 @@
 		"compile": "tsc -b",
 		"test": "sh ./scripts/e2e.sh",
 		"vscode:prepublish": "npm run bundle-all",
-		"webpack": "webpack --mode development",
-		"webpack-dev": "webpack --mode development --watch",
 		"test-compile": "tsc -p ./",
 		"get-proposed": "npx vscode-dts dev",
 		"get-main": "npx vscode-dts main",

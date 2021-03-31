@@ -2,11 +2,13 @@
 node_modules/
 out/
 src/
-/textFixture
+testFixture
 scripts/
 tsconfig.json
+tsconfig.base.json
 webpack.config.js
 samples/
 docs/
 *.vsix
 .gitignore
+esbuild.js
