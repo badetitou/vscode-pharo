@@ -98,8 +98,6 @@ export class MoosebookContentProvider implements  vscode.NotebookContentProvider
 	}
 
 
-
-
 	public lookupMoosebook(keyOrUri: string | number | vscode.Uri): Moosebook | undefined {
 		let key: string;
 		if (typeof keyOrUri === 'string') {
