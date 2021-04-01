@@ -32,7 +32,8 @@
 		"onCommand:pharo.printIt",
 		"onCommand:pharo.showIt",
 		"onCommand:extension.pharo-debug.debugEditorContents",
-		"onNotebook:moosebook"
+		"onNotebook:moosebook",
+		"onView:pharoImage"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -53,6 +54,14 @@
 					"description": "The Pharo Image that can run the Pharo Language server (https://github.com/badetitou/Pharo-LanguageServer)."
 				}
 			}
+		},
+		"views": {
+			"explorer": [
+				{
+					"id": "pharoImage",
+					"name": "Pharo Image"
+				}
+			]
 		},
 		"languages": [
 			{
