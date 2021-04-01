@@ -27,11 +27,13 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		};
 	}
 
-	public getChildren(element?: PharoNode): PharoNode[] | Thenable<PharoNode[]>  {
+	public getChildren(element?: PharoNode): PharoNode[] | Thenable<PharoNode[]> {
 		if (element === undefined) {
-			return client.sendRequest('pls:packages', {}).then((result: Array<string>) => {
-				return result.sort().map((item) => { return { resource: vscode.Uri.parse(item), isDirectory: true }; })
-			});
+			return client.onReady().then(() =>
+				client.sendRequest('pls:packages', {}).then((result: Array<string>) => {
+					return result.sort().map((item) => { return { resource: vscode.Uri.parse(item), isDirectory: true }; })
+				})
+			)
 		}
 		return [{ resource: vscode.Uri.parse('test'), isDirectory: true }];
 	}
