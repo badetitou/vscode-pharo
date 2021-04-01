@@ -16,6 +16,7 @@ import * as child_process from 'child_process';
 import * as lc from 'vscode-languageclient';
 import { activateDebug } from './activateDebug'
 import { DebugAdapterFactory } from './debugFactory'
+import { PharoImageExplorer } from './treeProvider/imageExplorer';
 
 export let client: LanguageClient;
 let socket: net.Socket;
@@ -40,6 +41,8 @@ export async function activate(context: ExtensionContext) {
 	
 		// Create new command
 		createCommands(context);
+
+		new PharoImageExplorer(context);
 
 		// Create debugguer
 		let factory = new DebugAdapterFactory();
