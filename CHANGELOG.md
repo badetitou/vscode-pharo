@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.0.11
+
+- Add the Pharo Image tree to explore easily all methods of an image
+- The port is now given by the Pharo image at startup (everything goes faster, and less bug possible)
+
 ## v0.0.10
 
 - Support Language Server Protocol diagnostics
