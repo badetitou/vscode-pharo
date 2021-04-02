@@ -126,7 +126,7 @@ async function createServerWithSocket(pharoPath: string, pathToImage: string, co
     let dls: child_process.ChildProcess;
 	
 	dls = child_process.spawn(pharoPath.trim(), [
-		pathToImage, 'st', context.asAbsolutePath('/src/res/run-server.st')
+		pathToImage, 'st', context.asAbsolutePath('/res/run-server.st')
 	]);
 
 	let socket = await Promise.resolve(getSocket(dls));

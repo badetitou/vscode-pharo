@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "0.0.10",
+	"version": "0.0.11",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -32,7 +32,7 @@
 		"onCommand:extension.pharo-debug.debugEditorContents",
 		"onView:pharoImage"
 	],
-	"main": "./out/extension",
+	"main": "./dist/extension",
 	"contributes": {
 		"configuration": {
 			"type": "object",
