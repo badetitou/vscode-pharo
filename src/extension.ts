@@ -19,7 +19,6 @@ import { DebugAdapterFactory } from './debugFactory'
 import { PharoImageExplorer } from './treeProvider/imageExplorer';
 
 export let client: LanguageClient;
-let socket: net.Socket;
 
 export async function activate(context: ExtensionContext) {
 	// Testing Pharo can be used
@@ -123,18 +122,14 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 	);
 }
 
-async function createServerWithSocket(pharoPath: string, pathToImage: string, context: ExtensionContext) {
+async function createServerWithSocket(pharoPath: string, pathToImage: string, context: ExtensionContext): Promise<lc.StreamInfo> {
     let dls: child_process.ChildProcess;
+	
 	dls = child_process.spawn(pharoPath.trim(), [
 		pathToImage, 'st', context.asAbsolutePath('/src/res/run-server.st')
 	]);
 
-	await sleep(8000); // Wait that the Pharo server start
-
-	socket = net.connect({ port: 4000, host: '127.0.0.1' }, () => {
-		// 'connect' listener.
-		console.log('connected to server!');
-	});
+	let socket = await Promise.resolve(getSocket(dls));
 
 	let result: lc.StreamInfo = {
 		writer: socket,
@@ -143,6 +138,16 @@ async function createServerWithSocket(pharoPath: string, pathToImage: string, co
 	return Promise.resolve(result);
 }
 
-async function sleep(ms: number) {
-	return new Promise(resolve => setTimeout(resolve, ms));
+async function getSocket(dls: child_process.ChildProcess): Promise<net.Socket>  {
+	return new Promise(function(resolve) {
+		let socket: net.Socket;
+		dls.stdout.on('data', (data) => {
+			console.log(`Try to connect to port ${data}`);
+			socket = net.connect({ port: parseInt(data), host: '127.0.0.1' }, () => {
+				// 'connect' listener.
+			console.log('connected to server!');
+			resolve(socket)
+		});
+		});
+	});
 }
