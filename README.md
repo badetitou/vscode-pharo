@@ -90,6 +90,10 @@ The additional feature can be access using the command palette of VSCode
 
 6. Saving a tonel file in VSCode, save the corresponding methods/class in the Pharo image
 
+7. Access Pharo Image
+
+![Access Pharo Image gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/accessPharoImage.gif)
+
 ## Installation
 
 To install the extension:
