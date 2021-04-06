@@ -13,7 +13,7 @@
 	},
 	"nclass": {
 		"prefix": "nclass",
-		"body": "Class {\n\t #name: ${1:MyClassName},\n\t#superclass : ${2:Object},\n\t#instVars: [ $3],\n\t#category : #'${4:PackageName}'\n}",
+		"body": "Class {\n\t #name: #${1:MyClassName},\n\t#superclass: #${2:Object},\n\t#instVars: [ $3],\n\t#category : #'${4:PackageName}'\n}",
 		"description": "New class in tonel file",
 		"scope": "source.pharo"
 	}
