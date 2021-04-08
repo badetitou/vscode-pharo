@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.12
+
+### Users
+
+- Support code lens to run Pharo tests from VSCode
+
+### Developers
+
+We added a full new document model to better handle tonel and script file.
+
 ## v0.0.11
 
 - Add the Pharo Image tree to explore easily all methods of an image

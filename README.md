@@ -53,6 +53,9 @@ We present here the existing features
 
 ![Diagnostics gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/diagnostics.gif)
 
+**Code Lens (Tests)**
+
+![Run test gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/runTest.gif)
 
 ### Debug Adapter Protocol feature
 
