@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-const vscode = require('vscode');
+import * as vscode from 'vscode';
 import { workspace, ExtensionContext, commands, window, Selection } from 'vscode';
 import {
 	LanguageClient,
@@ -55,6 +55,7 @@ function createCommands(context: ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.printIt', commandPharoPrintIt));
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.showIt', commandPharoShowIt));
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.save', commandPharoSave));
+	context.subscriptions.push(vscode.commands.registerCommand('pharo.executeTest', commandPharoExecuteTest));
 }
 
 
@@ -92,6 +93,12 @@ function commandPharoShowIt() {
 
 function commandPharoSave() {
 	client.sendRequest('command:save').then( (result: string) => {
+		window.showInformationMessage(result);
+	}).catch((error) => window.showErrorMessage(error));
+}
+
+function commandPharoExecuteTest(aClass: string, testMethod: string) {
+	client.sendRequest('pls:executeClassTest', {class: aClass, testMethod: testMethod}).then( (result: string) => {
 		window.showInformationMessage(result);
 	}).catch((error) => window.showErrorMessage(error));
 }

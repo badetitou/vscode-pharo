@@ -56,7 +56,8 @@
 			"explorer": [
 				{
 					"id": "pharoImage",
-					"name": "Pharo Image"
+					"name": "Pharo Image",
+					"icon": "media/pharo-bar.svg"
 				}
 			]
 		},
@@ -98,6 +99,11 @@
 			{
 				"command": "pharo.showIt",
 				"title": "Show the result of selected lines"
+			},
+			{
+				"command": "pharo.executeTest",
+				"title": "Show the result of selected lines",
+				"when": false
 			},
 			{
 				"command": "extension.pharo-debug.debugEditorContents",
