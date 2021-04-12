@@ -78,7 +78,7 @@ function commandPharoExtensionVersion() {
 function commandPharoPrintIt() {
 	let editor = vscode.window.activeTextEditor;
 	let selection = editor.selection;
-	client.sendRequest('command:printIt', {"line": editor.document.getText(selection)}).then( (result: string) => {
+	client.sendRequest('command:printIt', {"line": editor.document.getText(selection), "textDocumentURI": editor.document.uri}).then( (result: string) => {
 		editor.edit(editBuilder => {
 			editBuilder.replace( new vscode.Selection(selection.end, selection.end), ' "' + result + '" ');
 		})
