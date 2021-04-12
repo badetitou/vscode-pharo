@@ -3,7 +3,7 @@ Class {
 	#superclass: #TestCase, 
 	#instVars: [ ],
 	#category : #'MyPackage'
-}   
+}
 
 { #category : #accessing }
 MyClassTest >> testMethod1 [  

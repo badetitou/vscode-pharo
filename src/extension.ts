@@ -56,6 +56,7 @@ function createCommands(context: ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.showIt', commandPharoShowIt));
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.save', commandPharoSave));
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.executeTest', commandPharoExecuteTest));
+	context.subscriptions.push(vscode.commands.registerCommand('pharo.executeClassTests', commandPharoExecuteClassTests));
 }
 
 
@@ -99,6 +100,12 @@ function commandPharoSave() {
 
 function commandPharoExecuteTest(aClass: string, testMethod: string) {
 	client.sendRequest('pls:executeClassTest', {class: aClass, testMethod: testMethod}).then( (result: string) => {
+		window.showInformationMessage(result);
+	}).catch((error) => window.showErrorMessage(error));
+}
+
+function commandPharoExecuteClassTests(aClass: string) {
+	client.sendRequest('pls:executeClassTests', {className: aClass}).then( (result: string) => {
 		window.showInformationMessage(result);
 	}).catch((error) => window.showErrorMessage(error));
 }

@@ -110,9 +110,15 @@
 			},
 			{
 				"command": "pharo.executeTest",
-				"title": "Show the result of selected lines",
+				"title": "Execute the test",
 				"when": false
 			},
+			{
+				"command": "pharo.executeClassTests",
+				"title": "Execute all class tests",
+				"when": false
+			}
+			,
 			{
 				"command": "extension.pharo-debug.debugEditorContents",
 				"title": "Debug File",
