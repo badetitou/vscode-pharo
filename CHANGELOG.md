@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.0.0
+
+- Move to version 1.0.0
+
+### Users
+
+- A real custom tree view to access the image with the correct logo
+- Support run class test**s**
+- Modification of the binder (script files are not considered as playground with separate variable binding/holders)
+
+And coming from the Pharo Language Server
+
+- Document symbol
+  - Outline
+  - Breadcumber
+- References (jump to type definition)
+
 ## v0.0.12
 
 ### Users

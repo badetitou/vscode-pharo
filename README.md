@@ -103,7 +103,7 @@ To install the extension:
 
 1. Install [VSCode](https://code.visualstudio.com/)
 2. Install the [Pharo extension](https://marketplace.visualstudio.com/items?itemName=badetitou.pharo-language-server)
-3. Download a [Pharo Language Server image](https://github.com/badetitou/Pharo-LanguageServer/releases) or [install the server](https://github.com/badetitou/Pharo-LanguageServer#installation) in a pre-existing image 
+3. Download a [Pharo Language Server image](https://github.com/badetitou/Pharo-LanguageServer/releases) or [install the server](https://github.com/badetitou/Pharo-LanguageServer#installation) in a pre-existing image
 4. Download a [VM](https://files.pharo.org/vm/pharo-spur64-headless/) (headless or not) for the image
 5. Set up the Pharo extension property
    1. pharo.pathToVM: is the path to the VM executable
@@ -111,6 +111,8 @@ To install the extension:
       2. Linux: `/path/to/pharo`
       3. MacOS: `/path/to/Pharo.app/Contents/MacOS/Pharo`
    2. pharo.pathToImage: is the absolute path to the image
+
+> From version v1.0.0, please use at least version v1.1.0 of the Pharo Language Server.
 
 ## Thanks
 
