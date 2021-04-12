@@ -53,14 +53,22 @@
 			}
 		},
 		"views": {
-			"explorer": [
+			"pharoView": [
 				{
 					"id": "pharoImage",
-					"name": "Pharo Image",
-					"icon": "media/pharo-bar.svg"
+					"name": "Pharo Image"
 				}
 			]
 		},
+		"viewsContainers": {
+            "activitybar": [
+                {
+                    "icon": "media/pharo-bar.svg",
+                    "id": "pharoView",
+                    "title": "Pharo"
+                }
+            ]
+        },
 		"languages": [
 			{
 				"id": "pharo",
