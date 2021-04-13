@@ -57,9 +57,19 @@
 				{
 					"id": "pharoImage",
 					"name": "Pharo Image"
+				},
+				{
+					"id": "pharoBindingView",
+					"name": "Variables"
 				}
 			]
 		},
+		"viewsWelcome": [
+			{
+			  "view": "pharoBindingView",
+			  "contents": "In Progress"
+			}
+		],
 		"viewsContainers": {
             "activitybar": [
                 {

@@ -27,6 +27,10 @@ We present here the existing features
 
 ![Highlighting](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/highlighting.png)
 
+**Breadcrumbs & Outline**
+
+![Breadcrumbs & Outline](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/breadcrumbs-and-outline.gif)
+
 ### Supported Language Server feature
 
 **Code formatting**
@@ -53,9 +57,13 @@ We present here the existing features
 
 ![Diagnostics gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/diagnostics.gif)
 
-**Code Lens (Tests)**
+**Code Lens (Run Tests)**
 
 ![Run test gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/runTest.gif)
+
+**Jump type Definition**
+
+![Jump type Definition gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/jump-type-def.gif)
 
 ### Debug Adapter Protocol feature
 
