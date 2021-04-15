@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.1
+
+- Improve snippets with autocompleted class name and package name to ease the creation of class and new methods
+
 ## v1.0.0
 
 - Move to version 1.0.0
