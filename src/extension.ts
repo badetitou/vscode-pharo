@@ -17,6 +17,7 @@ import * as lc from 'vscode-languageclient';
 import { activateDebug } from './activateDebug'
 import { DebugAdapterFactory } from './debugFactory'
 import { PharoImageExplorer } from './treeProvider/imageExplorer';
+import { PharoDocumentExplorer } from './treeProvider/documentBinding';
 
 export let client: LanguageClient;
 
@@ -42,6 +43,7 @@ export async function activate(context: ExtensionContext) {
 		createCommands(context);
 
 		new PharoImageExplorer(context);
+		new PharoDocumentExplorer(context);
 
 		// Create debugguer
 		let factory = new DebugAdapterFactory();

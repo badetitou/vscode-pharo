@@ -1,6 +1,6 @@
 Object.
 
-hello := true.  "true" 
+hello := true. "true" 
 
 hello ifFalse: [ ] ifTrue: [ ].
 
