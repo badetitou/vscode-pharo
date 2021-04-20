@@ -3,6 +3,7 @@ import { client } from '../extension';
 
 export interface PLSVariable {
 	name: string;
+	value: string;
 	variableReference: string;
 	isDirectory: boolean;
 }
@@ -34,16 +35,17 @@ export class PharoBindingProvider implements vscode.TreeDataProvider<PLSVariable
 		if (element === undefined) {
 			return client.onReady().then(() =>
 				client.sendRequest('pls:documentVariables', {textDocument: vscode.window.activeTextEditor.document}).then((result: Array<PLSVariable>) => {
-					return result.map((item) => { return { name: item.name, variableReference: item.variableReference, isDirectory: true }; })
+					return result.map((item) => { return { name: item.name + ': ' + item.value, variableReference: item.variableReference, value: item.value, isDirectory: true }; })
 				})
 			)
 		}
 		return client.onReady().then(() =>
-			client.sendRequest('pls:childrenVariables', { variableReference: element.variableReference }).then((result: Array<PLSVariable>) => {
+			client.sendRequest('pls:childrenVariables', { variableReference: element.variableReference, textDocument: vscode.window.activeTextEditor.document }).then((result: Array<PLSVariable>) => {
 				return result.sort().map((item) => {
 					return {
-						name: item.name,
+						name: item.name + ': ' + item.value,
 						variableReference: item.variableReference,
+						value: item.value,
 						isDirectory: true
 					};
 				})
