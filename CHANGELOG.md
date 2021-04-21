@@ -2,8 +2,14 @@
 
 ## v1.0.1
 
+### Users
+
 - Improve snippets with autocompleted class name and package name to ease the creation of class and new methods
 - Improve documentation
+- Fix bug with the "inspect it" command
+- Fix bug with debugguer that did not work if we used a headless image (see Pharo Language Server v1.1.1)
+- Begin tree view for the variable of a document
+- Executing `self inform:` is now reflected in the VSCode UI
 
 ## v1.0.0
 
