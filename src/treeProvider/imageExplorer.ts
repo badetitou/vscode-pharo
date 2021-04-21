@@ -63,7 +63,7 @@ export class PharoImageExplorer {
 	constructor(context: vscode.ExtensionContext) {
 		const pharoDataProvider = new PharoDataProvider();
 		vscode.window.createTreeView('pharoImage', { treeDataProvider: pharoDataProvider });
-
+		context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider('pharoImage', pharoDataProvider));
 		vscode.commands.registerCommand('pharoImage.openClass', resource => this.openResource(resource));
 
 	}
