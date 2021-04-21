@@ -66,19 +66,19 @@
 		},
 		"viewsWelcome": [
 			{
-			  "view": "pharoBindingView",
-			  "contents": "In Progress"
+				"view": "pharoBindingView",
+				"contents": "In Progress"
 			}
 		],
 		"viewsContainers": {
-            "activitybar": [
-                {
-                    "icon": "media/pharo-bar.svg",
-                    "id": "pharoView",
-                    "title": "Pharo"
-                }
-            ]
-        },
+			"activitybar": [
+				{
+					"icon": "media/pharo-bar.svg",
+					"id": "pharoView",
+					"title": "Pharo"
+				}
+			]
+		},
 		"languages": [
 			{
 				"id": "pharo",
@@ -127,8 +127,7 @@
 				"command": "pharo.executeClassTests",
 				"title": "Execute all class tests",
 				"when": false
-			}
-			,
+			},
 			{
 				"command": "extension.pharo-debug.debugEditorContents",
 				"title": "Debug File",
