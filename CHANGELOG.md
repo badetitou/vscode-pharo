@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.3
+
+- Add the variables document explorer browser
+
 ## v1.0.2
 
 - bug fixes with the image explorer
