@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.4
+
+Fix documentation
+
 ## v1.0.3
 
 - Add the variables document explorer browser

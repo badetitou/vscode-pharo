@@ -97,9 +97,9 @@ The additional feature can be access using the command palette of VSCode
 
 5. Explore variable state
 
-[!Explore variable state gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/documentVariablesBrowser.gif)
+![Explore variable state gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/documentVariablesBrowser.gif)
 
-6. Show the current server version
+1. Show the current server version
 
 ![Show version gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/pharo-version.gif)
 
