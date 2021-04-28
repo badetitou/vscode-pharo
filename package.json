@@ -151,8 +151,7 @@
 					"command": "pharo.printIt",
 					"when": "editorLangId == pharo",
 					"group": "Pharo@1"
-				}
-				,
+				},
 				{
 					"command": "pharo.doIt",
 					"when": "editorLangId == pharo",
@@ -175,8 +174,7 @@
 			{
 				"command": "pharo.printIt",
 				"key": "ctrl+alt+p"
-			}
-			,
+			},
 			{
 				"command": "pharo.doIt",
 				"key": "ctrl+alt+d"
