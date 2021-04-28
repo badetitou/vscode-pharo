@@ -1,5 +1,5 @@
 Object.
-hello := true.	"true"
+hello := true.
 hello
 	ifFalse: [  ]
 	ifTrue: [  ].
@@ -12,7 +12,7 @@ Transcript crShow: 'Hello'.
 true
 	ifTrue: [  ]
 	ifFalse: [  ].
-server := PLSServer.	"PLSServer"
+server := PLSServer.
 
 myClass := MyClass new
 	myVar2: (MyClass new myVar2: (MyClass new));

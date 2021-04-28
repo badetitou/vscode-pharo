@@ -56,9 +56,15 @@ export class PharoBindingProvider implements vscode.TreeDataProvider<PLSVariable
 }
 
 export class PharoDocumentExplorer {
-	constructor(context: vscode.ExtensionContext) {
-		const pharoBindingProvider = new PharoBindingProvider();
-		vscode.window.createTreeView('pharoBindingView', { treeDataProvider: pharoBindingProvider });
 
+	public pharoBindingProvider = new PharoBindingProvider();
+
+	constructor(context: vscode.ExtensionContext) {
+		vscode.window.createTreeView('pharoBindingView', { treeDataProvider: this.pharoBindingProvider });
 	}
+
+	refresh() {
+		this.pharoBindingProvider.refresh();
+	}
+
 }

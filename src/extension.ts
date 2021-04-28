@@ -20,6 +20,7 @@ import { PharoImageExplorer } from './treeProvider/imageExplorer';
 import { PharoDocumentExplorer } from './treeProvider/documentBinding';
 
 export let client: LanguageClient;
+let documentExplorer: PharoDocumentExplorer;
 
 export async function activate(context: ExtensionContext) {
 	// Testing Pharo can be used
@@ -43,7 +44,7 @@ export async function activate(context: ExtensionContext) {
 		createCommands(context);
 
 		new PharoImageExplorer(context);
-		new PharoDocumentExplorer(context);
+		documentExplorer = new PharoDocumentExplorer(context);
 
 		// Create debugguer
 		let factory = new DebugAdapterFactory();
@@ -83,6 +84,7 @@ function commandPharoPrintIt() {
 	client.sendRequest('command:printIt', { "line": editor.document.getText(selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
 		editor.edit(editBuilder => {
 			editBuilder.replace(new vscode.Selection(selection.end, selection.end), ' "' + result + '" ');
+		documentExplorer.refresh();
 		})
 	}).catch((error) => window.showErrorMessage(error));
 }
@@ -91,6 +93,7 @@ function commandPharoShowIt() {
 	let editor = vscode.window.activeTextEditor;
 	client.sendRequest('command:printIt', { "line": editor.document.getText(editor.selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
 		window.showInformationMessage(result);
+		documentExplorer.refresh();
 	}).catch((error) => window.showErrorMessage(error));
 }
 
