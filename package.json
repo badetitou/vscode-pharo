@@ -119,6 +119,10 @@
 				"title": "Show the result of selected lines"
 			},
 			{
+				"command": "pharo.doIt",
+				"title": "Execute the result of selected lines"
+			},
+			{
 				"command": "pharo.executeTest",
 				"title": "Execute the test",
 				"when": false
@@ -148,6 +152,12 @@
 					"when": "editorLangId == pharo",
 					"group": "Pharo@1"
 				}
+				,
+				{
+					"command": "pharo.doIt",
+					"when": "editorLangId == pharo",
+					"group": "Pharo@1"
+				}
 			],
 			"editor/title": [
 				{
@@ -165,6 +175,11 @@
 			{
 				"command": "pharo.printIt",
 				"key": "ctrl+alt+p"
+			}
+			,
+			{
+				"command": "pharo.doIt",
+				"key": "ctrl+alt+d"
 			}
 		],
 		"debuggers": [

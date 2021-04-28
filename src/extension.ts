@@ -57,6 +57,7 @@ function createCommands(context: ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.extensionVersion', commandPharoExtensionVersion));
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.printIt', commandPharoPrintIt));
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.showIt', commandPharoShowIt));
+	context.subscriptions.push(vscode.commands.registerCommand('pharo.doIt', commandPharoDoIt));
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.save', commandPharoSave));
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.executeTest', commandPharoExecuteTest));
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.executeClassTests', commandPharoExecuteClassTests));
@@ -78,14 +79,23 @@ function commandPharoExtensionVersion() {
 	});
 }
 
+function commandPharoDoIt() {
+	let editor = vscode.window.activeTextEditor;
+	let selection = editor.selection;
+	client.sendRequest('command:printIt', { "line": editor.document.getText(selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
+		documentExplorer.refresh();
+	}).catch((error) => window.showErrorMessage(error));
+}
+
+
 function commandPharoPrintIt() {
 	let editor = vscode.window.activeTextEditor;
 	let selection = editor.selection;
 	client.sendRequest('command:printIt', { "line": editor.document.getText(selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
 		editor.edit(editBuilder => {
 			editBuilder.replace(new vscode.Selection(selection.end, selection.end), ' "' + result + '" ');
-		documentExplorer.refresh();
 		})
+		documentExplorer.refresh();
 	}).catch((error) => window.showErrorMessage(error));
 }
 
