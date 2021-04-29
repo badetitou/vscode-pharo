@@ -35,7 +35,7 @@ export class PharoBindingProvider implements vscode.TreeDataProvider<PLSVariable
 		if (element === undefined) {
 			return client.onReady().then(() =>
 				client.sendRequest('pls:documentVariables', {textDocument: vscode.window.activeTextEditor.document}).then((result: Array<PLSVariable>) => {
-					return result.map((item) => { return { name: item.name + ': ' + item.value, variableReference: item.variableReference, value: item.value, isDirectory: true }; })
+					return result.map((item) => { return { name: item.name + ': ' + item.value, variableReference: item.variableReference, value: item.value, isDirectory: item.isDirectory }; })
 				})
 			)
 		}
@@ -46,7 +46,7 @@ export class PharoBindingProvider implements vscode.TreeDataProvider<PLSVariable
 						name: item.name + ': ' + item.value,
 						variableReference: item.variableReference,
 						value: item.value,
-						isDirectory: true
+						isDirectory: item.isDirectory
 					};
 				})
 			})
