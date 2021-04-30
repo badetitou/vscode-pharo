@@ -135,7 +135,10 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 	// Options to control the language client
 	let clientOptions: LanguageClientOptions = {
 		// Register the server for plain text documents
-		documentSelector: [{ scheme: 'file', language: 'pharo' }],
+		documentSelector: [
+			{ scheme: 'file', language: 'pharo' },
+			{ scheme: 'pharoImage', language: 'pharo' }
+		],
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')

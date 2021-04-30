@@ -1,1 +1,8 @@
-hello := 'test' "'test'" 
+| hello patate |
+hello := 'test' "'test'".
+
+patate := true.
+
+patate ifFalse: [ ]  ifTrue: [].
+
+

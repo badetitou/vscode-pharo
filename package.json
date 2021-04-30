@@ -30,7 +30,8 @@
 		"onCommand:pharo.printIt",
 		"onCommand:pharo.showIt",
 		"onCommand:extension.pharo-debug.debugEditorContents",
-		"onView:pharoImage"
+		"onView:pharoImage",
+		"onFileSystem:pharoImage"
 	],
 	"main": "./dist/extension",
 	"contributes": {
@@ -91,6 +92,7 @@
 				"extensions": [
 					".st"
 				],
+				
 				"configuration": "./language-configuration.json"
 			}
 		],
