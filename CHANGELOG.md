@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.5
+
+- Can edit document from pharoImage
+- Can not extends variables without children
+
 ## v1.0.4
 
 Fix documentation
