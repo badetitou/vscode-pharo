@@ -3,6 +3,7 @@
 ## v1.0.6
 
 - Add error message when the process dies
+- Check that the path to the VM and to the image exist
 
 ## v1.0.5
 

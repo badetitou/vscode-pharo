@@ -1,6 +1,6 @@
 
 import { workspace, Uri, env, window, ConfigurationTarget, commands, ExtensionContext } from 'vscode';
-
+import * as fs from 'fs';
 const vscode = require('vscode');
 
 export interface RequirementsData {
@@ -23,11 +23,11 @@ export async function resolveRequirements(): Promise<RequirementsData> {
 
 async function checkPathToVM(): Promise<string> {
 	return new Promise(async (resolve, reject) => {
-		if (vscode.workspace.getConfiguration('pharo').get('pathToVM') === '') {
+		if (!fs.existsSync(vscode.workspace.getConfiguration('pharo').get('pathToVM'))) {
 			reject({
-				message: 'Path to VM not set',
+				message: 'Path to VM incorrectly set',
 				label: 'Open settings',
-				command: 'workbench.action.openSettingsJson'
+				command: 'workbench.action.openSettings'
 			});
 		}
 		return resolve(vscode.workspace.getConfiguration('pharo').get('pathToVM'));
@@ -37,11 +37,11 @@ async function checkPathToVM(): Promise<string> {
 
 async function checkPathToImage(): Promise<string> {
 	return new Promise(async (resolve, reject) => {
-		if (vscode.workspace.getConfiguration('pharo').get('pathToImage') === '') {
+		if (!fs.existsSync(vscode.workspace.getConfiguration('pharo').get('pathToImage'))) {
 			reject({
-				message: 'Path to Image not set',
+				message: 'Path to Image incorrectly set',
 				label: 'Open settings',
-				command: 'workbench.action.openSettingsJson'
+				command: 'workbench.action.openSettings'
 			});
 		}
 		return resolve(vscode.workspace.getConfiguration('pharo').get('pathToImage'));
