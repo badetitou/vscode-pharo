@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.6
+
+- Add error message when the process dies
+
 ## v1.0.5
 
 - Can edit document from pharoImage

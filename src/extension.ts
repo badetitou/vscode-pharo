@@ -18,6 +18,7 @@ import { activateDebug } from './activateDebug'
 import { DebugAdapterFactory } from './debugFactory'
 import { PharoImageExplorer } from './treeProvider/imageExplorer';
 import { PharoDocumentExplorer } from './treeProvider/documentBinding';
+import { sign } from 'crypto';
 
 export let client: LanguageClient;
 let documentExplorer: PharoDocumentExplorer;
@@ -160,6 +161,10 @@ async function createServerWithSocket(pharoPath: string, pathToImage: string, co
 	dls = child_process.spawn(pharoPath.trim(), [
 		pathToImage, 'st', context.asAbsolutePath('/res/run-server.st')
 	]);
+
+	dls.on('close', (code: number, signal: NodeJS.Signals) => {
+		window.showErrorMessage(code + " - Pharo Language Server stops working. Please report an [issue](https://github.com/badetitou/vscode-pharo/issues).");
+	});
 
 	let socket = await Promise.resolve(getSocket(dls));
 
