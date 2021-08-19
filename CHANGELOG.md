@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.7
+
+- add walkthroughs to install the plugin
+
 ## v1.0.6
 
 - Add error message when the process dies

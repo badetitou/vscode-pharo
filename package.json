@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -21,7 +21,7 @@
 		"pharo smalltalk"
 	],
 	"engines": {
-		"vscode": "^1.43.0"
+		"vscode": "^1.59.0"
 	},
 	"activationEvents": [
 		"onDebugResolve:pharodb",
@@ -211,6 +211,42 @@
 			{
 				"language": "pharo",
 				"path": "./snippets/snippets.json"
+			}
+		],
+		"walkthroughs": [
+			{
+				"id": "setup",
+				"title": "Set Up PLS",
+				"description": "Set Up Pharo Language Server",
+				"steps": [
+					{
+						"id": "downloadImage",
+						"title": "Download Pharo Language Server Image",
+						"description": "In this step, you have to download the last version of Pharo Language Server from the [GitHub Release page](https://github.com/badetitou/Pharo-LanguageServer/releases)",
+						"media": {
+							"image": "media/releases.png",
+							"altText": ""
+						}
+					},
+					{
+						"id": "downloadVM",
+						"title": "Download Pharo VM",
+						"description": "In this step, you have to download the last version of the [VM for your pharo image](https://files.pharo.org/vm/pharo-spur64-headless/)",
+						"media": {
+							"image": "media/vms.png",
+							"altText": ""
+						}
+					},
+					{
+						"id": "modifySetting",
+						"title": "Update Setting",
+						"description": "Update the pharo setting with the corresponding Image and VM path\n[Open Settings](command:workbench.action.openSettings)",
+						"media": {
+							"image": "media/pharo-bar.svg",
+							"altText": ""
+						}
+					}
+				]
 			}
 		]
 	},

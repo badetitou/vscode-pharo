@@ -111,7 +111,11 @@ The additional feature can be access using the command palette of VSCode
 
 ## Installation
 
-To install the extension:
+You can follow the walkthroughs
+
+![Walkthroughs](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/walkthroughs.gif)
+
+Or, to install the extension:
 
 1. Install [VSCode](https://code.visualstudio.com/)
 2. Install the [Pharo extension](https://marketplace.visualstudio.com/items?itemName=badetitou.pharo-language-server)
