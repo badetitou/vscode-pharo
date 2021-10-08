@@ -9,6 +9,7 @@ A Pharo client extension for VSCode.
   - [Generic feature](#generic-feature)
   - [Supported Language Server feature](#supported-language-server-feature)
   - [Debug Adapter Protocol feature](#debug-adapter-protocol-feature)
+  - [Moose Book (Notebook for Moose/Pharo)](#moose-book-notebook-for-moosepharo)
   - [Additional feature](#additional-feature)
 - [Installation](#installation)
 - [Thanks](#thanks)
@@ -77,6 +78,11 @@ We present here the existing features
 2. Step, step in, step out
 
 ![Step the stack gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/debugSteps.gif)
+
+
+### Moose Book (Notebook for Moose/Pharo)
+
+MooseBook is a way to use a notebook with Pharo
 
 ### Additional feature
 

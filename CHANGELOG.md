@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.0
+
+Support of MooseBook
+
 ## v1.0.7
 
 - add walkthroughs to install the plugin
