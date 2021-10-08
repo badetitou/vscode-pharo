@@ -1,0 +1,1 @@
+[{"kind":1,"language":"markdown","value":"Hello"},{"kind":2,"language":"pharo","value":"self inform: 'hello'"},{"kind":2,"language":"pharo","value":"hello := 3.\nhello := hello + 1.\nhello"}]

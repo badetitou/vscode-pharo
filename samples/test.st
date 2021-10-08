@@ -1,3 +1,5 @@
+| hello |
+
 Object.
 hello := true.
 hello

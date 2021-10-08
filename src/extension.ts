@@ -19,6 +19,8 @@ import { DebugAdapterFactory } from './debugFactory'
 import { PharoImageExplorer } from './treeProvider/imageExplorer';
 import { PharoDocumentExplorer } from './treeProvider/documentBinding';
 import { sign } from 'crypto';
+import { MoosebookSerializer } from './moosebook/MoosebookSerializer'
+import { MoosebookController } from './moosebook/MoosebookController';
 
 export let client: LanguageClient;
 let documentExplorer: PharoDocumentExplorer;
@@ -50,6 +52,8 @@ export async function activate(context: ExtensionContext) {
 		// Create debugguer
 		let factory = new DebugAdapterFactory();
 		activateDebug(context, factory);
+		context.subscriptions.push(vscode.workspace.registerNotebookSerializer('moosebook', new MoosebookSerializer()));
+		context.subscriptions.push(new MoosebookController());
 	})
 
 }

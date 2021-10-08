@@ -31,7 +31,8 @@
 		"onCommand:pharo.showIt",
 		"onCommand:extension.pharo-debug.debugEditorContents",
 		"onView:pharoImage",
-		"onFileSystem:pharoImage"
+		"onFileSystem:pharoImage",
+		"onNotebook:moosebook"
 	],
 	"main": "./dist/extension",
 	"contributes": {
@@ -248,6 +249,17 @@
 					}
 				]
 			}
+		],
+		"notebooks": [
+			{
+				"type": "moosebook",
+				"displayName": "Moosebook",
+				"selector": [
+					{
+						"filenamePattern": "*.moosebook"
+					}
+				]
+			}
 		]
 	},
 	"scripts": {
@@ -266,7 +278,7 @@
 	"devDependencies": {
 		"@types/mocha": "^8.0.3",
 		"@types/node": "^12.12.0",
-		"@types/vscode": "1.43.0",
+		"@types/vscode": "^1.43.0",
 		"@typescript-eslint/parser": "^2.3.0",
 		"eslint": "^6.4.0",
 		"mocha": "^8.1.1",
