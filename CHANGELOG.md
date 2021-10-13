@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.1
+
+- Fix MooseBook to display errors
+
 ## v1.1.0
 
 Support of MooseBook
