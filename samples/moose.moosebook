@@ -1,1 +1,1 @@
-[{"kind":1,"language":"markdown","value":"# Hello MooseBook (or a VSCode Notebook for Pharo )\n\nThis is an extension of VSCode that allows one to use the Pharo programing language in a notebook"},{"kind":2,"language":"pharo","value":"hello := 6."},{"kind":1,"language":"markdown","value":"#Oui"},{"kind":2,"language":"pharo","value":"hello"}]
+[{"kind":1,"language":"markdown","value":"Hello"},{"kind":2,"language":"pharo","value":"test := Object new."},{"kind":2,"language":"pharo","value":""},{"kind":2,"language":"pharo","value":"hello"}]
