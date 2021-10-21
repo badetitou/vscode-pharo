@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.2
+
+- `Show it` now tries to use GTK backend of Pharo
+
 ## v1.1.1
 
 - Fix MooseBook to display errors
