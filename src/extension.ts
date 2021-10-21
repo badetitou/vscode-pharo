@@ -106,9 +106,9 @@ function commandPharoPrintIt() {
 
 function commandPharoShowIt() {
 	let editor = vscode.window.activeTextEditor;
-	client.sendRequest('command:printIt', { "line": editor.document.getText(editor.selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
+	client.sendRequest('pls-gtk:inspectIt', { "line": editor.document.getText(editor.selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
 		window.showInformationMessage(result);
-		documentExplorer.refresh();
+		// documentExplorer.refresh();
 	}).catch((error) => window.showErrorMessage(error));
 }
 
