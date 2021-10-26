@@ -2,7 +2,7 @@
 
 ## v1.1.2
 
-- `Show it` now tries to use GTK backend of Pharo
+- `Show it` now tries to use the GTK backend of Pharo
 
 ## v1.1.1
 
@@ -19,12 +19,12 @@ Support of MooseBook
 ## v1.0.6
 
 - Add error message when the process dies
-- Check that the path to the VM and to the image exist
+- Check that the path to the VM and to the image exists
 
 ## v1.0.5
 
-- Can edit document from pharoImage
-- Can not extends variables without children
+- Can edit documents from pharoImage
+- Can not extend variables without children
 
 ## v1.0.4
 
@@ -45,7 +45,7 @@ Fix documentation
 - Improve snippets with autocompleted class name and package name to ease the creation of class and new methods
 - Improve documentation
 - Fix bug with the "inspect it" command
-- Fix bug with debugguer that did not work if we used a headless image (see Pharo Language Server v1.1.1)
+- Fix bug with debugger that did not work if we used a headless image (see Pharo Language Server v1.1.1)
 - Begin tree view for the variable of a document
 - Executing `self inform:` is now reflected in the VSCode UI
 
@@ -78,7 +78,7 @@ We added a full new document model to better handle tonel and script file.
 
 ## v0.0.11
 
-- Add the Pharo Image tree to explore easily all methods of an image
+- Add the Pharo Image tree to explore all methods of an image easily
 - The port is now given by the Pharo image at startup (everything goes faster, and less bug possible)
 
 ## v0.0.10
