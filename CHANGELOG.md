@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.0.0
+
+- Update to last version of VSCode (following API changement)
+- Update following v3 of [Pharo Language Server](https://github.com/badetitou/Pharo-LanguageServer/tree/v3)
+
 ## v1.1.2
 
 - `Show it` now tries to use the GTK backend of Pharo
