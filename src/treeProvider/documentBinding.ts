@@ -13,13 +13,13 @@ export class PharoBindingProvider implements vscode.TreeDataProvider<PLSVariable
 	private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>();
 	readonly onDidChangeTreeData: vscode.Event<any> = this._onDidChangeTreeData.event;
 
-	constructor() { 
+	constructor() {
 		vscode.workspace.onDidOpenTextDocument(e => this.refresh())
 	}
 
 	public refresh(): any {
 		this._onDidChangeTreeData.fire(undefined);
-		
+
 	}
 
 
@@ -33,24 +33,22 @@ export class PharoBindingProvider implements vscode.TreeDataProvider<PLSVariable
 
 	public getChildren(element?: PLSVariable): PLSVariable[] | Thenable<PLSVariable[]> {
 		if (element === undefined) {
-			return client.onReady().then(() =>
-				client.sendRequest('pls:documentVariables', {textDocument: vscode.window.activeTextEditor.document}).then((result: Array<PLSVariable>) => {
-					return result.map((item) => { return { name: item.name + ': ' + item.value, variableReference: item.variableReference, value: item.value, isDirectory: item.isDirectory }; })
-				})
-			)
-		}
-		return client.onReady().then(() =>
-			client.sendRequest('pls:childrenVariables', { variableReference: element.variableReference, textDocument: vscode.window.activeTextEditor.document }).then((result: Array<PLSVariable>) => {
-				return result.sort().map((item) => {
-					return {
-						name: item.name + ': ' + item.value,
-						variableReference: item.variableReference,
-						value: item.value,
-						isDirectory: item.isDirectory
-					};
-				})
+			return client.sendRequest('pls:documentVariables', { textDocument: vscode.window.activeTextEditor.document }).then((result: Array<PLSVariable>) => {
+				return result.map((item) => { return { name: item.name + ': ' + item.value, variableReference: item.variableReference, value: item.value, isDirectory: item.isDirectory }; })
 			})
-		)
+
+		}
+		return client.sendRequest('pls:childrenVariables', { variableReference: element.variableReference, textDocument: vscode.window.activeTextEditor.document }).then((result: Array<PLSVariable>) => {
+			return result.sort().map((item) => {
+				return {
+					name: item.name + ': ' + item.value,
+					variableReference: item.variableReference,
+					value: item.value,
+					isDirectory: item.isDirectory
+				};
+			})
+		})
+
 	}
 
 }

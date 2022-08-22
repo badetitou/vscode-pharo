@@ -1,4 +1,4 @@
-| hello |
+| hello myClass server |
 
 Object.
 hello := true.
@@ -8,7 +8,7 @@ hello
 'To halt' record.
 self halt.
 1 + 1.
-self inform: 'hello world'.
+self inform: 'Hello'.
 Object.
 Transcript crShow: 'Hello'.
 true

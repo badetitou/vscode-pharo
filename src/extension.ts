@@ -8,8 +8,10 @@ import { workspace, ExtensionContext, commands, window, Selection } from 'vscode
 import {
 	LanguageClient,
 	LanguageClientOptions,
-	ServerOptions
-} from 'vscode-languageclient';
+	ServerOptions,
+	StreamInfo,
+	TransportKind
+} from 'vscode-languageclient/node';
 import * as requirements from './requirements';
 import * as net from 'net';
 import * as child_process from 'child_process';
@@ -40,7 +42,8 @@ export async function activate(context: ExtensionContext) {
 		client = createPharoLanguageServer(requirements, context);
 		
 		// Start the client. This will also launch the server
-		context.subscriptions.push(client.start());
+		client.start();
+		context.subscriptions.push(client);
 		window.showInformationMessage('Client started');
 	
 		// Create new command
@@ -159,7 +162,7 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 	);
 }
 
-async function createServerWithSocket(pharoPath: string, pathToImage: string, context: ExtensionContext): Promise<lc.StreamInfo> {
+async function createServerWithSocket(pharoPath: string, pathToImage: string, context: ExtensionContext): Promise<StreamInfo> {
     let dls: child_process.ChildProcess;
 	
 	dls = child_process.spawn(pharoPath.trim(), [
@@ -172,7 +175,7 @@ async function createServerWithSocket(pharoPath: string, pathToImage: string, co
 
 	let socket = await Promise.resolve(getSocket(dls));
 
-	let result: lc.StreamInfo = {
+	let result: StreamInfo = {
 		writer: socket,
 		reader: socket
 	};

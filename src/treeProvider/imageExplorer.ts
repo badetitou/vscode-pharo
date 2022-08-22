@@ -13,7 +13,7 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 	readonly onDidChangeTreeData: vscode.Event<any> = this._onDidChangeTreeData.event;
 
 	constructor() { }
-	
+
 	private _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
 	onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this._emitter.event;
 
@@ -67,23 +67,19 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 
 	public getChildren(element?: PharoNode): PharoNode[] | Thenable<PharoNode[]> {
 		if (element === undefined) {
-			return client.onReady().then(() =>
-				client.sendRequest('pls:packages', {}).then((result: Array<string>) => {
-					return result.sort().map((item) => { return { name: item, resource: vscode.Uri.parse('pharoImage:/' + item, true), isDirectory: true }; })
-				})
-			)
-		}
-		return client.onReady().then(() =>
-			client.sendRequest('pls:classes', { package: element.name }).then((result: Array<string>) => {
-				return result.sort().map((item) => {
-					return {
-						name: item,
-						resource: vscode.Uri.parse('pharoImage:/' + item, true),
-						isDirectory: false
-					};
-				})
+			return client.sendRequest('pls:packages', {}).then((result: Array<string>) => {
+				return result.sort().map((item) => { return { name: item, resource: vscode.Uri.parse('pharoImage:/' + item, true), isDirectory: true }; })
 			})
-		)
+		}
+		return client.sendRequest('pls:classes', { package: element.name }).then((result: Array<string>) => {
+			return result.sort().map((item) => {
+				return {
+					name: item,
+					resource: vscode.Uri.parse('pharoImage:/' + item, true),
+					isDirectory: false
+				};
+			})
+		})
 	}
 
 }
