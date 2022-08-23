@@ -52,6 +52,18 @@
 					"type": "string",
 					"default": "",
 					"description": "The Pharo Image that can run the Pharo Language server (https://github.com/badetitou/Pharo-LanguageServer)."
+				},
+				"pharo.headless": {
+					"scope": "window",
+					"type": "boolean",
+					"default": "true",
+					"description": "Should the Pharo Image appears"
+				},
+				"pharo.debugMode": {
+					"scope": "window",
+					"type": "boolean",
+					"default": "false",
+					"description": "Debug mode of the image (can not be use in headless mode)"
 				}
 			}
 		},

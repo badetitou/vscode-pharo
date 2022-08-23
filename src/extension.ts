@@ -165,9 +165,11 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 async function createServerWithSocket(pharoPath: string, pathToImage: string, context: ExtensionContext): Promise<StreamInfo> {
     let dls: child_process.ChildProcess;
 	
-	dls = child_process.spawn(pharoPath.trim(), [
-		pathToImage, 'st', context.asAbsolutePath('/res/run-server.st')
-	]);
+	let options = [	pathToImage, 'st', context.asAbsolutePath('/res/run-server.st') ];
+	if (vscode.workspace.getConfiguration('pharo').get('headless') && !vscode.workspace.getConfiguration('pharo').get('debugMode')) {
+		options.unshift('--headless')
+	}
+	dls = child_process.spawn(pharoPath.trim(), options);
 
 	dls.on('close', (code: number, signal: NodeJS.Signals) => {
 		window.showErrorMessage(code + " - Pharo Language Server stops working. Please report an [issue](https://github.com/badetitou/vscode-pharo/issues).");
