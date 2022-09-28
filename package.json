@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.0.0",
+	"version": "2.0.1",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -106,7 +106,21 @@
 				"extensions": [
 					".st"
 				],
-				"configuration": "./language-configuration.json"
+				"configuration": "./language-configuration.json",
+				"icon": {
+					"light": "./media/pharo-bar.svg",
+					"dark": "./media/pharo-bar.svg"
+				}
+			},
+			{
+				"id": "moosebook",
+				"extensions": [
+					".moosebook"
+				],
+				"icon": {
+					"light": "./media/moose-logo.svg",
+					"dark": "./media/moose-logo.svg"
+				}
 			}
 		],
 		"grammars": [

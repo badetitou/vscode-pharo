@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.0.1
+
+- Add icon for Pharo files and Moosebook file
+
 ## v2.0.0
 
 - Update to last version of VSCode (following API changement)
