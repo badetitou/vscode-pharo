@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as vscode from 'vscode';
-import { workspace, ExtensionContext, commands, window, Selection } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Uri, Selection } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
@@ -23,11 +23,23 @@ import { PharoDocumentExplorer } from './treeProvider/documentBinding';
 import { sign } from 'crypto';
 import { MoosebookSerializer } from './moosebook/MoosebookSerializer'
 import { MoosebookController } from './moosebook/MoosebookController';
+const os = require('os');
+
+import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
+
 
 export let client: LanguageClient;
 let documentExplorer: PharoDocumentExplorer;
+let dls: child_process.ChildProcess;
+export let extensionContext: ExtensionContext;
+
 
 export async function activate(context: ExtensionContext) {
+
+	extensionContext = context;
+	// Create new command
+	createCommands(context);
+
 	// Testing Pharo can be used
 	return requirements.resolveRequirements().catch(error => {
 		window.showErrorMessage(error.message, error.label).then((selection) => {
@@ -46,9 +58,6 @@ export async function activate(context: ExtensionContext) {
 		context.subscriptions.push(client);
 		window.showInformationMessage('Client started');
 	
-		// Create new command
-		createCommands(context);
-
 		new PharoImageExplorer(context);
 		documentExplorer = new PharoDocumentExplorer(context);
 
@@ -69,6 +78,8 @@ function createCommands(context: ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.save', commandPharoSave));
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.executeTest', commandPharoExecuteTest));
 	context.subscriptions.push(vscode.commands.registerCommand('pharo.executeClassTests', commandPharoExecuteClassTests));
+	context.subscriptions.push(vscode.commands.registerCommand('pharo.installIt', commandPharoInstallLastVersion));
+
 }
 
 
@@ -133,6 +144,67 @@ function commandPharoExecuteClassTests(aClass: string) {
 	}).catch((error) => window.showErrorMessage(error));
 }
 
+export async function commandPharoInstallLastVersion() {
+
+	if(dls !== undefined){
+		dls.kill(9);
+	}
+
+	// Download pharo VM
+
+	let vmPath = ''
+	if (os.platform() == 'linux') {
+		vmPath = 'https://files.pharo.org/get-files/100/pharo64-linux-stable.zip'
+	} else if (os.platform() == 'darwin') {
+		vmPath = 'https://files.pharo.org/get-files/100/pharo64-mac-stable.zip'
+	} else {
+		vmPath = 'https://files.pharo.org/get-files/100/pharo-vm-Windows-x86_64-stable.zip'
+	}
+
+	let vmDirectory = await download(Uri.parse(vmPath), true, 'pharoVM');
+	vscode.workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "\\Pharo.exe", true);
+	window.showInformationMessage('VM updated. Please wait')
+
+	// Download image
+	let imageName = 'Moose64-10-PLS'
+	let pharoDirectory = await download(Uri.parse("https://github.com/badetitou/Pharo-LanguageServer/releases/download/v3.0.2/" + imageName + ".zip"), true, imageName);
+	vscode.workspace.getConfiguration('pharo').update('pathToImage', pharoDirectory.fsPath + "\\" + imageName + ".image", true);
+	window.showInformationMessage('Pharo updated. Please restart', 'Restart VSCode').then(() => {
+		commands.executeCommand('workbench.action.reloadWindow');
+	})
+}
+
+
+async function download(uri: Uri, unzip: boolean, location: string): Promise<vscode.Uri> {
+
+	// let mooseImageUri = Uri.parse("", true);
+	const fileDownloader: FileDownloader = await getApi();
+	console.log('Download ', uri)
+	console.log('Download ', uri.toString())
+	// update to string
+	uri.toString = (skipEncoding?: boolean): string => {
+		return uri.scheme + "://" + uri.authority + uri.path + "?" + uri.query
+	}
+	console.log('Download ', uri.toString())
+
+
+	const cancellationTokenSource = new vscode.CancellationTokenSource();
+	const cancellationToken = cancellationTokenSource.token;
+
+	const progressCallback = (downloadedBytes: number, totalBytes: number | undefined) => {
+		console.log(`Downloaded ${downloadedBytes}/${totalBytes} bytes`);
+	};
+	const vmDirectory: Uri = await fileDownloader.downloadFile(
+		uri,
+		location,
+		extensionContext,
+		cancellationToken,
+		progressCallback,
+		{ shouldUnzip: unzip }
+	);
+	return vmDirectory;
+}
+
 /*
  * Section with function for Pharo Language Server
  */
@@ -163,7 +235,6 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 }
 
 async function createServerWithSocket(pharoPath: string, pathToImage: string, context: ExtensionContext): Promise<StreamInfo> {
-    let dls: child_process.ChildProcess;
 	
 	let options = [	pathToImage, 'st', context.asAbsolutePath('/res/run-server.st') ];
 	if (vscode.workspace.getConfiguration('pharo').get('headless') && !vscode.workspace.getConfiguration('pharo').get('debugMode')) {

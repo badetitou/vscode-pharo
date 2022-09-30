@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.0.1",
+	"version": "2.0.2",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -30,10 +30,14 @@
 		"onCommand:pharo.extensionVersion",
 		"onCommand:pharo.printIt",
 		"onCommand:pharo.showIt",
+		"onCommand:pharo.installIt",
 		"onCommand:extension.pharo-debug.debugEditorContents",
 		"onView:pharoImage",
 		"onFileSystem:pharoImage",
 		"onNotebook:moosebook"
+	],
+	"extensionDependencies": [
+		"mindaro-dev.file-downloader"
 	],
 	"main": "./dist/extension",
 	"contributes": {
@@ -133,32 +137,44 @@
 		"commands": [
 			{
 				"command": "pharo.extensionVersion",
-				"title": "Show Pharo Language Server Version"
+				"title": "Show Pharo Language Server Version",
+				"category": "Pharo"
 			},
 			{
 				"command": "pharo.save",
-				"title": "Save the Pharo image"
+				"title": "Save the Pharo image",
+				"category": "Pharo"
 			},
 			{
 				"command": "pharo.printIt",
-				"title": "Print the result of selected lines"
+				"title": "Print the result of selected lines",
+				"category": "Pharo"
 			},
 			{
 				"command": "pharo.showIt",
-				"title": "Show the result of selected lines"
+				"title": "Show the result of selected lines",
+				"category": "Pharo"
 			},
 			{
 				"command": "pharo.doIt",
-				"title": "Execute the result of selected lines"
+				"title": "Execute the result of selected lines",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.installIt",
+				"title": "Install the last version of the language server",
+				"category": "Pharo"
 			},
 			{
 				"command": "pharo.executeTest",
 				"title": "Execute the test",
+				"category": "Pharo",
 				"when": false
 			},
 			{
 				"command": "pharo.executeClassTests",
 				"title": "Execute all class tests",
+				"category": "Pharo",
 				"when": false
 			},
 			{
@@ -300,7 +316,8 @@
 	"dependencies": {
 		"@vscode/debugprotocol": "^1.51.0",
 		"vscode-languageclient": "^8.0.2",
-		"vscode-languageserver-protocol": "3.17.2"
+		"vscode-languageserver-protocol": "3.17.2",
+		"@microsoft/vscode-file-downloader-api": "^1.0.1"
 	},
 	"devDependencies": {
 		"@types/mocha": "^8.0.3",

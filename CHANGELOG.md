@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.0.2
+
+Execute the command `Install the last version of the language server` and get directly your environment set up.
+
 ## v2.0.1
 
 - Add icon for Pharo files and Moosebook file
