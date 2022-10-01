@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.0.3
+
+- Fix easy install for linux and mac
+
 ## v2.0.2
 
 Execute the command `Install the last version of the language server` and get directly your environment set up.

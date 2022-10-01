@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.0.2",
+	"version": "2.0.3",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -22,7 +22,7 @@
 		"pharo smalltalk"
 	],
 	"engines": {
-		"vscode": "^1.70.0"
+		"vscode": "^1.71.0"
 	},
 	"activationEvents": [
 		"onDebugResolve:pharodb",
@@ -321,13 +321,13 @@
 	},
 	"devDependencies": {
 		"@types/mocha": "^8.0.3",
-		"@types/node": "^12.12.0",
-		"@types/vscode": "^1.70.0",
+		"@types/node": "^18.7.23",
+		"@types/vscode": "^1.71.0",
 		"@typescript-eslint/parser": "^2.3.0",
-		"eslint": "^6.4.0",
+		"eslint": "^8.24.0",
 		"mocha": "^8.1.1",
 		"ts-loader": "^8.0.12",
-		"typescript": "^4.0.2",
+		"typescript": "^4.8.4",
 		"@vscode/debugadapter-testsupport": "^1.51.0",
 		"vscode-test": "^1.3.0",
 		"webpack": "^5.11.1",

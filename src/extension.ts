@@ -162,13 +162,24 @@ export async function commandPharoInstallLastVersion() {
 	}
 
 	let vmDirectory = await download(Uri.parse(vmPath), true, 'pharoVM');
-	vscode.workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "\\Pharo.exe", true);
+
+	if (os.platform() == 'linux' || os.platform() == 'darwin') {
+		vscode.workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "/pharo", true);
+	} else {
+		vscode.workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "\\Pharo.exe", true);
+	}
 	window.showInformationMessage('VM updated. Please wait')
 
 	// Download image
 	let imageName = 'Moose64-10-PLS'
 	let pharoDirectory = await download(Uri.parse("https://github.com/badetitou/Pharo-LanguageServer/releases/download/v3.0.2/" + imageName + ".zip"), true, imageName);
-	vscode.workspace.getConfiguration('pharo').update('pathToImage', pharoDirectory.fsPath + "\\" + imageName + ".image", true);
+
+	if (os.platform() == 'linux' || os.platform() == 'darwin') {
+		vscode.workspace.getConfiguration('pharo').update('pathToImage', pharoDirectory.fsPath + "/" + imageName + ".image", true);
+	} else {
+		vscode.workspace.getConfiguration('pharo').update('pathToImage', pharoDirectory.fsPath + "\\" + imageName + ".image", true);
+	}
+	
 	window.showInformationMessage('Pharo updated. Please restart', 'Restart VSCode').then(() => {
 		commands.executeCommand('workbench.action.reloadWindow');
 	})
