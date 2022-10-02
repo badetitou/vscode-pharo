@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.0
+
+- Notebooks supports several outputs mimetype
+
 ## v2.0.3
 
 - Fix easy install for linux and mac
