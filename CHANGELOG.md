@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.1
+
+- Enable LSP for notebook
+
 ## v2.1.0
 
 - Notebooks supports several outputs mimetype

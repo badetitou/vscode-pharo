@@ -228,7 +228,8 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 		// Register the server for plain text documents
 		documentSelector: [
 			{ scheme: 'file', language: 'pharo' },
-			{ scheme: 'pharoImage', language: 'pharo' }
+			{ scheme: 'pharoImage', language: 'pharo' },
+			{ notebook: 'moosebook', language: 'pharo' }
 		],
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
