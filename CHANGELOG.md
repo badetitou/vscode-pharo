@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.4
+
+- Fix bug when having no focused editor
+
 ## v2.1.3
 
 - Enable usage of variable panel when using the notebook
