@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.2
+
+- Use server version 3.1.1 in quick install
+
 ## v2.1.1
 
 - Enable LSP for notebook

@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.1.1",
+	"version": "2.1.2",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
