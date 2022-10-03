@@ -56,8 +56,10 @@ export class MoosebookController {
 					items.push(NotebookCellOutputItem.text(value.content, value.mimetype))
 				}
 			})
+			let output = new NotebookCellOutput(items);
+			output.metadata = []
 			execution.replaceOutput([
-				new NotebookCellOutput(items)
+				output
 			]);
 			execution.end(true, Date.now());
 			documentExplorer.refresh();

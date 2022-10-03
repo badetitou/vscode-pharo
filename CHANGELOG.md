@@ -4,6 +4,7 @@
 
 - Enable usage of variable panel when using the notebook
 - Clean the typescript code
+- Fix notebook show image in linux system (because a variable not required using windows system is required when using linux?)
 
 ## v2.1.2
 

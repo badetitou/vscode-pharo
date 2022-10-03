@@ -307,7 +307,6 @@
 	},
 	"scripts": {
 		"compile": "tsc -b",
-		"test": "sh ./scripts/e2e.sh",
 		"vscode:prepublish": "webpack --mode production",
 		"webpack": "webpack --mode development",
 		"webpack-dev": "webpack --mode development --watch",
