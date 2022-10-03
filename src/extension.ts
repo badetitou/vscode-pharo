@@ -1,10 +1,4 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
-
-import * as vscode from 'vscode';
-import { workspace, ExtensionContext, commands, window, Uri, Selection } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
@@ -15,12 +9,10 @@ import {
 import * as requirements from './requirements';
 import * as net from 'net';
 import * as child_process from 'child_process';
-import * as lc from 'vscode-languageclient';
 import { activateDebug } from './activateDebug'
 import { DebugAdapterFactory } from './debugFactory'
 import { PharoImageExplorer } from './treeProvider/imageExplorer';
 import { PharoDocumentExplorer } from './treeProvider/documentBinding';
-import { sign } from 'crypto';
 import { MoosebookSerializer } from './moosebook/MoosebookSerializer'
 import { MoosebookController } from './moosebook/MoosebookController';
 const os = require('os');
@@ -29,7 +21,7 @@ import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
 
 
 export let client: LanguageClient;
-let documentExplorer: PharoDocumentExplorer;
+export let documentExplorer: PharoDocumentExplorer;
 let dls: child_process.ChildProcess;
 export let extensionContext: ExtensionContext;
 
@@ -64,21 +56,21 @@ export async function activate(context: ExtensionContext) {
 		// Create debugguer
 		let factory = new DebugAdapterFactory();
 		activateDebug(context, factory);
-		context.subscriptions.push(vscode.workspace.registerNotebookSerializer('moosebook', new MoosebookSerializer()));
+		context.subscriptions.push(workspace.registerNotebookSerializer('moosebook', new MoosebookSerializer()));
 		context.subscriptions.push(new MoosebookController());
 	})
 
 }
 
 function createCommands(context: ExtensionContext) {
-	context.subscriptions.push(vscode.commands.registerCommand('pharo.extensionVersion', commandPharoExtensionVersion));
-	context.subscriptions.push(vscode.commands.registerCommand('pharo.printIt', commandPharoPrintIt));
-	context.subscriptions.push(vscode.commands.registerCommand('pharo.showIt', commandPharoShowIt));
-	context.subscriptions.push(vscode.commands.registerCommand('pharo.doIt', commandPharoDoIt));
-	context.subscriptions.push(vscode.commands.registerCommand('pharo.save', commandPharoSave));
-	context.subscriptions.push(vscode.commands.registerCommand('pharo.executeTest', commandPharoExecuteTest));
-	context.subscriptions.push(vscode.commands.registerCommand('pharo.executeClassTests', commandPharoExecuteClassTests));
-	context.subscriptions.push(vscode.commands.registerCommand('pharo.installIt', commandPharoInstallLastVersion));
+	context.subscriptions.push(commands.registerCommand('pharo.extensionVersion', commandPharoExtensionVersion));
+	context.subscriptions.push(commands.registerCommand('pharo.printIt', commandPharoPrintIt));
+	context.subscriptions.push(commands.registerCommand('pharo.showIt', commandPharoShowIt));
+	context.subscriptions.push(commands.registerCommand('pharo.doIt', commandPharoDoIt));
+	context.subscriptions.push(commands.registerCommand('pharo.save', commandPharoSave));
+	context.subscriptions.push(commands.registerCommand('pharo.executeTest', commandPharoExecuteTest));
+	context.subscriptions.push(commands.registerCommand('pharo.executeClassTests', commandPharoExecuteClassTests));
+	context.subscriptions.push(commands.registerCommand('pharo.installIt', commandPharoInstallLastVersion));
 
 }
 
@@ -99,7 +91,7 @@ function commandPharoExtensionVersion() {
 }
 
 function commandPharoDoIt() {
-	let editor = vscode.window.activeTextEditor;
+	let editor = window.activeTextEditor;
 	let selection = editor.selection;
 	client.sendRequest('command:printIt', { "line": editor.document.getText(selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
 		documentExplorer.refresh();
@@ -108,18 +100,18 @@ function commandPharoDoIt() {
 
 
 function commandPharoPrintIt() {
-	let editor = vscode.window.activeTextEditor;
+	let editor = window.activeTextEditor;
 	let selection = editor.selection;
 	client.sendRequest('command:printIt', { "line": editor.document.getText(selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
 		editor.edit(editBuilder => {
-			editBuilder.replace(new vscode.Selection(selection.end, selection.end), ' "' + result + '" ');
+			editBuilder.replace(new Selection(selection.end, selection.end), ' "' + result + '" ');
 		})
 		documentExplorer.refresh();
 	}).catch((error) => window.showErrorMessage(error));
 }
 
 function commandPharoShowIt() {
-	let editor = vscode.window.activeTextEditor;
+	let editor = window.activeTextEditor;
 	client.sendRequest('pls-gtk:inspectIt', { "line": editor.document.getText(editor.selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
 		window.showInformationMessage(result);
 		// documentExplorer.refresh();
@@ -164,9 +156,9 @@ export async function commandPharoInstallLastVersion() {
 	let vmDirectory = await download(Uri.parse(vmPath), true, 'pharoVM');
 
 	if (os.platform() == 'linux' || os.platform() == 'darwin') {
-		vscode.workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "/pharo", true);
+		workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "/pharo", true);
 	} else {
-		vscode.workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "\\Pharo.exe", true);
+		workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "\\Pharo.exe", true);
 	}
 	window.showInformationMessage('VM updated. Please wait')
 
@@ -175,9 +167,9 @@ export async function commandPharoInstallLastVersion() {
 	let pharoDirectory = await download(Uri.parse("https://github.com/badetitou/Pharo-LanguageServer/releases/download/v3.1.1/" + imageName + ".zip"), true, imageName);
 
 	if (os.platform() == 'linux' || os.platform() == 'darwin') {
-		vscode.workspace.getConfiguration('pharo').update('pathToImage', pharoDirectory.fsPath + "/" + imageName + ".image", true);
+		workspace.getConfiguration('pharo').update('pathToImage', pharoDirectory.fsPath + "/" + imageName + ".image", true);
 	} else {
-		vscode.workspace.getConfiguration('pharo').update('pathToImage', pharoDirectory.fsPath + "\\" + imageName + ".image", true);
+		workspace.getConfiguration('pharo').update('pathToImage', pharoDirectory.fsPath + "\\" + imageName + ".image", true);
 	}
 	
 	window.showInformationMessage('Pharo updated. Please restart', 'Restart VSCode').then(() => {
@@ -186,7 +178,7 @@ export async function commandPharoInstallLastVersion() {
 }
 
 
-async function download(uri: Uri, unzip: boolean, location: string): Promise<vscode.Uri> {
+async function download(uri: Uri, unzip: boolean, location: string): Promise<Uri> {
 
 	// let mooseImageUri = Uri.parse("", true);
 	const fileDownloader: FileDownloader = await getApi();
@@ -199,7 +191,7 @@ async function download(uri: Uri, unzip: boolean, location: string): Promise<vsc
 	console.log('Download ', uri.toString())
 
 
-	const cancellationTokenSource = new vscode.CancellationTokenSource();
+	const cancellationTokenSource = new CancellationTokenSource();
 	const cancellationToken = cancellationTokenSource.token;
 
 	const progressCallback = (downloadedBytes: number, totalBytes: number | undefined) => {
@@ -249,7 +241,7 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 async function createServerWithSocket(pharoPath: string, pathToImage: string, context: ExtensionContext): Promise<StreamInfo> {
 	
 	let options = [	pathToImage, 'st', context.asAbsolutePath('/res/run-server.st') ];
-	if (vscode.workspace.getConfiguration('pharo').get('headless') && !vscode.workspace.getConfiguration('pharo').get('debugMode')) {
+	if (workspace.getConfiguration('pharo').get('headless') && !workspace.getConfiguration('pharo').get('debugMode')) {
 		options.unshift('--headless')
 	}
 	dls = child_process.spawn(pharoPath.trim(), options);

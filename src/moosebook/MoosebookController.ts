@@ -1,7 +1,7 @@
 import {
 	notebooks, NotebookController, NotebookCell, NotebookDocument, NotebookCellOutput, NotebookCellOutputItem
 } from 'vscode';
-import { client } from '../extension';
+import { client, documentExplorer } from '../extension';
 
 interface PharoResponse {
 	mimetype: string,
@@ -60,6 +60,7 @@ export class MoosebookController {
 				new NotebookCellOutput(items)
 			]);
 			execution.end(true, Date.now());
+			documentExplorer.refresh();
 		}).catch((err) => {
 			execution.replaceOutput([new NotebookCellOutput([
 				NotebookCellOutputItem.error(err)

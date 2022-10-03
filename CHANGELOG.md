@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.1.3
+
+- Enable usage of variable panel when using the notebook
+- Clean the typescript code
+
 ## v2.1.2
 
 - Use server version 3.1.1 in quick install
