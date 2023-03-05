@@ -26,13 +26,6 @@
 	},
 	"activationEvents": [
 		"onDebugResolve:pharodb",
-		"onLanguage:pharo",
-		"onCommand:pharo.extensionVersion",
-		"onCommand:pharo.printIt",
-		"onCommand:pharo.showIt",
-		"onCommand:pharo.installIt",
-		"onCommand:extension.pharo-debug.debugEditorContents",
-		"onView:pharoImage",
 		"onFileSystem:pharoImage",
 		"onNotebook:moosebook"
 	],
@@ -314,14 +307,14 @@
 	},
 	"dependencies": {
 		"@vscode/debugprotocol": "^1.51.0",
-		"vscode-languageclient": "^8.0.2",
-		"vscode-languageserver-protocol": "3.17.2",
+		"vscode-languageclient": "^8.1.0",
+		"vscode-languageserver-protocol": "3.17.3",
 		"@microsoft/vscode-file-downloader-api": "^1.0.1"
 	},
 	"devDependencies": {
 		"@types/mocha": "^8.0.3",
 		"@types/node": "^18.7.23",
-		"@types/vscode": "^1.71.0",
+		"@types/vscode": "^1.76.0",
 		"mocha": "^8.1.1",
 		"ts-loader": "^8.0.12",
 		"typescript": "^4.8.4",
