@@ -1,4 +1,4 @@
-import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
@@ -18,6 +18,7 @@ import { MoosebookController } from './moosebook/MoosebookController';
 const os = require('os');
 
 import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
+import { IceControlManager } from './ice/IceControlManager';
 
 
 export let client: LanguageClient;
@@ -58,8 +59,11 @@ export async function activate(context: ExtensionContext) {
 		activateDebug(context, factory);
 		context.subscriptions.push(workspace.registerNotebookSerializer('moosebook', new MoosebookSerializer()));
 		context.subscriptions.push(new MoosebookController());
-	})
 
+		// Create Ice
+		let iceControlManager = new IceControlManager(client, context);
+		context.subscriptions.push(iceControlManager);
+	})
 }
 
 function createCommands(context: ExtensionContext) {
@@ -73,7 +77,6 @@ function createCommands(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('pharo.installIt', commandPharoInstallLastVersion));
 
 }
-
 
 
 export function deactivate() {
