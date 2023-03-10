@@ -150,7 +150,7 @@ export async function commandPharoInstallLastVersion() {
 	let vmPath = ''
 	if (os.platform() == 'linux') {
 		vmPath = 'https://files.pharo.org/get-files/100/pharo64-linux-stable.zip'
-	} else if (os.platform() == 'darwin') {
+	} else if (os.platform() == 'darwin') { // MacOSX
 		vmPath = 'https://files.pharo.org/get-files/100/pharo64-mac-stable.zip'
 	} else {
 		vmPath = 'https://files.pharo.org/get-files/100/pharo-vm-Windows-x86_64-stable.zip'
@@ -158,8 +158,10 @@ export async function commandPharoInstallLastVersion() {
 
 	let vmDirectory = await download(Uri.parse(vmPath), true, 'pharoVM');
 
-	if (os.platform() == 'linux' || os.platform() == 'darwin') {
+	if (os.platform() == 'linux') {
 		workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "/pharo", true);
+	} else if (os.platform() == 'darwin') { // MacOSX
+		workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "/Pharo.app/Contents/MacOS/Pharo", true);
 	} else {
 		workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "\\Pharo.exe", true);
 	}
