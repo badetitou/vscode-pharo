@@ -167,7 +167,7 @@ export async function commandPharoInstallLastVersion() {
 
 	// Download image
 	let imageName = 'Moose64-10-PLS'
-	let pharoDirectory = await download(Uri.parse("https://github.com/badetitou/Pharo-LanguageServer/releases/download/v3.1.1/" + imageName + ".zip"), true, imageName);
+	let pharoDirectory = await download(Uri.parse("https://github.com/badetitou/Pharo-LanguageServer/releases/download/v3.1.2/" + imageName + ".zip"), true, imageName);
 
 	if (os.platform() == 'linux' || os.platform() == 'darwin') {
 		workspace.getConfiguration('pharo').update('pathToImage', pharoDirectory.fsPath + "/" + imageName + ".image", true);
