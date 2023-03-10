@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.1.6
+
+- [fix new requirement for badges](https://learn.microsoft.com/en-us/azure/devops/extend/develop/manifest?view=azure-devops#approvedbadges)
 ## v2.1.5
 
 - beta introduces iceberg integration (only showing existing repo for now)

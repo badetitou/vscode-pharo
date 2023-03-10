@@ -1,6 +1,6 @@
 # vscode-pharo <!-- omit in toc -->
 
-[![Pharo Language Server](https://vsmarketplacebadge.apphb.com/version/badetitou.pharo-language-server.svg)](https://marketplace.visualstudio.com/items?itemName=badetitou.pharo-language-server)
+[![Pharo Language Server](https://vsmarketplacebadges.dev/version/badetitou.pharo-language-server.svg)](https://marketplace.visualstudio.com/items?itemName=badetitou.pharo-language-server)
 
 A Pharo client extension for VSCode.
 
@@ -12,6 +12,7 @@ A Pharo client extension for VSCode.
   - [Moose Book (Notebook for Moose/Pharo)](#moose-book-notebook-for-moosepharo)
   - [Additional feature](#additional-feature)
 - [Installation](#installation)
+  - [Specific version of the language server](#specific-version-of-the-language-server)
 - [Thanks](#thanks)
 
 ## Supported files
