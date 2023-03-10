@@ -117,11 +117,15 @@ The additional feature can be access using the command palette of VSCode
 
 ## Installation
 
-You can follow the walkthroughs
+The easiest way is to execute the `pharo.installIt` command using VSCode command panel.
+
+### Specific version of the language server
+
+You can also follow the walkthroughs to download a pre-configured version of the Language Server.
 
 ![Walkthroughs](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/walkthroughs.gif)
 
-Or, to install the extension:
+Or, to install the extension in an existing image :
 
 1. Install [VSCode](https://code.visualstudio.com/)
 2. Install the [Pharo extension](https://marketplace.visualstudio.com/items?itemName=badetitou.pharo-language-server)
