@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.1.5
+
+- beta introduces iceberg integration (only showing existing repo for now)
+- Update to last Pharo Language Server
+  - Fix printIt command
+
 ## v2.1.4
 
 - Fix bug when having no focused editor

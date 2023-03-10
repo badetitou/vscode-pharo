@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.1.4",
+	"version": "2.1.5",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -22,7 +22,7 @@
 		"pharo smalltalk"
 	],
 	"engines": {
-		"vscode": "^1.71.0"
+		"vscode": "^1.76.0"
 	},
 	"activationEvents": [
 		"onDebugResolve:pharodb",
