@@ -14,7 +14,7 @@ export class PharoBindingProvider implements vscode.TreeDataProvider<PLSVariable
 	readonly onDidChangeTreeData: vscode.Event<any> = this._onDidChangeTreeData.event;
 
 	constructor() {
-		vscode.workspace.onDidOpenTextDocument(e => this.refresh())
+		vscode.workspace.onDidOpenTextDocument(e => this.refresh());
 	}
 
 	public refresh(): any {
@@ -35,8 +35,8 @@ export class PharoBindingProvider implements vscode.TreeDataProvider<PLSVariable
 		if (vscode.window.activeTextEditor !== undefined &&  vscode.window.activeTextEditor.document !== undefined) {
 			if (element === undefined) {
 				return client.sendRequest('pls:documentVariables', { textDocument: vscode.window.activeTextEditor.document }).then((result: Array<PLSVariable>) => {
-					return result.map((item) => { return { name: item.name + ': ' + item.value, variableReference: item.variableReference, value: item.value, isDirectory: item.isDirectory }; })
-				})
+					return result.map((item) => { return { name: item.name + ': ' + item.value, variableReference: item.variableReference, value: item.value, isDirectory: item.isDirectory }; });
+				});
 
 			}
 			return client.sendRequest('pls:childrenVariables', { variableReference: element.variableReference, textDocument: vscode.window.activeTextEditor.document }).then((result: Array<PLSVariable>) => {
@@ -47,10 +47,10 @@ export class PharoBindingProvider implements vscode.TreeDataProvider<PLSVariable
 						value: item.value,
 						isDirectory: item.isDirectory
 					};
-				})
-			})
+				});
+			});
 		} else {
-			return []
+			return [];
 		}
 
 	}

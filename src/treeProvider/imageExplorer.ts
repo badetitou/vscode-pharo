@@ -21,7 +21,7 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		throw new Error('Method not implemented.');
 	}
 	stat(uri: vscode.Uri): vscode.FileStat | Thenable<vscode.FileStat> {
-		return { ctime: 0, mtime: 0, size: 100, type: vscode.FileType.File }
+		return { ctime: 0, mtime: 0, size: 100, type: vscode.FileType.File };
 	}
 	readDirectory(uri: vscode.Uri): [string, vscode.FileType][] | Thenable<[string, vscode.FileType][]> {
 		throw new Error('Method not implemented.');
@@ -68,8 +68,8 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 	public getChildren(element?: PharoNode): PharoNode[] | Thenable<PharoNode[]> {
 		if (element === undefined) {
 			return client.sendRequest('pls:packages', {}).then((result: Array<string>) => {
-				return result.sort().map((item) => { return { name: item, resource: vscode.Uri.parse('pharoImage:/' + item, true), isDirectory: true }; })
-			})
+				return result.sort().map((item) => { return { name: item, resource: vscode.Uri.parse('pharoImage:/' + item, true), isDirectory: true }; });
+			});
 		}
 		return client.sendRequest('pls:classes', { package: element.name }).then((result: Array<string>) => {
 			return result.sort().map((item) => {
@@ -78,8 +78,8 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 					resource: vscode.Uri.parse('pharoImage:/' + item, true),
 					isDirectory: false
 				};
-			})
-		})
+			});
+		});
 	}
 
 }

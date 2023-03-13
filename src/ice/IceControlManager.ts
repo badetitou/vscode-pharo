@@ -30,10 +30,10 @@ export class IceControlManager implements IDisposable {
 				iceRepo.sourceControl = scm.createSourceControl(repository.name, repository.name);
 				this.ices.push(iceRepo); 
 			}
-		})
+		});
 		this.ices.forEach(ice => {
 			if(ice.valid) {
-				this._context.subscriptions.push(ice.sourceControl)
+				this._context.subscriptions.push(ice.sourceControl);
 				ice.sourceControl.count = 0;
 				this.resolveWorkingCopyOf(ice);
 			}
@@ -52,9 +52,9 @@ export class IceControlManager implements IDisposable {
 					{
 						resourceUri: Uri.parse(classURI, true)
 					}
-				]
-			})
-		})
+				];
+			});
+		});
 	}
 	
 }

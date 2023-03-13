@@ -51,13 +51,13 @@ export class MoosebookController {
 			let items = [];
 			results.forEach((value) => {
 				if(value.mimetype === 'error') {
-					items.push(NotebookCellOutputItem.error(new Error(value.content)))
+					items.push(NotebookCellOutputItem.error(new Error(value.content)));
 				} else {
-					items.push(NotebookCellOutputItem.text(value.content, value.mimetype))
+					items.push(NotebookCellOutputItem.text(value.content, value.mimetype));
 				}
-			})
+			});
 			let output = new NotebookCellOutput(items);
-			output.metadata = []
+			output.metadata = [];
 			execution.replaceOutput([
 				output
 			]);

@@ -9,7 +9,7 @@ export class DebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory
 
 		const port : Promise<number> = client.sendRequest('dap:startServer', { }).then((result: number) => {
 			return result;
-		})
+		});
 
 		// make VS Code connect to debug server
 		return new vscode.DebugAdapterServer(await port, 'localhost');
