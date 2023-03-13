@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.1.7",
+	"version": "2.1.8",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -323,6 +323,7 @@
 		"@vscode/debugadapter-testsupport": "^1.51.0",
 		"@vscode/test-electron": "^2.3.0",
 		"mocha": "^10.2.0",
+		"ts-loader": "^9.4.2",
 		"typescript": "^4.8.4",
 		"vscode-test": "^1.3.0",
 		"eslint": "^8.34.0",
