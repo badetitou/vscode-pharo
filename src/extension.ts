@@ -115,9 +115,9 @@ function commandPharoPrintIt() {
 
 function commandPharoShowIt() {
 	let editor = window.activeTextEditor;
-	client.sendRequest('pls-gtk:inspectIt', { "line": editor.document.getText(editor.selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
+	client.sendRequest('command:printIt', { "line": editor.document.getText(editor.selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
 		window.showInformationMessage(result);
-		// documentExplorer.refresh();
+		documentExplorer.refresh();
 	}).catch((error) => window.showErrorMessage(error));
 }
 

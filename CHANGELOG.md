@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.8
+
+- `showIt` should present the result inside a popUp
+
 ## v2.1.7
 
 - Should fix vm path install in macOSX
