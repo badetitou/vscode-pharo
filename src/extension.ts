@@ -4,7 +4,7 @@ import {
 	LanguageClientOptions,
 	ServerOptions,
 	StreamInfo,
-	TransportKind
+	TransportKind,
 } from 'vscode-languageclient/node';
 import * as requirements from './requirements';
 import * as net from 'net';
@@ -75,7 +75,7 @@ function createCommands(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('pharo.executeTest', commandPharoExecuteTest));
 	context.subscriptions.push(commands.registerCommand('pharo.executeClassTests', commandPharoExecuteClassTests));
 	context.subscriptions.push(commands.registerCommand('pharo.installIt', commandPharoInstallLastVersion));
-
+	context.subscriptions.push(commands.registerCommand('pharo.createProject', commandPharoCreateProject));
 }
 
 
@@ -137,6 +137,17 @@ function commandPharoExecuteClassTests(aClass: string) {
 	client.sendRequest('pls:executeClassTests', {className: aClass}).then( (result: string) => {
 		window.showInformationMessage(result);
 	}).catch((error) => window.showErrorMessage(error));
+}
+
+function commandPharoCreateProject() {
+	let rootProject: Uri = workspace.workspaceFolders.at(0).uri;
+	workspace.fs.createDirectory(Uri.file(rootProject.fsPath + "/src"));
+	workspace.fs.writeFile(
+		Uri.file(rootProject.fsPath + "\\.project"),
+		new Uint8Array(Buffer.from("{\n    'srcDirectory' : 'src'\n}")));
+		workspace.fs.writeFile(
+			Uri.file(rootProject.fsPath + "/src/.properties"),
+			new Uint8Array(Buffer.from("{\n    #format : #tonel\n}")));
 }
 
 export async function commandPharoInstallLastVersion() {

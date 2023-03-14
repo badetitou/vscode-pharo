@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.1.8",
+	"version": "2.1.9",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -156,6 +156,11 @@
 			{
 				"command": "pharo.installIt",
 				"title": "Install the last version of the language server",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.createProject",
+				"title": "Create a new Pharo project",
 				"category": "Pharo"
 			},
 			{
