@@ -8,4 +8,4 @@ patate := true.
 
 patate ifFalse: [ ]  ifTrue: [].
 
-hello
+hello 
