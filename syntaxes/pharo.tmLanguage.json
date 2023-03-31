@@ -92,7 +92,7 @@
         },
         {
             "comment": "Fake conditionals. Smalltalk Methods.",
-            "match": "ifCurtailed:|ifTrue:|ifFalse:|whileFalse:|whileTrue:",
+            "match": "ifCurtailed:|ifTrue:|ifFalse:|whileFalse:|whileTrue:|ifNil:|ifNotNil:",
             "name": "keyword.control.conditionals.pharo"
         },
         {
