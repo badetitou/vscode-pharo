@@ -13,6 +13,7 @@ A Pharo client extension for VSCode.
   - [Additional feature](#additional-feature)
 - [Installation](#installation)
   - [Specific version of the language server](#specific-version-of-the-language-server)
+  - [Using VMs from the Pharo Launcher](#using-vms-from-the-pharo-launcher)
 - [Thanks](#thanks)
 
 ## Supported files
@@ -140,6 +141,14 @@ Or, to install the extension in an existing image :
    2. pharo.pathToImage: is the absolute path to the image
 
 > From version v1.0.0, please use at least version v1.1.0 of the Pharo Language Server.
+
+### Using VMs from the Pharo Launcher
+
+Assuming you have [the official Pharo Launcher](https://pharo.org/download) installed, you can also configure the extension to use the launcher's VMs along with the language server image like so:
+
+https://user-images.githubusercontent.com/3588798/230201074-90226504-fc32-4aac-8bab-89d23ea8f660.mp4
+
+(The example above is using VSCode with macOS 13)
 
 ## Thanks
 
