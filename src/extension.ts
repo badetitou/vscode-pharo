@@ -1,4 +1,4 @@
-import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
@@ -26,10 +26,12 @@ export let documentExplorer: PharoDocumentExplorer;
 let dls: child_process.ChildProcess;
 export let extensionContext: ExtensionContext;
 
+let plsStatusBar: StatusBarItem;
 
 export async function activate(context: ExtensionContext) {
 
 	extensionContext = context;
+	initStatusBar(extensionContext);
 	// Create new command
 	createCommands(context);
 
@@ -63,6 +65,7 @@ export async function activate(context: ExtensionContext) {
 		// Create Ice
 		let iceControlManager = new IceControlManager(client, context);
 		context.subscriptions.push(iceControlManager);
+		resetStatusBarText();
 	});
 }
 
@@ -211,7 +214,7 @@ async function download(uri: Uri, unzip: boolean, location: string): Promise<Uri
 	const cancellationToken = cancellationTokenSource.token;
 
 	const progressCallback = (downloadedBytes: number, totalBytes: number | undefined) => {
-		console.log(`Downloaded ${downloadedBytes}/${totalBytes} bytes`);
+		setStatusBarText(`Downloaded ${downloadedBytes}/${totalBytes} bytes`);
 	};
 	const vmDirectory: Uri = await fileDownloader.downloadFile(
 		uri,
@@ -221,6 +224,7 @@ async function download(uri: Uri, unzip: boolean, location: string): Promise<Uri
 		progressCallback,
 		{ shouldUnzip: unzip }
 	);
+	resetStatusBarText();
 	return vmDirectory;
 }
 
@@ -287,4 +291,21 @@ async function getSocket(dls: child_process.ChildProcess): Promise<net.Socket>  
 		});
 		});
 	});
+}
+
+// About Status bar
+
+function initStatusBar(context: ExtensionContext) {
+	plsStatusBar = window.createStatusBarItem(StatusBarAlignment.Right, 100);
+	context.subscriptions.push(plsStatusBar);
+	plsStatusBar.show();
+	setStatusBarText('Starting Up');
+}
+
+function setStatusBarText(text: string) {
+	plsStatusBar.text = "$(pls-icon)" + text;
+}
+
+function resetStatusBarText() {
+	plsStatusBar.text = "$(pls-icon)";
 }

@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.1.9",
+	"version": "2.1.10",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -75,6 +75,22 @@
 					"name": "Variables"
 				}
 			]
+		},
+		"icons": {
+			"pls-icon": {
+				"description": "pls-icon",
+				"default": {
+					"fontPath": "res/pls-font.woff",
+					"fontCharacter": "\\41"
+				}
+			},
+			"moose-icon": {
+				"description": "moose-icon",
+				"default": {
+					"fontPath": "res/pls-font.woff",
+					"fontCharacter": "\\42"
+				}
+			}
 		},
 		"viewsWelcome": [
 			{

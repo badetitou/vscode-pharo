@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.10
+
+- Add icon in the status bar used when downloading the last version of the Language Server
+
 ## v2.1.8
 
 - `showIt` should present the result inside a popUp
