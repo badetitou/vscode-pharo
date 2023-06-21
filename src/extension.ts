@@ -79,8 +79,9 @@ function createCommands(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('pharo.executeClassTests', commandPharoExecuteClassTests));
 	context.subscriptions.push(commands.registerCommand('pharo.installIt', commandPharoInstallLastVersion));
 	context.subscriptions.push(commands.registerCommand('pharo.createProject', commandPharoCreateProject));
+	context.subscriptions.push(commands.registerCommand('pharo.openLog', commandPharoOpenLog));
+	context.subscriptions.push(commands.registerCommand('pharo.clearLog', commandPharoClearLog));
 }
-
 
 export function deactivate() {
 }
@@ -152,6 +153,13 @@ function commandPharoCreateProject() {
 			Uri.file(rootProject.fsPath + "/src/.properties"),
 			new Uint8Array(Buffer.from("{\n    #format : #tonel\n}")));
 }
+function commandPharoOpenLog() {
+	client.sendRequest('pls-developer:openLog').then( () => {}).catch((error) => window.showErrorMessage(error));
+}
+
+function commandPharoClearLog() {
+	client.sendRequest('pls-developer:clearLog').then( () => {}).catch((error) => window.showErrorMessage(error));
+}
 
 export async function commandPharoInstallLastVersion() {
 
@@ -182,7 +190,7 @@ export async function commandPharoInstallLastVersion() {
 	window.showInformationMessage('VM updated. Please wait');
 
 	// Download image
-	let imageName = 'Moose64-10-PLS';
+	let imageName = 'Moose64-11-PLS';
 	let pharoDirectory = await download(Uri.parse("https://github.com/badetitou/Pharo-LanguageServer/releases/download/v3.1.2/" + imageName + ".zip"), true, imageName);
 
 	if (os.platform() === 'linux' || os.platform() === 'darwin') {

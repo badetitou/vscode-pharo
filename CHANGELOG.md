@@ -1,8 +1,14 @@
 # Changelog
 
+## v2.1.11
+
+- Update to Moose11 image by default
+- Add quick debug command to show log with the command `pharo.openLog` that shows in/out message
+- Add clear log too
+
 ## v2.1.10
 
-- Add icon in the status bar used when downloading the last version of the Language Server
+Add an icon in the status bar used when downloading the last version of the Language Server
 
 ## v2.1.8
 

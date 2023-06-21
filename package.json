@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.1.10",
+	"version": "2.1.11",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -197,6 +197,16 @@
 				"category": "Pharo Debug",
 				"when": "resourceLangId == markdown",
 				"icon": "$(debug-alt)"
+			},
+			{
+				"command": "pharo.openLog",
+				"title": "Open Log",
+				"category": "Pharo Developer"
+			},
+			{
+				"command": "pharo.clearLog",
+				"title": "Clear Log",
+				"category": "Pharo Developer"
 			}
 		],
 		"menus": {
