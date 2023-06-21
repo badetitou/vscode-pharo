@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.13 & 2.1.12
+
+- Add several options to configure the quickinstall
+
 ## v2.1.11
 
 - Update to Moose11 image by default
