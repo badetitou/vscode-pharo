@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.16
+
+- Native Test integration
+
 ## v2.1.14
 
 - Up default version of the server

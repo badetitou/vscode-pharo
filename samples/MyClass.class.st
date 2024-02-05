@@ -28,3 +28,8 @@ MyClass >> myVar2 [
 MyClass >> myVar2: anObject [
     myVar2 := anObject
 ]
+
+{ #category : #accessing }
+MyClass >> anotherMethod [
+    ^ 'another method'
+]

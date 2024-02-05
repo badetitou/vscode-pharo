@@ -7,6 +7,9 @@ A Pharo client extension for VSCode.
 - [Supported files](#supported-files)
 - [Features](#features)
   - [Generic feature](#generic-feature)
+    - [Code highlighting](#code-highlighting)
+    - [Breadcrumbs \& Outline](#breadcrumbs--outline)
+    - [Native tests support](#native-tests-support)
   - [Supported Language Server feature](#supported-language-server-feature)
   - [Debug Adapter Protocol feature](#debug-adapter-protocol-feature)
   - [Moose Book (Notebook for Moose/Pharo)](#moose-book-notebook-for-moosepharo)
@@ -26,13 +29,17 @@ We present here the existing features
 
 ### Generic feature
 
-**Code highlighting**
+#### Code highlighting
 
 ![Highlighting](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/highlighting.png)
 
-**Breadcrumbs & Outline**
+#### Breadcrumbs & Outline
 
 ![Breadcrumbs & Outline](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/breadcrumbs-and-outline.gif)
+
+#### Native tests support
+
+![Native test image](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/native-test.png)
 
 ### Supported Language Server feature
 

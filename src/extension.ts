@@ -19,6 +19,7 @@ const os = require('os');
 
 import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
 import { IceControlManager } from './ice/IceControlManager';
+import { initTestController } from './testController/testController';
 
 
 export let client: LanguageClient;
@@ -65,6 +66,10 @@ export async function activate(context: ExtensionContext) {
 			// Create Ice
 			let iceControlManager = new IceControlManager(client, context);
 			context.subscriptions.push(iceControlManager);
+
+			// Create Tests
+			initTestController();
+
 			resetStatusBarText();
 		});
 }
