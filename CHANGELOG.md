@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.14
+
+- Up default version of the server
+
 ## v2.1.13 & 2.1.12
 
 - Add several options to configure the quickinstall
