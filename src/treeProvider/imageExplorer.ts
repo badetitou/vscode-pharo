@@ -58,7 +58,7 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 			resourceUri: element.resource,
 			collapsibleState: element.isDirectory ? vscode.TreeItemCollapsibleState.Collapsed : void 0,
 			command: element.isDirectory ? void 0 : {
-				command: 'pharoImage.openClass',
+				command: 'vscode.open',
 				arguments: [element.resource],
 				title: 'Open Pharo Class'
 			}
@@ -90,11 +90,6 @@ export class PharoImageExplorer {
 		vscode.window.createTreeView('pharoImage', { treeDataProvider: pharoDataProvider });
 		// context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider('pharoImage', pharoDataProvider));
 		context.subscriptions.push(vscode.workspace.registerFileSystemProvider('pharoImage', pharoDataProvider, { isCaseSensitive: true }));
-		vscode.commands.registerCommand('pharoImage.openClass', resource => this.openResource(resource));
-
 	}
 
-	private openResource(resource: vscode.Uri): void {
-		vscode.window.showTextDocument(resource);
-	}
 }
