@@ -1,0 +1,17 @@
+SmalltalkCISpec {
+  #loading : [
+    SCIMetacelloLoadSpec {
+      #baseline : 'PharoLanguageServer',
+      #directory : 'src',
+      #ignoreImage : true,
+      #onConflict : #useIncoming,
+      #onUpgrade : #useIncoming
+    }
+  ],
+  #testing : {
+    #coverage : {
+      #packages : [ 'PharoLanguageServer.*', 'PLS-.*', 'PharoLanguageClient.*', 'PharoLanguageProtocol' ],
+      #format : #lcov
+    }
+  }
+}

@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.17
+
+- Syntax highlight for Ston
+
 ## v2.1.16
 
 - Native Test integration

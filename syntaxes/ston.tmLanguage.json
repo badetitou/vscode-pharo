@@ -1,0 +1,102 @@
+{
+    "name": "ston",
+    "foldingStartMarker": "\\[",
+    "foldingStopMarker": "^\\s*\\]|^\\s\\]",
+    "fileTypes": [
+        "ston"
+    ],
+    "patterns": [
+        {
+            "begin": "'",
+            "beginCaptures": [
+                {
+                    "name": "punctuation.definition.string.begin.ston"
+                }
+            ],
+            "end": "'",
+            "endCaptures": [
+                {
+                    "name": "punctuation.definition.string.end.ston"
+                }
+            ],
+            "name": "string.quoted.single.ston"
+        },
+        {
+            "captures": {
+                "1": {
+                    "name": "support.class.ston"
+                }
+            },
+            "comment": "Class Name",
+            "match": "([a-zA-Z_][a-zA-Z0-9]*) {"
+        },
+        {
+            "captures": {
+                "1": {
+                    "name": "support.type.property-name.ston"
+                }
+            },
+            "comment": "symbols",
+            "match": "(#[a-zA-Z_][a-zA-Z0-9:]*) :"
+        },
+        {
+            "captures": {
+                "1": {
+                    "name": "punctuation.definition.constant.ston"
+                }
+            },
+            "comment": "symbols",
+            "match": "(#)[a-zA-Z_][a-zA-Z0-9:]*",
+            "name": "constant.language.keyword.ston"
+        },
+        {
+            "match": "\\b(true|false)\\b",
+            "name": "constant.language.boolean.ston"
+        },
+        {
+            "begin": "#\\[",
+            "beginCaptures": [
+                {
+                    "name": "punctuation.definition.constant.begin.ston"
+                }
+            ],
+            "end": "\\]",
+            "endCaptures": [
+                {
+                    "name": "punctuation.definition.constant.end.ston"
+                }
+            ],
+            "name": "meta.array.byte.ston",
+            "patterns": [
+                {
+                    "match": "[0-9]+(r[a-zA-Z0-9]+)?",
+                    "name": "constant.numeric.integer.ston"
+                },
+                {
+                    "match": "[^\\s\\]]+",
+                    "name": "invalid.illegal.character-not-allowed-here.ston"
+                }
+            ]
+        },
+        {
+            "begin": "#\\(",
+            "beginCaptures": [
+                {
+                    "name": "punctuation.definition.constant.begin.ston"
+                }
+            ],
+            "comment": "Array Constructor",
+            "end": "\\)",
+            "endCaptures": [
+                {
+                    "name": "punctuation.definition.constant.end.ston"
+                }
+            ],
+            "name": "constant.other.array.ston"
+        }
+    ],
+    "repository": {
+    },
+    "scopeName": "source.ston"
+
+}

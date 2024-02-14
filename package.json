@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.1.16",
+	"version": "2.1.17",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -21,7 +21,8 @@
 	],
 	"keywords": [
 		"pharo",
-		"smalltalk"
+		"smalltalk",
+		"ston"
 	],
 	"engines": {
 		"vscode": "^1.76.0"
@@ -161,6 +162,20 @@
 					"light": "./media/moose-logo.svg",
 					"dark": "./media/moose-logo.svg"
 				}
+			},
+			{
+				"id": "ston",
+				"aliases": [
+					"Ston", 
+					"STON"
+				],
+				"extensions": [
+					".ston"
+				],
+				"icon": {
+					"light": "./media/pharo-bar.svg",
+					"dark": "./media/pharo-bar.svg"
+				}
 			}
 		],
 		"grammars": [
@@ -168,6 +183,11 @@
 				"language": "pharo",
 				"scopeName": "source.pharo",
 				"path": "./syntaxes/pharo.tmLanguage.json"
+			},
+			{
+				"language": "ston",
+				"scopeName": "source.ston",
+				"path": "./syntaxes/ston.tmLanguage.json"
 			}
 		],
 		"commands": [
