@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.18
+
+- Default Pharo server is now v5 for Pharo12
+
 ## v2.1.17
 
 - Syntax highlight for Ston

@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.1.17",
+	"version": "2.1.18",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -73,21 +73,21 @@
 					"title": "Quick install image name",
 					"scope": "window",
 					"type": "string",
-					"default": "Moose64-11-PLS",
+					"default": "Moose64-12-PLS",
 					"description": "The image to download by default with install command"
 				},
 				"pharo quick install.server version": {
 					"title": "Quick install server version",
 					"scope": "window",
 					"type": "string",
-					"default": "v4.0.7",
+					"default": "v5.0.0",
 					"description": "The version of the server to install by default"
 				},
 				"pharo quick install.server VM version": {
 					"title": "Quick install server VM version",
 					"scope": "window",
 					"type": "string",
-					"default": "110",
+					"default": "120",
 					"description": "The VM version required by the server to install by default"
 				} 
 			}
