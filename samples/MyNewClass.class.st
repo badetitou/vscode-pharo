@@ -8,14 +8,14 @@
 
 "
 Class {
-	 #name: #MyNewClass,
-	#superclass: #Object,
-	#instVars: [ ],
-	#category : #'samples'
+	#name : 'MyNewClass',
+	#superclass : 'Object',
+	#category : 'samples',
+	#package : 'samples'
 }
 
-{ #category : #accessing }
+{ #category : 'accessing' }
 MyNewClass >> helloEsug2022 [
+
 	^ 'Hello esug 2022'
-	
 ]
