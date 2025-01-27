@@ -177,9 +177,9 @@ export async function commandPharoInstallLastVersion() {
 	let vmPath = '';
 	let vmVersion: string = workspace.getConfiguration('pharo quick install').get('server VM version');
 	if (os.platform() === 'linux') {
-		vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo64-linux-stable.zip';
+		vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo-vm-Linux-x86_64-stable.zip';
 	} else if (os.platform() === 'darwin') { // MacOSX
-		vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo64-mac-stable.zip';
+		vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo-vm-Darwin-x86_64-latest.zip';
 	} else {
 		vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo-vm-Windows-x86_64-stable.zip';
 	}
