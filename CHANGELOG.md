@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.19
+
+- Update URL when downloading VM
+
 ## v2.1.18
 
 - Default Pharo server is now v5 for Pharo12
