@@ -1,6 +1,6 @@
 # vscode-pharo <!-- omit in toc -->
 
-[![Pharo Language Server](https://vsmarketplacebadges.dev/version/badetitou.pharo-language-server.svg)](https://marketplace.visualstudio.com/items?itemName=badetitou.pharo-language-server)
+[![Pharo Language Server](https://vsmarketplacebadges.dev/version/badetitou.pharo-language-server.png)](https://marketplace.visualstudio.com/items?itemName=badetitou.pharo-language-server)
 
 A Pharo client extension for VSCode.
 
