@@ -3,6 +3,7 @@
 ## v2.1.19
 
 - Update URL when downloading VM
+- Bump version server by default
 
 ## v2.1.18
 
