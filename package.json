@@ -80,7 +80,7 @@
 					"title": "Quick install server version",
 					"scope": "window",
 					"type": "string",
-					"default": "v5.0.0",
+					"default": "v5.0.2",
 					"description": "The version of the server to install by default"
 				},
 				"pharo quick install.server VM version": {
