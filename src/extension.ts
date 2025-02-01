@@ -309,10 +309,23 @@ async function getSocket(dls: child_process.ChildProcess): Promise<net.Socket> {
 }
 
 // About Status bar
-
 function initStatusBar(context: ExtensionContext) {
 	plsStatusBar = window.createStatusBarItem(StatusBarAlignment.Right, 100);
 	context.subscriptions.push(plsStatusBar);
+	plsStatusBar.tooltip = 'Pharo Language Server';
+	plsStatusBar.command = 'extension.showQuickPick';
+
+	commands.registerCommand('extension.showQuickPick', async () => {
+		const options = ['$(settings-gear) Open Settings'];
+		const selection = await window.showQuickPick(options, {
+			canPickMany: false,
+			title: 'Select option'
+		});
+		if (selection === options.at(0)) {
+			commands.executeCommand('workbench.action.openSettings', '@ext:badetitou.pharo-language-server');
+		}
+	});
+
 	plsStatusBar.show();
 	setStatusBarText('Starting Up');
 }
