@@ -89,7 +89,14 @@
 					"type": "string",
 					"default": "120",
 					"description": "The VM version required by the server to install by default"
-				} 
+				},
+				"pharoLanguageServer.trace.server": {
+					"title": "Trace Level",
+					"scope": "window",
+					"type": "string",
+					"enum": ["off","messages","verbose"],
+                    "default": "off"
+				}
 			}
 		},
 		"views": {
