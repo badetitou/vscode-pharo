@@ -1,6 +1,4 @@
 {
 	"pharo.debugMode": true,
-    "pharo.headless": false,
-	"pharo.pathToImage": "D:\\Users\\benoit.verhaeghe\\Documents\\Pharo\\images\\PLS\\PLS.image",
-	"pharo.pathToVM": "D:\\Users\\benoit.verhaeghe\\Documents\\Pharo\\vms\\120-x64\\Pharo.exe"
+    "pharo.headless": false
 }

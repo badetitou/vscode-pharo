@@ -20,6 +20,7 @@ const os = require('os');
 import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
 import { IceControlManager } from './ice/IceControlManager';
 import { initTestController } from './testController/testController';
+import { PharoImagesExplorer } from './treeProvider/pharoImages';
 
 
 export let client: LanguageClient;
@@ -27,9 +28,13 @@ export let documentExplorer: PharoDocumentExplorer;
 let dls: child_process.ChildProcess;
 export let extensionContext: ExtensionContext;
 
+export let pharoImagesClients: Array<LanguageClient>;
+
 let plsStatusBar: StatusBarItem;
 
 export async function activate(context: ExtensionContext) {
+
+	pharoImagesClients = [];
 
 	extensionContext = context;
 	initStatusBar(extensionContext);
@@ -50,27 +55,32 @@ export async function activate(context: ExtensionContext) {
 			client = createPharoLanguageServer(requirements, context);
 
 			// Start the client. This will also launch the server
-			client.start();
-			context.subscriptions.push(client);
-			window.showInformationMessage('Client started');
+			client.start().then(e => {
+				context.subscriptions.push(client);
 
-			new PharoImageExplorer(context);
-			documentExplorer = new PharoDocumentExplorer(context);
+				pharoImagesClients.push(client);
 
-			// Create debugguer
-			let factory = new DebugAdapterFactory();
-			activateDebug(context, factory);
-			context.subscriptions.push(workspace.registerNotebookSerializer('moosebook', new MoosebookSerializer()));
-			context.subscriptions.push(new MoosebookController());
+				new PharoImagesExplorer(context, pharoImagesClients);
+				new PharoImageExplorer(context);
+				documentExplorer = new PharoDocumentExplorer(context);
 
-			// Create Ice
-			let iceControlManager = new IceControlManager(client, context);
-			context.subscriptions.push(iceControlManager);
+				// Create debugguer
+				let factory = new DebugAdapterFactory();
+				activateDebug(context, factory);
+				context.subscriptions.push(workspace.registerNotebookSerializer('moosebook', new MoosebookSerializer()));
+				context.subscriptions.push(new MoosebookController());
 
-			// Create Tests
-			initTestController();
+				// Create Ice
+				let iceControlManager = new IceControlManager(client, context);
+				context.subscriptions.push(iceControlManager);
 
-			resetStatusBarText();
+				// Create Tests
+				initTestController();
+
+				resetStatusBarText();
+			}).catch(err => {
+				setStatusBarText('Error Pharo Language Server')
+			});
 		});
 }
 

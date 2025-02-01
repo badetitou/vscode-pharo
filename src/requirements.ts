@@ -1,18 +1,9 @@
-
-import { workspace, Uri, env, window, ConfigurationTarget, commands, ExtensionContext } from 'vscode';
 import * as fs from 'fs';
 const vscode = require('vscode');
 
 export interface RequirementsData {
     pathToVM: string;
     pathToImage: string;
-}
-
-interface ErrorData {
-    message: string;
-    label: string;
-    command: string;
-    commandParam: any;
 }
 
 export async function resolveRequirements(): Promise<RequirementsData> {

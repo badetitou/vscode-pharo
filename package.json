@@ -46,14 +46,16 @@
 					"scope": "window",
 					"type": "string",
 					"default": "pharo",
-					"description": "The Pharo VM that will be used to run the Pharo Image holding the Pharo Language server. You should select a VM that can run the selected image"
+					"description": "The Pharo VM that will be used to run the Pharo Image holding the Pharo Language server. You should select a VM that can run the selected image",
+					"ignoreSync": true
 				},
 				"pharo.pathToImage": {
 					"title": "Path to Image",
 					"scope": "window",
 					"type": "string",
 					"default": "",
-					"description": "The Pharo Image that can run the Pharo Language server (https://github.com/badetitou/Pharo-LanguageServer)."
+					"description": "The Pharo Image that can run the Pharo Language server (https://github.com/badetitou/Pharo-LanguageServer).",
+					"ignoreSync": true
 				},
 				"pharo.headless": {
 					"title": "Headless",
@@ -102,8 +104,12 @@
 		"views": {
 			"pharoView": [
 				{
+					"id": "images",
+					"name": "Pharo Images"
+				},
+				{
 					"id": "pharoImage",
-					"name": "Pharo Image"
+					"name": "Image Browser"
 				},
 				{
 					"id": "pharoBindingView",
@@ -198,6 +204,11 @@
 			}
 		],
 		"commands": [
+			{
+				"command": "pharo.browseImage",
+				"title": "Browse Pharo Image",
+				"enablement": "false"
+			},
 			{
 				"command": "pharo.extensionVersion",
 				"title": "Show Pharo Language Server Version",
