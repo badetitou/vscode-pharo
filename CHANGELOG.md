@@ -4,6 +4,7 @@
 
 - Update URL when downloading VM
 - Bump version server by default
+- Add qucick access to settings thansks to quick pick accessible using the pharo icon
 
 ## v2.1.18
 
