@@ -216,14 +216,10 @@ async function download(uri: Uri, unzip: boolean, location: string): Promise<Uri
 
 	// let mooseImageUri = Uri.parse("", true);
 	const fileDownloader: FileDownloader = await getApi();
-	console.log('Download ', uri);
-	console.log('Download ', uri.toString());
 	// update to string
 	uri.toString = (skipEncoding?: boolean): string => {
 		return uri.scheme + "://" + uri.authority + uri.path + "?" + uri.query;
 	};
-	console.log('Download ', uri.toString());
-
 
 	const cancellationTokenSource = new CancellationTokenSource();
 	const cancellationToken = cancellationTokenSource.token;
