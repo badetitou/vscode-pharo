@@ -40,7 +40,7 @@ export class IceControlManager implements IDisposable {
         repositories.forEach((repository) => {
             let iceRepo = new IceRepository(repository.name, repository.valid);
             if (iceRepo.valid) {
-                iceRepo.sourceControl = scm.createSourceControl(repository.name, repository.name);
+                iceRepo.sourceControl = scm.createSourceControl('pls', repository.name);
                 iceRepo.sourceControl.quickDiffProvider = quickDiffProvider;
                 this.ices.push(iceRepo); 
             }
@@ -56,15 +56,12 @@ export class IceControlManager implements IDisposable {
 
     private resolveWorkingCopyOf(ice: IceRepository) {
         this._client.sendRequest('pls-ice:repository', {'aRepositoryName': ice.name}).then((modifiedClasses: string[]) => {
-            let icePackageGroup = ice.sourceControl.createResourceGroup('workingTree', 'Changes');
+            let icePackageGroup = ice.sourceControl.createResourceGroup('iceWorking', 'Changes');
             this._context.subscriptions.push(icePackageGroup);
-            modifiedClasses.forEach((classURI) => {
-                icePackageGroup.resourceStates = [
-                    {
-                        resourceUri: Uri.parse(classURI, true)
-                    }
-                ];
+            icePackageGroup.resourceStates = modifiedClasses.map((classURI) => {
+                return {resourceUri: Uri.parse(classURI, true)}
             });
+            
         });
     }
 }
