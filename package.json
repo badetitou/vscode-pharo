@@ -4,7 +4,7 @@
 	"description": "Highlighting, Auto-completion, Execution, ...",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.1.19",
+	"version": "2.1.20",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -33,7 +33,8 @@
 		"onNotebook:moosebook"
 	],
 	"extensionDependencies": [
-		"mindaro-dev.file-downloader"
+		"mindaro-dev.file-downloader",
+		"badetitou.pharo-highlighter"
 	],
 	"main": "./dist/extension",
 	"contributes": {

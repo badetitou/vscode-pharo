@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.20
+
+- Add dependency to Pharo Highlighter
+
 ## v2.1.19
 
 - Update URL when downloading VM
