@@ -151,23 +151,6 @@
 		},
 		"languages": [
 			{
-				"id": "pharo",
-				"aliases": [
-					"Pharo",
-					"smalltalk",
-					"SmallTalk",
-					"smalltalk"
-				],
-				"extensions": [
-					".st"
-				],
-				"configuration": "./language-configuration.json",
-				"icon": {
-					"light": "./media/pharo-bar.svg",
-					"dark": "./media/pharo-bar.svg"
-				}
-			},
-			{
 				"id": "moosebook",
 				"extensions": [
 					".moosebook"
@@ -176,32 +159,6 @@
 					"light": "./media/moose-logo.svg",
 					"dark": "./media/moose-logo.svg"
 				}
-			},
-			{
-				"id": "ston",
-				"aliases": [
-					"Ston", 
-					"STON"
-				],
-				"extensions": [
-					".ston"
-				],
-				"icon": {
-					"light": "./media/pharo-bar.svg",
-					"dark": "./media/pharo-bar.svg"
-				}
-			}
-		],
-		"grammars": [
-			{
-				"language": "pharo",
-				"scopeName": "source.pharo",
-				"path": "./syntaxes/pharo.tmLanguage.json"
-			},
-			{
-				"language": "ston",
-				"scopeName": "source.ston",
-				"path": "./syntaxes/ston.tmLanguage.json"
 			}
 		],
 		"commands": [
