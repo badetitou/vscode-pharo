@@ -189,7 +189,12 @@ export async function commandPharoInstallLastVersion() {
 	if (os.platform() === 'linux') {
 		vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo-vm-Linux-x86_64-stable.zip';
 	} else if (os.platform() === 'darwin') { // MacOSX
-		vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo-vm-Darwin-x86_64-latest.zip';
+		const arch = os.arch(); // 'arm64', 'x64', etc.
+		if (arch === "arm64") {
+			vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo-vm-Darwin-arm64-latest.zip';
+		} else {
+			vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo-vm-Darwin-x86_64-latest.zip';
+		}
 	} else {
 		vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo-vm-Windows-x86_64-stable.zip';
 	}

@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.21
+
+- check arm64 dependency
+
 ## v2.1.20
 
 - Add dependency to Pharo Highlighter
