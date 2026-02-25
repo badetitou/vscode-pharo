@@ -31,6 +31,9 @@ export let extensionContext: ExtensionContext;
 export let pharoImagesClients: Array<LanguageClient>;
 
 let plsStatusBar: StatusBarItem;
+const PHARO_IMAGE_WORKSPACE_SCHEME = 'pharoImage';
+const PHARO_IMAGE_WORKSPACE_NAME = 'Pharo Image';
+let pharoImageExplorer: PharoImageExplorer;
 
 export async function activate(context: ExtensionContext) {
 
@@ -40,48 +43,59 @@ export async function activate(context: ExtensionContext) {
 	initStatusBar(extensionContext);
 	// Create new command
 	createCommands(context);
+	pharoImageExplorer = new PharoImageExplorer(context);
+	syncPharoImageWorkspaceFolder();
+	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
+		if (event.affectsConfiguration('pharo.imageWorkspace')) {
+			syncPharoImageWorkspaceFolder();
+		}
+	}));
 
 	// Testing Pharo can be used
-	return requirements.resolveRequirements().catch(error => {
+	let resolvedRequirements: requirements.RequirementsData;
+	try {
+		resolvedRequirements = await requirements.resolveRequirements();
+	} catch (error) {
 		window.showErrorMessage(error.message, error.label).then((selection) => {
 			if (error.label && error.label === selection && error.command) {
 				commands.executeCommand(error.command, error.commandParam);
 			}
 		});
-	}).then(
-		async (requirements: requirements.RequirementsData) => {
+		setStatusBarText('Configuration error');
+		return;
+	}
 
-			// Create the pharo language server client
-			client = createPharoLanguageServer(requirements, context);
+	// Create the pharo language server client
+	client = createPharoLanguageServer(resolvedRequirements, context);
 
-			// Start the client. This will also launch the server
-			client.start().then(e => {
-				context.subscriptions.push(client);
+	try {
+		// Start the client. This will also launch the server
+		await client.start();
+		context.subscriptions.push(client);
 
-				pharoImagesClients.push(client);
+		pharoImagesClients.push(client);
 
-				new PharoImagesExplorer(context, pharoImagesClients);
-				new PharoImageExplorer(context);
-				documentExplorer = new PharoDocumentExplorer(context);
+		new PharoImagesExplorer(context, pharoImagesClients);
+		pharoImageExplorer.refresh();
+		documentExplorer = new PharoDocumentExplorer(context);
 
-				// Create debugguer
-				let factory = new DebugAdapterFactory();
-				activateDebug(context, factory);
-				context.subscriptions.push(workspace.registerNotebookSerializer('moosebook', new MoosebookSerializer()));
-				context.subscriptions.push(new MoosebookController());
+		// Create debugguer
+		let factory = new DebugAdapterFactory();
+		activateDebug(context, factory);
+		context.subscriptions.push(workspace.registerNotebookSerializer('moosebook', new MoosebookSerializer()));
+		context.subscriptions.push(new MoosebookController());
 
-				// Create Ice
-				let iceControlManager = new IceControlManager(client, context);
-				context.subscriptions.push(iceControlManager);
+		// Create Ice
+		let iceControlManager = new IceControlManager(client);
+		context.subscriptions.push(iceControlManager);
 
-				// Create Tests
-				initTestController();
+		// Create Tests
+		initTestController();
 
-				resetStatusBarText();
-			}).catch(err => {
-				setStatusBarText('Error Pharo Language Server')
-			});
-		});
+		resetStatusBarText();
+	} catch (err) {
+		setStatusBarText('Error Pharo Language Server');
+	}
 }
 
 function createCommands(context: ExtensionContext) {
@@ -94,6 +108,7 @@ function createCommands(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('pharo.executeClassTests', commandPharoExecuteClassTests));
 	context.subscriptions.push(commands.registerCommand('pharo.installIt', commandPharoInstallLastVersion));
 	context.subscriptions.push(commands.registerCommand('pharo.createProject', commandPharoCreateProject));
+	context.subscriptions.push(commands.registerCommand('pharo.addImageToWorkspace', commandPharoAddImageToWorkspace));
 	context.subscriptions.push(commands.registerCommand('pharo.openLog', commandPharoOpenLog));
 	context.subscriptions.push(commands.registerCommand('pharo.clearLog', commandPharoClearLog));
 }
@@ -174,6 +189,19 @@ function commandPharoOpenLog() {
 
 function commandPharoClearLog() {
 	client.sendRequest('pls-developer:clearLog').then(() => { }).catch((error) => window.showErrorMessage(error));
+}
+
+async function commandPharoAddImageToWorkspace() {
+	const added = ensurePharoImageWorkspaceFolder();
+	if (!added) {
+		window.showWarningMessage('Unable to add the Pharo image workspace folder.');
+		return;
+	}
+
+	const hasWorkspaceFolder = (workspace.workspaceFolders ?? []).length > 0;
+	// `update(..., false)` targets workspace settings when a workspace is open.
+	await workspace.getConfiguration('pharo').update('imageWorkspace', true, hasWorkspaceFolder ? false : true);
+	window.showInformationMessage('Pharo image added to workspace.');
 }
 
 export async function commandPharoInstallLastVersion() {
@@ -284,6 +312,34 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 	);
 }
 
+function syncPharoImageWorkspaceFolder() {
+	const shouldUseImageWorkspace = workspace.getConfiguration('pharo').get<boolean>('imageWorkspace', false);
+	const folders = workspace.workspaceFolders ?? [];
+	const imageWorkspaceFolderIndex = folders.findIndex((folder) => folder.uri.scheme === PHARO_IMAGE_WORKSPACE_SCHEME);
+
+	if (shouldUseImageWorkspace) {
+		ensurePharoImageWorkspaceFolder();
+		return;
+	}
+
+	if (!shouldUseImageWorkspace && imageWorkspaceFolderIndex !== -1) {
+		workspace.updateWorkspaceFolders(imageWorkspaceFolderIndex, 1);
+	}
+}
+
+function ensurePharoImageWorkspaceFolder(): boolean {
+	const folders = workspace.workspaceFolders ?? [];
+	const imageWorkspaceFolderIndex = folders.findIndex((folder) => folder.uri.scheme === PHARO_IMAGE_WORKSPACE_SCHEME);
+	if (imageWorkspaceFolderIndex !== -1) {
+		return true;
+	}
+
+	return workspace.updateWorkspaceFolders(folders.length, 0, {
+		uri: Uri.parse(`${PHARO_IMAGE_WORKSPACE_SCHEME}:/`),
+		name: PHARO_IMAGE_WORKSPACE_NAME
+	});
+}
+
 async function createServerWithSocket(pharoPath: string, pathToImage: string, context: ExtensionContext): Promise<StreamInfo> {
 
 	let options = [pathToImage, 'st', context.asAbsolutePath('/res/run-server.st')];
@@ -327,12 +383,16 @@ function initStatusBar(context: ExtensionContext) {
 	plsStatusBar.command = 'extension.showQuickPick';
 
 	commands.registerCommand('extension.showQuickPick', async () => {
-		const options = ['$(settings-gear) Open Settings'];
+		const addImageOption = '$(folder-opened) Add Image to Workspace';
+		const openSettingsOption = '$(settings-gear) Open Settings';
+		const options = [addImageOption, openSettingsOption];
 		const selection = await window.showQuickPick(options, {
 			canPickMany: false,
 			title: 'Select option'
 		});
-		if (selection === options.at(0)) {
+		if (selection === addImageOption) {
+			commands.executeCommand('pharo.addImageToWorkspace');
+		} else if (selection === openSettingsOption) {
 			commands.executeCommand('workbench.action.openSettings', '@ext:badetitou.pharo-language-server');
 		}
 	});

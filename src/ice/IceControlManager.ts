@@ -1,9 +1,24 @@
-import { ExtensionContext, scm, SourceControl, Uri, QuickDiffProvider, CancellationToken, ProviderResult } from 'vscode';
-import { Disposable, LanguageClient } from 'vscode-languageclient/node';
+import {
+    CancellationToken,
+    commands,
+    Disposable,
+    ProviderResult,
+    QuickDiffProvider,
+    scm,
+    SourceControl,
+    SourceControlResourceGroup,
+    SourceControlResourceState,
+    TextDocument,
+    Uri,
+    window,
+    workspace
+} from 'vscode';
+import { LanguageClient } from 'vscode-languageclient/node';
 import { IDisposable } from '../util';
 
 export class IceRepository {
-    public sourceControl: SourceControl;
+    public sourceControl?: SourceControl;
+    public changesGroup?: SourceControlResourceGroup;
 
     constructor(public name: string, public valid: boolean) {}
 }
@@ -11,57 +26,138 @@ export class IceRepository {
 class IceQuickDiffProvider implements QuickDiffProvider {
     constructor(private client: LanguageClient) {}
 
-    provideOriginalResource(uri: Uri, token: CancellationToken): ProviderResult<Uri> {
-        // Implémentez la logique pour fournir l'URI de la ressource originale
-        return this.client.sendRequest('pls-ice:originalResource', { uri: uri.toString() }).then((originalUri: string) => {
-            return Uri.parse(originalUri, true);
-        });
+    provideOriginalResource(uri: Uri, _token: CancellationToken): ProviderResult<Uri> {
+        return this.client
+            .sendRequest('pls-ice:originalResource', { uri: uri.toString() })
+            .then((originalUri: string) => Uri.parse(originalUri, true))
+            .catch(() => undefined);
     }
 }
 
 export class IceControlManager implements IDisposable {
 
-    disposables: Disposable[] = [];
-    ices: IceRepository[] = [];
+    private disposables: Disposable[] = [];
+    private repositories = new Map<string, IceRepository>();
+    private readonly quickDiffProvider: QuickDiffProvider;
+    private refreshing = false;
+    private pendingRefresh = false;
 
     dispose(): void {
+        this.repositories.forEach((repository) => {
+            repository.sourceControl?.dispose();
+        });
         this.disposables.forEach((d) => d.dispose());
     }
 
-    constructor(private _client: LanguageClient, private _context: ExtensionContext) {
-        this._client.start().then(() => {
-            this._client.sendRequest('pls-ice:repositories').then((param: IceRepository[]) => this.onGetRepositories(param));
-        });		
+    constructor(private _client: LanguageClient) {
+        this.quickDiffProvider = new IceQuickDiffProvider(this._client);
+        this.disposables.push(
+            commands.registerCommand('pharo.ice.refresh', () => this.refresh()),
+            workspace.onDidSaveTextDocument((document) => this.onDidSaveDocument(document))
+        );
+        void this.refresh();
     }
 
-    private onGetRepositories(repositories: IceRepository[]) {
-        const quickDiffProvider = new IceQuickDiffProvider(this._client);
+    async refresh(): Promise<void> {
+        if (this.refreshing) {
+            this.pendingRefresh = true;
+            return;
+        }
+
+        this.refreshing = true;
+        do {
+            this.pendingRefresh = false;
+            await this.refreshRepositories();
+        } while (this.pendingRefresh);
+        this.refreshing = false;
+    }
+
+    private async refreshRepositories(): Promise<void> {
+        try {
+            const repositories = await this._client.sendRequest('pls-ice:repositories') as IceRepository[];
+            this.syncRepositories(repositories);
+            await Promise.all(
+                Array.from(this.repositories.values()).map((repository) =>
+                    this.resolveWorkingCopyOf(repository)
+                )
+            );
+        } catch (error) {
+            window.showWarningMessage('Unable to refresh Iceberg repositories in VSCode.');
+        }
+    }
+
+    private syncRepositories(repositories: IceRepository[]): void {
+        const nextRepositoryNames = new Set(
+            repositories.filter((repository) => repository.valid).map((repository) => repository.name)
+        );
+
+        this.repositories.forEach((repository, repositoryName) => {
+            if (!nextRepositoryNames.has(repositoryName)) {
+                repository.sourceControl?.dispose();
+                this.repositories.delete(repositoryName);
+            }
+        });
 
         repositories.forEach((repository) => {
-            let iceRepo = new IceRepository(repository.name, repository.valid);
-            if (iceRepo.valid) {
-                iceRepo.sourceControl = scm.createSourceControl('pls', repository.name);
-                iceRepo.sourceControl.quickDiffProvider = quickDiffProvider;
-                this.ices.push(iceRepo); 
+            if (!repository.valid) {
+                return;
             }
-        });
-        this.ices.forEach(ice => {
-            if(ice.valid) {
-                this._context.subscriptions.push(ice.sourceControl);
-                ice.sourceControl.count = 0;
-                this.resolveWorkingCopyOf(ice);
+
+            if (this.repositories.has(repository.name)) {
+                return;
             }
+
+            const iceRepository = new IceRepository(repository.name, repository.valid);
+            const sourceControl = scm.createSourceControl(
+                this.sourceControlIdFrom(repository.name),
+                repository.name
+            );
+            sourceControl.quickDiffProvider = this.quickDiffProvider;
+            iceRepository.sourceControl = sourceControl;
+            iceRepository.changesGroup = sourceControl.createResourceGroup('iceWorking', 'Changes');
+            sourceControl.count = 0;
+            this.repositories.set(repository.name, iceRepository);
         });
     }
 
-    private resolveWorkingCopyOf(ice: IceRepository) {
-        this._client.sendRequest('pls-ice:repository', {'aRepositoryName': ice.name}).then((modifiedClasses: string[]) => {
-            let icePackageGroup = ice.sourceControl.createResourceGroup('iceWorking', 'Changes');
-            this._context.subscriptions.push(icePackageGroup);
-            icePackageGroup.resourceStates = modifiedClasses.map((classURI) => {
-                return {resourceUri: Uri.parse(classURI, true)}
+    private async resolveWorkingCopyOf(ice: IceRepository): Promise<void> {
+        if (!ice.sourceControl || !ice.changesGroup) {
+            return;
+        }
+
+        try {
+            const modifiedClasses = await this._client.sendRequest(
+                'pls-ice:repository',
+                { 'aRepositoryName': ice.name }
+            ) as string[];
+            const uniqueClassUris = Array.from(new Set(modifiedClasses));
+            const states: SourceControlResourceState[] = uniqueClassUris.map((classURI) => {
+                const resourceUri = Uri.parse(classURI, true);
+                return {
+                    resourceUri,
+                    command: {
+                        command: 'vscode.open',
+                        title: 'Open Changes',
+                        arguments: [resourceUri]
+                    }
+                };
             });
-            
-        });
+            ice.changesGroup.resourceStates = states;
+            ice.sourceControl.count = states.length;
+        } catch (error) {
+            ice.changesGroup.resourceStates = [];
+            ice.sourceControl.count = 0;
+        }
+    }
+
+    private onDidSaveDocument(document: TextDocument): void {
+        if (document.languageId !== 'pharo' && document.uri.scheme !== 'pharoImage') {
+            return;
+        }
+        void this.refresh();
+    }
+
+    private sourceControlIdFrom(repositoryName: string): string {
+        return `pls.${repositoryName.toLowerCase().replace(/[^a-z0-9_.-]/g, '-')}`;
     }
 }

@@ -58,6 +58,13 @@
 					"description": "The Pharo Image that can run the Pharo Language server (https://github.com/badetitou/Pharo-LanguageServer).",
 					"ignoreSync": true
 				},
+				"pharo.imageWorkspace": {
+					"title": "Expose Pharo Image Workspace",
+					"scope": "window",
+					"type": "boolean",
+					"default": false,
+					"description": "Expose pharoImage:/ as a workspace folder so extensions supporting virtual workspaces (for example AI assistants) can read classes from the running image."
+				},
 				"pharo.headless": {
 					"title": "Headless",
 					"scope": "window",
@@ -203,6 +210,11 @@
 				"category": "Pharo"
 			},
 			{
+				"command": "pharo.addImageToWorkspace",
+				"title": "Add Image To Workspace",
+				"category": "Pharo Developer"
+			},
+			{
 				"command": "pharo.executeTest",
 				"title": "Execute the test",
 				"category": "Pharo",
@@ -225,6 +237,16 @@
 				"command": "pharo.openLog",
 				"title": "Open Log",
 				"category": "Pharo Developer"
+			},
+			{
+				"command": "pharo.openImage",
+				"title": "Open Pharo Image",
+				"category": "Pharo Developer"
+			},
+			{
+				"command": "pharo.ice.refresh",
+				"title": "Refresh Iceberg Repositories",
+				"category": "Pharo Git"
 			},
 			{
 				"command": "pharo.clearLog",

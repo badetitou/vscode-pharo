@@ -1,4 +1,5 @@
 {
 	"pharo.debugMode": true,
-    "pharo.headless": false
+    "pharo.headless": false,
+    "pharo.imageWorkspace": false
 }
