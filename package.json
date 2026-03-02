@@ -185,6 +185,16 @@
 				"category": "Pharo"
 			},
 			{
+				"command": "pharo.createPackage",
+				"title": "Create Package",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.createClass",
+				"title": "Create Class",
+				"category": "Pharo"
+			},
+			{
 				"command": "pharo.printIt",
 				"title": "Print the result of selected lines",
 				"category": "Pharo"
@@ -259,6 +269,11 @@
 				"title": "Push Iceberg Repository",
 				"category": "Pharo Git",
 				"icon": "$(cloud-upload)"
+			},
+			{
+				"command": "pharo.ice.addPackage",
+				"title": "Add Package To Iceberg Repository",
+				"category": "Pharo Git"
 			},
 			{
 				"command": "pharo.clearLog",

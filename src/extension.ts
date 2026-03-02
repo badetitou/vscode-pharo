@@ -33,6 +33,7 @@ export let pharoImagesClients: Array<LanguageClient>;
 let plsStatusBar: StatusBarItem;
 const PHARO_IMAGE_WORKSPACE_SCHEME = 'pharoImage';
 const PHARO_IMAGE_WORKSPACE_NAME = 'Pharo Image';
+const PHARO_IMAGE_REPOSITORY_QUERY_KEY = 'iceRepository';
 let pharoImageExplorer: PharoImageExplorer;
 
 export async function activate(context: ExtensionContext) {
@@ -48,6 +49,7 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration('pharo.imageWorkspace')) {
 			syncPharoImageWorkspaceFolder();
+			void commands.executeCommand('pharo.ice.refresh');
 		}
 	}));
 
@@ -104,6 +106,9 @@ function createCommands(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('pharo.showIt', commandPharoShowIt));
 	context.subscriptions.push(commands.registerCommand('pharo.doIt', commandPharoDoIt));
 	context.subscriptions.push(commands.registerCommand('pharo.save', commandPharoSave));
+	context.subscriptions.push(commands.registerCommand('pharo.createPackage', commandPharoCreatePackage));
+	context.subscriptions.push(commands.registerCommand('pharo.createClass', commandPharoCreateClass));
+	context.subscriptions.push(commands.registerCommand('pharo.ice.addPackage', commandPharoIceAddPackage));
 	context.subscriptions.push(commands.registerCommand('pharo.executeTest', commandPharoExecuteTest));
 	context.subscriptions.push(commands.registerCommand('pharo.executeClassTests', commandPharoExecuteClassTests));
 	context.subscriptions.push(commands.registerCommand('pharo.installIt', commandPharoInstallLastVersion));
@@ -161,6 +166,143 @@ function commandPharoSave() {
 	}).catch((error) => window.showErrorMessage(error));
 }
 
+async function commandPharoCreatePackage() {
+	const packageName = (await window.showInputBox({
+		title: 'Create Pharo Package',
+		placeHolder: 'Package name',
+		validateInput: (value) => value.trim().length === 0 ? 'Package name is required.' : undefined
+	}))?.trim();
+	if (!packageName) {
+		return;
+	}
+
+	client.sendRequest('pls:createPackage', { packageName }).then((result: string) => {
+		window.showInformationMessage(result);
+		pharoImageExplorer.refresh();
+	}).catch((error) => window.showErrorMessage(error));
+}
+
+async function commandPharoCreateClass() {
+	const packageName = await pickPharoPackageName();
+	if (!packageName) {
+		return;
+	}
+
+	const className = (await window.showInputBox({
+		title: 'Create Pharo Class',
+		placeHolder: 'Class name (e.g. MyNewClass)',
+		validateInput: (value) => value.trim().length === 0 ? 'Class name is required.' : undefined
+	}))?.trim();
+	if (!className) {
+		return;
+	}
+
+	const superclassName = (await window.showInputBox({
+		title: 'Superclass',
+		value: 'Object',
+		placeHolder: 'Superclass name'
+	}))?.trim() || 'Object';
+
+	const instanceVariables = (await window.showInputBox({
+		title: 'Instance Variables',
+		placeHolder: "Space-separated names (e.g. name age), optional"
+	}))?.trim() ?? '';
+
+	client.sendRequest('pls:createClass', {
+		packageName,
+		className,
+		superclassName,
+		instanceVariables
+	}).then((result: string) => {
+		window.showInformationMessage(result);
+		pharoImageExplorer.refresh();
+		void commands.executeCommand(
+			'vscode.open',
+			Uri.from({ scheme: 'pharoImage', path: `/${packageName}/${className}.class.st` })
+		);
+	}).catch((error) => window.showErrorMessage(error));
+}
+
+async function commandPharoIceAddPackage() {
+	const packageName = await pickPharoPackageName();
+	if (!packageName) {
+		return;
+	}
+
+	let repositories: Array<{ name: string; valid: boolean }> = [];
+	try {
+		repositories = await client.sendRequest('pls-ice:repositories') as Array<{ name: string; valid: boolean }>;
+	} catch (error) {
+		window.showErrorMessage('Unable to load Iceberg repositories from Pharo.');
+		return;
+	}
+
+	const validRepositories = repositories.filter((repository) => repository.valid).map((repository) => repository.name);
+	if (validRepositories.length === 0) {
+		window.showWarningMessage('No valid Iceberg repository available in this image.');
+		return;
+	}
+
+	const selectedRepository = await window.showQuickPick(validRepositories.sort((left, right) => left.localeCompare(right)), {
+		title: 'Add Package To Iceberg',
+		placeHolder: 'Select the target Iceberg repository'
+	});
+	if (!selectedRepository) {
+		return;
+	}
+
+	client.sendRequest('pls-ice:addPackage', {
+		aRepositoryName: selectedRepository,
+		packageName
+	}).then((result: string) => {
+		window.showInformationMessage(result);
+		void commands.executeCommand('pharo.ice.refresh');
+	}).catch((error) => window.showErrorMessage(error));
+}
+
+async function pickPharoPackageName(): Promise<string | undefined> {
+	let packages: string[] = [];
+	try {
+		packages = await client.sendRequest('pls:packages', {}) as string[];
+	} catch (_error) {
+		// Fall back to a free-form input below.
+	}
+
+	const createNewPackageLabel = '$(add) Create New Package';
+	const options = packages.length === 0
+		? [createNewPackageLabel]
+		: [createNewPackageLabel, ...packages.sort((left, right) => left.localeCompare(right))];
+
+	const selected = await window.showQuickPick(options, {
+		title: 'Select Package',
+		placeHolder: 'Choose an existing package or create a new one'
+	});
+	if (!selected) {
+		return undefined;
+	}
+
+	if (selected === createNewPackageLabel) {
+		const newPackageName = (await window.showInputBox({
+			title: 'New Package Name',
+			placeHolder: 'Package name',
+			validateInput: (value) => value.trim().length === 0 ? 'Package name is required.' : undefined
+		}))?.trim();
+		if (!newPackageName) {
+			return undefined;
+		}
+		try {
+			await client.sendRequest('pls:createPackage', { packageName: newPackageName });
+			pharoImageExplorer.refresh();
+			return newPackageName;
+		} catch (error) {
+			window.showErrorMessage(String(error));
+			return undefined;
+		}
+	}
+
+	return selected;
+}
+
 function commandPharoExecuteTest(aClass: string, testMethod: string) {
 	client.sendRequest('pls:executeClassTest', { class: aClass, testMethod: testMethod }).then((result: string) => {
 		window.showInformationMessage(result);
@@ -201,6 +343,7 @@ async function commandPharoAddImageToWorkspace() {
 	const hasWorkspaceFolder = (workspace.workspaceFolders ?? []).length > 0;
 	// `update(..., false)` targets workspace settings when a workspace is open.
 	await workspace.getConfiguration('pharo').update('imageWorkspace', true, hasWorkspaceFolder ? false : true);
+	void commands.executeCommand('pharo.ice.refresh');
 	window.showInformationMessage('Pharo image added to workspace.');
 }
 
@@ -314,22 +457,20 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 
 function syncPharoImageWorkspaceFolder() {
 	const shouldUseImageWorkspace = workspace.getConfiguration('pharo').get<boolean>('imageWorkspace', false);
-	const folders = workspace.workspaceFolders ?? [];
-	const imageWorkspaceFolderIndex = folders.findIndex((folder) => folder.uri.scheme === PHARO_IMAGE_WORKSPACE_SCHEME);
 
 	if (shouldUseImageWorkspace) {
 		ensurePharoImageWorkspaceFolder();
 		return;
 	}
 
-	if (!shouldUseImageWorkspace && imageWorkspaceFolderIndex !== -1) {
-		workspace.updateWorkspaceFolders(imageWorkspaceFolderIndex, 1);
-	}
+	removePharoImageWorkspaceFolders();
 }
 
 function ensurePharoImageWorkspaceFolder(): boolean {
 	const folders = workspace.workspaceFolders ?? [];
-	const imageWorkspaceFolderIndex = folders.findIndex((folder) => folder.uri.scheme === PHARO_IMAGE_WORKSPACE_SCHEME);
+	const imageWorkspaceFolderIndex = folders.findIndex((folder) =>
+		folder.uri.scheme === PHARO_IMAGE_WORKSPACE_SCHEME && !isRepositoryScopedImageFolder(folder.uri)
+	);
 	if (imageWorkspaceFolderIndex !== -1) {
 		return true;
 	}
@@ -338,6 +479,28 @@ function ensurePharoImageWorkspaceFolder(): boolean {
 		uri: Uri.parse(`${PHARO_IMAGE_WORKSPACE_SCHEME}:/`),
 		name: PHARO_IMAGE_WORKSPACE_NAME
 	});
+}
+
+function removePharoImageWorkspaceFolders(): void {
+	const folders = workspace.workspaceFolders ?? [];
+	const folderIndexesToRemove = folders
+		.map((folder, index) => ({ folder, index }))
+		.filter(({ folder }) => folder.uri.scheme === PHARO_IMAGE_WORKSPACE_SCHEME)
+		.map(({ index }) => index)
+		.sort((left, right) => right - left);
+
+	folderIndexesToRemove.forEach((index) => {
+		workspace.updateWorkspaceFolders(index, 1);
+	});
+}
+
+function isRepositoryScopedImageFolder(uri: Uri): boolean {
+	if (!uri.query) {
+		return false;
+	}
+	const query = new URLSearchParams(uri.query);
+	const repositoryName = query.get(PHARO_IMAGE_REPOSITORY_QUERY_KEY);
+	return repositoryName !== null && repositoryName.trim().length > 0;
 }
 
 async function createServerWithSocket(pharoPath: string, pathToImage: string, context: ExtensionContext): Promise<StreamInfo> {

@@ -10,6 +10,7 @@ export interface PharoNode {
 const CLASS_FILE_SUFFIX = '.class.st';
 const PACKAGES_CACHE_TTL_MS = 2000;
 const CLASSES_CACHE_TTL_MS = 2000;
+const ICE_REPOSITORY_QUERY_KEY = 'iceRepository';
 
 export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vscode.FileSystemProvider {
 
@@ -23,6 +24,8 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 	private requestQueue: Promise<void> = Promise.resolve();
 	private packagesCache?: { values: string[]; loadedAt: number };
 	private packagesInFlight?: Promise<Array<string>>;
+	private repositoryPackagesCache = new Map<string, { values: string[]; loadedAt: number }>();
+	private repositoryPackagesInFlight = new Map<string, Promise<Array<string>>>();
 	private classesCache = new Map<string, { values: string[]; loadedAt: number }>();
 	private classesInFlight = new Map<string, Promise<Array<string>>>();
 
@@ -31,12 +34,13 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 	}
 	async stat(uri: vscode.Uri): Promise<vscode.FileStat> {
 		const segments = this.getPathSegments(uri);
+		const repositoryName = this.repositoryNameFrom(uri);
 		if (segments.length === 0) {
 			return this.directoryStat();
 		}
 
 		if (segments.length === 1) {
-			if (this.isCachedPackageName(segments[0])) {
+			if (await this.hasPackageName(segments[0], repositoryName)) {
 				return this.directoryStat();
 			}
 			// Compatibility with existing URIs such as pharoImage:/ClassName.
@@ -51,8 +55,9 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 	}
 	async readDirectory(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
 		const segments = this.getPathSegments(uri);
+		const repositoryName = this.repositoryNameFrom(uri);
 		if (segments.length === 0) {
-			const packages = await this.getPackages();
+			const packages = await this.getPackages(repositoryName);
 			return packages.sort().map((item) => [item, vscode.FileType.Directory]);
 		}
 
@@ -72,12 +77,13 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 
 	async readFile(uri: vscode.Uri): Promise<Uint8Array> {
 		const segments = this.getPathSegments(uri);
+		const repositoryName = this.repositoryNameFrom(uri);
 		if (segments.length === 0) {
 			throw vscode.FileSystemError.FileIsADirectory(uri);
 		}
 
 		if (segments.length === 1) {
-			const packages = await this.getPackages();
+			const packages = await this.getPackages(repositoryName);
 			if (packages.includes(segments[0])) {
 				throw vscode.FileSystemError.FileIsADirectory(uri);
 			}
@@ -108,6 +114,8 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 	public refresh(): any {
 		this.packagesCache = undefined;
 		this.packagesInFlight = undefined;
+		this.repositoryPackagesCache.clear();
+		this.repositoryPackagesInFlight.clear();
 		this.classesCache.clear();
 		this.classesInFlight.clear();
 		this._onDidChangeTreeData.fire(undefined);
@@ -143,9 +151,13 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		});
 	}
 
-	private getPackages(): Promise<Array<string>> {
+	private getPackages(repositoryName?: string): Promise<Array<string>> {
 		if (!this.isClientReady()) {
 			return Promise.resolve([]);
+		}
+
+		if (repositoryName) {
+			return this.getPackagesForRepository(repositoryName);
 		}
 
 		const now = Date.now();
@@ -164,6 +176,31 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 			this.packagesInFlight = undefined;
 		});
 		return this.packagesInFlight;
+	}
+
+	private getPackagesForRepository(repositoryName: string): Promise<Array<string>> {
+		const now = Date.now();
+		const cached = this.repositoryPackagesCache.get(repositoryName);
+		if (cached && now - cached.loadedAt < PACKAGES_CACHE_TTL_MS) {
+			return Promise.resolve(cached.values);
+		}
+
+		const inFlight = this.repositoryPackagesInFlight.get(repositoryName);
+		if (inFlight) {
+			return inFlight;
+		}
+
+		const request = this.sendRequestSerialized<Array<string>>('pls-ice:repositoryPackages', { aRepositoryName: repositoryName }).then((result) => {
+			this.repositoryPackagesCache.set(repositoryName, { values: result, loadedAt: Date.now() });
+			return result;
+		}).catch(() => {
+			// Server might not support repository packages yet; fall back to global packages.
+			return this.getPackages();
+		}).finally(() => {
+			this.repositoryPackagesInFlight.delete(repositoryName);
+		});
+		this.repositoryPackagesInFlight.set(repositoryName, request);
+		return request;
 	}
 
 	private getClasses(packageName: string): Promise<Array<string>> {
@@ -214,6 +251,14 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		return this.packagesCache !== undefined && this.packagesCache.values.includes(name);
 	}
 
+	private async hasPackageName(name: string, repositoryName?: string): Promise<boolean> {
+		if (!repositoryName && this.isCachedPackageName(name)) {
+			return true;
+		}
+		const packages = await this.getPackages(repositoryName);
+		return packages.includes(name);
+	}
+
 	private isClientReady(): boolean {
 		return client !== undefined && client.isRunning();
 	}
@@ -224,6 +269,15 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		}
 		const query = new URLSearchParams(uri.query);
 		return query.get('iceOriginal') === '1';
+	}
+
+	private repositoryNameFrom(uri: vscode.Uri): string | undefined {
+		if (!uri.query) {
+			return undefined;
+		}
+		const query = new URLSearchParams(uri.query);
+		const repositoryName = query.get(ICE_REPOSITORY_QUERY_KEY);
+		return repositoryName && repositoryName.length > 0 ? repositoryName : undefined;
 	}
 
 	private sendRequestSerialized<T>(method: string, params: unknown): Promise<T> {

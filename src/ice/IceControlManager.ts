@@ -57,6 +57,10 @@ class IceQuickDiffProvider implements QuickDiffProvider {
 export class IceControlManager implements IDisposable {
 
     private static readonly SOURCE_CONTROL_ID = 'pharo-iceberg';
+    private static readonly REPOSITORY_QUERY_KEY = 'iceRepository';
+    private static readonly IMAGE_WORKSPACE_CONFIGURATION = 'imageWorkspace';
+    private static readonly IMAGE_WORKSPACE_SCHEME = 'pharoImage';
+    private static readonly IMAGE_WORKSPACE_REPOSITORY_PREFIX = 'Pharo ';
     private disposables: Disposable[] = [];
     private repositories = new Map<string, IceRepository>();
     private readonly quickDiffProvider: QuickDiffProvider;
@@ -106,6 +110,7 @@ export class IceControlManager implements IDisposable {
         try {
             const repositories = await this._client.sendRequest('pls-ice:repositories') as IceRepository[];
             this.syncRepositories(repositories);
+            this.syncRepositoryWorkspaceFolders(repositories);
             await Promise.all(
                 Array.from(this.repositories.values()).map((repository) =>
                     this.resolveWorkingCopyOf(repository)
@@ -422,6 +427,98 @@ export class IceControlManager implements IDisposable {
     private displayNameFor(uri: Uri): string {
         const segments = uri.path.split('/');
         return segments.length > 0 ? segments[segments.length - 1] : uri.toString();
+    }
+
+    private syncRepositoryWorkspaceFolders(repositories: IceRepository[]): void {
+        if (!workspace.getConfiguration('pharo').get<boolean>(IceControlManager.IMAGE_WORKSPACE_CONFIGURATION, false)) {
+            this.removeRepositoryWorkspaceFolders();
+            return;
+        }
+
+        const targetRepositoryNames = new Set(
+            repositories
+                .filter((repository) => repository.valid)
+                .map((repository) => repository.name)
+        );
+        const folders = workspace.workspaceFolders ?? [];
+        const foldersToRemove: number[] = [];
+        const existingRepositoryNames = new Set<string>();
+
+        folders.forEach((folder, index) => {
+            const repositoryName = this.repositoryNameFromFolder(folder.uri);
+            if (!repositoryName) {
+                return;
+            }
+
+            if (!targetRepositoryNames.has(repositoryName)) {
+                foldersToRemove.push(index);
+                return;
+            }
+            if (existingRepositoryNames.has(repositoryName)) {
+                foldersToRemove.push(index);
+                return;
+            }
+            existingRepositoryNames.add(repositoryName);
+
+            const expectedName = this.repositoryWorkspaceFolderName(repositoryName);
+            if (folder.name !== expectedName) {
+                workspace.updateWorkspaceFolders(index, 1, {
+                    uri: folder.uri,
+                    name: expectedName
+                });
+            }
+        });
+
+        foldersToRemove.sort((left, right) => right - left).forEach((index) => {
+            workspace.updateWorkspaceFolders(index, 1);
+        });
+
+        const foldersLength = (workspace.workspaceFolders ?? []).length;
+        const missingFolders = Array.from(targetRepositoryNames.values())
+            .filter((repositoryName) => !existingRepositoryNames.has(repositoryName))
+            .sort((left, right) => left.localeCompare(right))
+            .map((repositoryName) => ({
+                uri: this.repositoryFolderUri(repositoryName),
+                name: this.repositoryWorkspaceFolderName(repositoryName)
+            }));
+
+        if (missingFolders.length > 0) {
+            workspace.updateWorkspaceFolders(foldersLength, 0, ...missingFolders);
+        }
+    }
+
+    private removeRepositoryWorkspaceFolders(): void {
+        const folders = workspace.workspaceFolders ?? [];
+        const folderIndexesToRemove = folders
+            .map((folder, index) => ({ folder, index }))
+            .filter(({ folder }) => this.repositoryNameFromFolder(folder.uri) !== undefined)
+            .map(({ index }) => index)
+            .sort((left, right) => right - left);
+
+        folderIndexesToRemove.forEach((index) => {
+            workspace.updateWorkspaceFolders(index, 1);
+        });
+    }
+
+    private repositoryNameFromFolder(uri: Uri): string | undefined {
+        if (uri.scheme !== IceControlManager.IMAGE_WORKSPACE_SCHEME || !uri.query) {
+            return undefined;
+        }
+        const query = new URLSearchParams(uri.query);
+        const repositoryName = query.get(IceControlManager.REPOSITORY_QUERY_KEY);
+        return repositoryName && repositoryName.length > 0 ? repositoryName : undefined;
+    }
+
+    private repositoryFolderUri(repositoryName: string): Uri {
+        return Uri.from({
+            scheme: IceControlManager.IMAGE_WORKSPACE_SCHEME,
+            path: '/',
+            query: `${IceControlManager.REPOSITORY_QUERY_KEY}=${encodeURIComponent(repositoryName)}`
+        });
+    }
+
+    private repositoryWorkspaceFolderName(repositoryName: string): string {
+        return `${IceControlManager.IMAGE_WORKSPACE_REPOSITORY_PREFIX}${repositoryName}`;
     }
 
     private async resolveRepository(repositoryName?: unknown): Promise<IceRepository | undefined> {
