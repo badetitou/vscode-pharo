@@ -187,12 +187,14 @@
 			{
 				"command": "pharo.createPackage",
 				"title": "Create Package",
-				"category": "Pharo"
+				"category": "Pharo",
+				"icon": "$(package)"
 			},
 			{
 				"command": "pharo.createClass",
 				"title": "Create Class",
-				"category": "Pharo"
+				"category": "Pharo",
+				"icon": "$(symbol-class)"
 			},
 			{
 				"command": "pharo.printIt",
@@ -304,6 +306,18 @@
 					"command": "extension.pharo-debug.debugEditorContents",
 					"when": "resourceLangId == pharo",
 					"group": "Pharo@2"
+				}
+			],
+			"explorer/context": [
+				{
+					"command": "pharo.createPackage",
+					"when": "resourceScheme == pharoImage && explorerResourceIsFolder && (explorerResourceIsRoot || resourcePath == '/')",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.createClass",
+					"when": "resourceScheme == pharoImage && explorerResourceIsFolder && resourcePath =~ /^\\/[^\\/]+$/",
+					"group": "navigation@2"
 				}
 			],
 			"scm/title": [

@@ -71,8 +71,19 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 
 		throw vscode.FileSystemError.FileNotADirectory(uri);
 	}
-	createDirectory(uri: vscode.Uri): void | Thenable<void> {
-		throw vscode.FileSystemError.NoPermissions(uri);
+	async createDirectory(uri: vscode.Uri): Promise<void> {
+		const segments = this.getPathSegments(uri);
+		if (segments.length !== 1) {
+			throw vscode.FileSystemError.NoPermissions('Pharo supports package folders only at the root level.');
+		}
+
+		const packageName = segments[0].trim();
+		if (!packageName) {
+			throw vscode.FileSystemError.NoPermissions('Package name cannot be empty.');
+		}
+
+		await this.createPackageForUri(packageName, uri);
+		this.refresh();
 	}
 
 	async readFile(uri: vscode.Uri): Promise<Uint8Array> {
@@ -97,8 +108,31 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		return this.sendRequestSerialized<string>('pls:classContent', { class: className }).then((result: string) => Buffer.from(result));
 	}
 
-	writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean; overwrite: boolean; }): void | Thenable<void> {
-		// This is already done by the Pharo Language Server
+	async writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean; overwrite: boolean; }): Promise<void> {
+		if (!options.create) {
+			// Class content updates are handled by textDocument/didSave in the language server.
+			return;
+		}
+
+		const segments = this.getPathSegments(uri);
+		if (segments.length !== 2) {
+			throw vscode.FileSystemError.NoPermissions('Create files inside a package folder (Package/Class.class.st).');
+		}
+
+		const packageName = segments[0].trim();
+		const className = this.toClassName(segments[1]).trim();
+		if (!packageName || !className) {
+			throw vscode.FileSystemError.NoPermissions('Package and class names are required.');
+		}
+
+		await this.createPackageForUri(packageName, uri);
+		await this.sendRequestSerialized('pls:createClass', {
+			packageName,
+			className,
+			superclassName: 'Object',
+			instanceVariables: ''
+		});
+		this.refresh();
 	}
 
 	delete(uri: vscode.Uri, options: { recursive: boolean; }): void | Thenable<void> {
@@ -278,6 +312,19 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		const query = new URLSearchParams(uri.query);
 		const repositoryName = query.get(ICE_REPOSITORY_QUERY_KEY);
 		return repositoryName && repositoryName.length > 0 ? repositoryName : undefined;
+	}
+
+	private async createPackageForUri(packageName: string, uri: vscode.Uri): Promise<void> {
+		await this.sendRequestSerialized('pls:createPackage', { packageName });
+		const repositoryName = this.repositoryNameFrom(uri);
+		if (!repositoryName) {
+			return;
+		}
+
+		await this.sendRequestSerialized('pls-ice:addPackage', {
+			aRepositoryName: repositoryName,
+			packageName
+		});
 	}
 
 	private sendRequestSerialized<T>(method: string, params: unknown): Promise<T> {

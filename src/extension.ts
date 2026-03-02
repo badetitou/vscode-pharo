@@ -166,7 +166,7 @@ function commandPharoSave() {
 	}).catch((error) => window.showErrorMessage(error));
 }
 
-async function commandPharoCreatePackage() {
+async function commandPharoCreatePackage(_target?: unknown) {
 	const packageName = (await window.showInputBox({
 		title: 'Create Pharo Package',
 		placeHolder: 'Package name',
@@ -182,8 +182,8 @@ async function commandPharoCreatePackage() {
 	}).catch((error) => window.showErrorMessage(error));
 }
 
-async function commandPharoCreateClass() {
-	const packageName = await pickPharoPackageName();
+async function commandPharoCreateClass(target?: unknown) {
+	const packageName = packageNameFromPharoFolderTarget(target) ?? await pickPharoPackageName();
 	if (!packageName) {
 		return;
 	}
@@ -301,6 +301,48 @@ async function pickPharoPackageName(): Promise<string | undefined> {
 	}
 
 	return selected;
+}
+
+function packageNameFromPharoFolderTarget(target: unknown): string | undefined {
+	const uri = uriFromCommandTarget(target);
+	if (!uri || uri.scheme !== PHARO_IMAGE_WORKSPACE_SCHEME) {
+		return undefined;
+	}
+
+	const segments = uri.path
+		.split('/')
+		.filter((segment) => segment.length > 0)
+		.map((segment) => decodeURIComponent(segment));
+	return segments.length === 1 ? segments[0] : undefined;
+}
+
+function uriFromCommandTarget(target: unknown): Uri | undefined {
+	if (!target) {
+		return undefined;
+	}
+
+	if (target instanceof Uri) {
+		return target;
+	}
+
+	if (typeof target === 'string') {
+		return Uri.parse(target, true);
+	}
+
+	if (typeof target === 'object') {
+		const possibleTarget = target as { resourceUri?: Uri; uri?: Uri | string };
+		if (possibleTarget.resourceUri instanceof Uri) {
+			return possibleTarget.resourceUri;
+		}
+		if (possibleTarget.uri instanceof Uri) {
+			return possibleTarget.uri;
+		}
+		if (typeof possibleTarget.uri === 'string') {
+			return Uri.parse(possibleTarget.uri, true);
+		}
+	}
+
+	return undefined;
 }
 
 function commandPharoExecuteTest(aClass: string, testMethod: string) {
