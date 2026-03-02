@@ -249,6 +249,16 @@
 				"category": "Pharo Git"
 			},
 			{
+				"command": "pharo.ice.commit",
+				"title": "Commit Iceberg Repository",
+				"category": "Pharo Git"
+			},
+			{
+				"command": "pharo.ice.push",
+				"title": "Push Iceberg Repository",
+				"category": "Pharo Git"
+			},
+			{
 				"command": "pharo.clearLog",
 				"title": "Clear Log",
 				"category": "Pharo Developer"
@@ -277,6 +287,18 @@
 					"command": "extension.pharo-debug.debugEditorContents",
 					"when": "resourceLangId == pharo",
 					"group": "Pharo@2"
+				}
+			],
+			"scm/title": [
+				{
+					"command": "pharo.ice.push",
+					"when": "scmProvider == pharo-iceberg",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.ice.refresh",
+					"when": "scmProvider == pharo-iceberg",
+					"group": "navigation@2"
 				}
 			]
 		},
