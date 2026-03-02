@@ -1,6 +1,5 @@
 import {
     CancellationToken,
-    Command,
     commands,
     Disposable,
     ProviderResult,
@@ -150,10 +149,6 @@ export class IceControlManager implements IDisposable {
                 arguments: [repository.name],
                 tooltip: `Commit changes in ${repository.name} with Iceberg`
             };
-            sourceControl.statusBarCommands = [
-                this.commandForPush(repository.name),
-                this.commandForRefresh()
-            ];
             sourceControl.inputBox.placeholder = `Commit message for ${repository.name}`;
             iceRepository.sourceControl = sourceControl;
             iceRepository.stagedGroup = sourceControl.createResourceGroup('iceIndex', 'Staged Changes');
@@ -457,20 +452,4 @@ export class IceControlManager implements IDisposable {
         return selected ? this.repositories.get(selected) : undefined;
     }
 
-    private commandForPush(repositoryName: string): Command {
-        return {
-            command: 'pharo.ice.push',
-            title: '$(cloud-upload) Push',
-            tooltip: `Push ${repositoryName} with Iceberg`,
-            arguments: [repositoryName]
-        };
-    }
-
-    private commandForRefresh(): Command {
-        return {
-            command: 'pharo.ice.refresh',
-            title: '$(refresh) Refresh',
-            tooltip: 'Refresh Iceberg repositories'
-        };
-    }
 }

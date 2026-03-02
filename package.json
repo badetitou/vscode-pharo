@@ -251,12 +251,14 @@
 			{
 				"command": "pharo.ice.commit",
 				"title": "Commit Iceberg Repository",
-				"category": "Pharo Git"
+				"category": "Pharo Git",
+				"icon": "$(check)"
 			},
 			{
 				"command": "pharo.ice.push",
 				"title": "Push Iceberg Repository",
-				"category": "Pharo Git"
+				"category": "Pharo Git",
+				"icon": "$(cloud-upload)"
 			},
 			{
 				"command": "pharo.clearLog",
@@ -291,14 +293,19 @@
 			],
 			"scm/title": [
 				{
-					"command": "pharo.ice.push",
+					"command": "pharo.ice.commit",
 					"when": "scmProvider == pharo-iceberg",
 					"group": "navigation@1"
 				},
 				{
-					"command": "pharo.ice.refresh",
+					"command": "pharo.ice.push",
 					"when": "scmProvider == pharo-iceberg",
 					"group": "navigation@2"
+				},
+				{
+					"command": "pharo.ice.refresh",
+					"when": "scmProvider == pharo-iceberg",
+					"group": "navigation@3"
 				}
 			]
 		},
