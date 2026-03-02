@@ -83,6 +83,10 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 			}
 		}
 
+		if (this.isIceOriginalUri(uri)) {
+			return this.sendRequestSerialized<string>('pls-ice:originalContent', { uri: uri.toString() }).then((result: string) => Buffer.from(result));
+		}
+
 		const className = this.toClassName(segments[segments.length - 1]);
 		return this.sendRequestSerialized<string>('pls:classContent', { class: className }).then((result: string) => Buffer.from(result));
 	}
@@ -212,6 +216,14 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 
 	private isClientReady(): boolean {
 		return client !== undefined && client.isRunning();
+	}
+
+	private isIceOriginalUri(uri: vscode.Uri): boolean {
+		if (!uri.query) {
+			return false;
+		}
+		const query = new URLSearchParams(uri.query);
+		return query.get('iceOriginal') === '1';
 	}
 
 	private sendRequestSerialized<T>(method: string, params: unknown): Promise<T> {
