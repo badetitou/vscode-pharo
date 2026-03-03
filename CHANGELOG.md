@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.2.0
+
+- Initial Iceberg integration (repository navigation/control)
+- Add AI integration: `pharo` chat participant + Language Model Tools
+- Improve Pharo explorer (icons, package/class management)
+- Update Moosebook examples and add extension-side tests
+
 ## v2.1.21
 
 - check arm64 dependency
