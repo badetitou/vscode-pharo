@@ -30,7 +30,9 @@
 	"activationEvents": [
 		"onDebugResolve:pharodb",
 		"onFileSystem:pharoImage",
-		"onNotebook:moosebook"
+		"onNotebook:moosebook",
+		"onChatParticipant:pharo-language-server.pharo",
+		"onStartupFinished"
 	],
 	"extensionDependencies": [
 		"mindaro-dev.file-downloader",
@@ -38,6 +40,160 @@
 	],
 	"main": "./dist/extension",
 	"contributes": {
+		"chatParticipants": [
+			{
+				"id": "pharo-language-server.pharo",
+				"name": "pharo",
+				"fullName": "Pharo",
+				"description": "Créer/lire des classes, exécuter du code et lancer des tests dans l'image Pharo.",
+				"isSticky": true,
+				"commands": [
+					{
+						"name": "help",
+						"description": "Afficher les commandes disponibles."
+					},
+					{
+						"name": "createPackage",
+						"description": "Créer un package Pharo (entrée: JSON ou texte)."
+					},
+					{
+						"name": "createClass",
+						"description": "Créer une classe Pharo (entrée: JSON)."
+					},
+					{
+						"name": "readClass",
+						"description": "Lire le contenu Tonel d'une classe (entrée: nom de classe)."
+					},
+					{
+						"name": "listPackages",
+						"description": "Lister les packages présents dans l'image."
+					},
+					{
+						"name": "listClasses",
+						"description": "Lister les classes d'un package (entrée: nom de package)."
+					},
+					{
+						"name": "eval",
+						"description": "Exécuter du Smalltalk et retourner le résultat (confirmation requise)."
+					},
+					{
+						"name": "runClassTests",
+						"description": "Exécuter tous les tests d'une classe."
+					},
+					{
+						"name": "runTest",
+						"description": "Exécuter une méthode de test (entrée: JSON)."
+					}
+				]
+			}
+		],
+		"languageModelTools": [
+			{
+				"name": "pharo-create-package",
+				"displayName": "Pharo: créer un package",
+				"modelDescription": "Crée un package dans l'image Pharo (effet de bord).",
+				"tags": ["pharo", "smalltalk", "workspace", "create"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"packageName": { "type": "string", "description": "Nom du package (ex: MyPackage)" }
+					},
+					"required": ["packageName"]
+				}
+			},
+			{
+				"name": "pharo-create-class",
+				"displayName": "Pharo: créer une classe",
+				"modelDescription": "Crée une classe (Tonel) dans un package de l'image Pharo (effet de bord).",
+				"tags": ["pharo", "smalltalk", "create"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"packageName": { "type": "string" },
+						"className": { "type": "string" },
+						"superclassName": { "type": "string", "default": "Object" },
+						"instanceVariables": { "type": "string", "description": "Variables d'instance séparées par des espaces" }
+					},
+					"required": ["packageName", "className"]
+				}
+			},
+			{
+				"name": "pharo-read-class",
+				"displayName": "Pharo: lire une classe",
+				"modelDescription": "Lit le contenu Tonel d'une classe depuis l'image Pharo (sans effet de bord).",
+				"tags": ["pharo", "smalltalk", "read"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"className": { "type": "string" }
+					},
+					"required": ["className"]
+				}
+			},
+			{
+				"name": "pharo-list-packages",
+				"displayName": "Pharo: lister les packages",
+				"modelDescription": "Liste les packages présents dans l'image Pharo (sans effet de bord).",
+				"tags": ["pharo", "smalltalk", "read", "list"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {}
+				}
+			},
+			{
+				"name": "pharo-list-classes",
+				"displayName": "Pharo: lister les classes",
+				"modelDescription": "Liste les classes d'un package dans l'image Pharo (sans effet de bord).",
+				"tags": ["pharo", "smalltalk", "read", "list"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"packageName": { "type": "string" }
+					},
+					"required": ["packageName"]
+				}
+			},
+			{
+				"name": "pharo-eval",
+				"displayName": "Pharo: exécuter du code",
+				"modelDescription": "Exécute du code Smalltalk dans l'image Pharo et renvoie le résultat (effet de bord potentiel).",
+				"tags": ["pharo", "smalltalk", "execute"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"code": { "type": "string" }
+					},
+					"required": ["code"]
+				}
+			},
+			{
+				"name": "pharo-run-class-tests",
+				"displayName": "Pharo: exécuter tests de classe",
+				"modelDescription": "Exécute tous les tests d'une classe dans l'image Pharo.",
+				"tags": ["pharo", "smalltalk", "test"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"className": { "type": "string" }
+					},
+					"required": ["className"]
+				}
+			},
+			{
+				"name": "pharo-run-test-method",
+				"displayName": "Pharo: exécuter un test",
+				"modelDescription": "Exécute une méthode de test (classe + sélecteur) dans l'image Pharo.",
+				"tags": ["pharo", "smalltalk", "test"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"className": { "type": "string" },
+						"testMethod": { "type": "string" }
+					},
+					"required": ["className", "testMethod"]
+				}
+			}
+		],
 		"configuration": {
 			"type": "object",
 			"title": "Pharo",
@@ -434,6 +590,7 @@
 	},
 	"scripts": {
 		"compile": "tsc -b",
+		"test": "npm run compile && node ./dist/test/runTest.js",
 		"vscode:prepublish": "webpack --mode production",
 		"webpack": "webpack --mode development",
 		"webpack-dev": "webpack --mode development --watch",

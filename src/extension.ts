@@ -21,6 +21,8 @@ import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
 import { IceControlManager } from './ice/IceControlManager';
 import { initTestController } from './testController/testController';
 import { PharoImagesExplorer } from './treeProvider/pharoImages';
+import { registerPharoLanguageModelTools } from './ai/pharoLmTools';
+import { registerPharoChatParticipant } from './ai/pharoChatParticipant';
 
 
 export let client: LanguageClient;
@@ -41,6 +43,9 @@ export async function activate(context: ExtensionContext) {
 	pharoImagesClients = [];
 
 	extensionContext = context;
+	// AI entrypoints: @pharo participant + tool-calls (pharo.*)
+	registerPharoLanguageModelTools(context);
+	registerPharoChatParticipant(context);
 	initStatusBar(extensionContext);
 	// Create new command
 	createCommands(context);
