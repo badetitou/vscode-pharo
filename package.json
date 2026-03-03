@@ -31,8 +31,7 @@
 		"onDebugResolve:pharodb",
 		"onFileSystem:pharoImage",
 		"onNotebook:moosebook",
-		"onChatParticipant:pharo-language-server.pharo",
-		"onStartupFinished"
+		"onChatParticipant:pharo-language-server.pharo"
 	],
 	"extensionDependencies": [
 		"mindaro-dev.file-downloader",
