@@ -1,7 +1,7 @@
 {
 	"name": "pharo-language-server",
 	"displayName": "Pharo Language Support",
-	"description": "Highlighting, Auto-completion, Execution, ...",
+	"description": "%extension.description%",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
 	"version": "2.2.0",
@@ -44,44 +44,44 @@
 				"id": "pharo-language-server.pharo",
 				"name": "pharo",
 				"fullName": "Pharo",
-				"description": "Créer/lire des classes, exécuter du code et lancer des tests dans l'image Pharo.",
+				"description": "%chatParticipant.pharo.description%",
 				"isSticky": true,
 				"commands": [
 					{
 						"name": "help",
-						"description": "Afficher les commandes disponibles."
+						"description": "%chatParticipant.pharo.command.help.description%"
 					},
 					{
 						"name": "createPackage",
-						"description": "Créer un package Pharo (entrée: JSON ou texte)."
+						"description": "%chatParticipant.pharo.command.createPackage.description%"
 					},
 					{
 						"name": "createClass",
-						"description": "Créer une classe Pharo (entrée: JSON)."
+						"description": "%chatParticipant.pharo.command.createClass.description%"
 					},
 					{
 						"name": "readClass",
-						"description": "Lire le contenu Tonel d'une classe (entrée: nom de classe)."
+						"description": "%chatParticipant.pharo.command.readClass.description%"
 					},
 					{
 						"name": "listPackages",
-						"description": "Lister les packages présents dans l'image."
+						"description": "%chatParticipant.pharo.command.listPackages.description%"
 					},
 					{
 						"name": "listClasses",
-						"description": "Lister les classes d'un package (entrée: nom de package)."
+						"description": "%chatParticipant.pharo.command.listClasses.description%"
 					},
 					{
 						"name": "eval",
-						"description": "Exécuter du Smalltalk et retourner le résultat (confirmation requise)."
+						"description": "%chatParticipant.pharo.command.eval.description%"
 					},
 					{
 						"name": "runClassTests",
-						"description": "Exécuter tous les tests d'une classe."
+						"description": "%chatParticipant.pharo.command.runClassTests.description%"
 					},
 					{
 						"name": "runTest",
-						"description": "Exécuter une méthode de test (entrée: JSON)."
+						"description": "%chatParticipant.pharo.command.runTest.description%"
 					}
 				]
 			}
@@ -90,12 +90,12 @@
 			{
 				"name": "pharo-create-package",
 				"displayName": "Pharo: créer un package",
-				"modelDescription": "Crée un package dans l'image Pharo (effet de bord).",
+				"modelDescription": "%lmTool.createPackage.modelDescription%",
 				"tags": ["pharo", "smalltalk", "workspace", "create"],
 				"inputSchema": {
 					"type": "object",
 					"properties": {
-						"packageName": { "type": "string", "description": "Nom du package (ex: MyPackage)" }
+						"packageName": { "type": "string", "description": "%lmTool.createPackage.input.packageName.description%" }
 					},
 					"required": ["packageName"]
 				}
@@ -103,7 +103,7 @@
 			{
 				"name": "pharo-create-class",
 				"displayName": "Pharo: créer une classe",
-				"modelDescription": "Crée une classe (Tonel) dans un package de l'image Pharo (effet de bord).",
+				"modelDescription": "%lmTool.createClass.modelDescription%",
 				"tags": ["pharo", "smalltalk", "create"],
 				"inputSchema": {
 					"type": "object",
@@ -111,7 +111,7 @@
 						"packageName": { "type": "string" },
 						"className": { "type": "string" },
 						"superclassName": { "type": "string", "default": "Object" },
-						"instanceVariables": { "type": "string", "description": "Variables d'instance séparées par des espaces" }
+						"instanceVariables": { "type": "string", "description": "%lmTool.createClass.input.instanceVariables.description%" }
 					},
 					"required": ["packageName", "className"]
 				}
@@ -119,7 +119,7 @@
 			{
 				"name": "pharo-read-class",
 				"displayName": "Pharo: lire une classe",
-				"modelDescription": "Lit le contenu Tonel d'une classe depuis l'image Pharo (sans effet de bord).",
+				"modelDescription": "%lmTool.readClass.modelDescription%",
 				"tags": ["pharo", "smalltalk", "read"],
 				"inputSchema": {
 					"type": "object",
@@ -132,7 +132,7 @@
 			{
 				"name": "pharo-list-packages",
 				"displayName": "Pharo: lister les packages",
-				"modelDescription": "Liste les packages présents dans l'image Pharo (sans effet de bord).",
+				"modelDescription": "%lmTool.listPackages.modelDescription%",
 				"tags": ["pharo", "smalltalk", "read", "list"],
 				"inputSchema": {
 					"type": "object",
@@ -142,7 +142,7 @@
 			{
 				"name": "pharo-list-classes",
 				"displayName": "Pharo: lister les classes",
-				"modelDescription": "Liste les classes d'un package dans l'image Pharo (sans effet de bord).",
+				"modelDescription": "%lmTool.listClasses.modelDescription%",
 				"tags": ["pharo", "smalltalk", "read", "list"],
 				"inputSchema": {
 					"type": "object",
@@ -155,7 +155,7 @@
 			{
 				"name": "pharo-eval",
 				"displayName": "Pharo: exécuter du code",
-				"modelDescription": "Exécute du code Smalltalk dans l'image Pharo et renvoie le résultat (effet de bord potentiel).",
+				"modelDescription": "%lmTool.eval.modelDescription%",
 				"tags": ["pharo", "smalltalk", "execute"],
 				"inputSchema": {
 					"type": "object",
@@ -168,7 +168,7 @@
 			{
 				"name": "pharo-run-class-tests",
 				"displayName": "Pharo: exécuter tests de classe",
-				"modelDescription": "Exécute tous les tests d'une classe dans l'image Pharo.",
+				"modelDescription": "%lmTool.runClassTests.modelDescription%",
 				"tags": ["pharo", "smalltalk", "test"],
 				"inputSchema": {
 					"type": "object",
@@ -181,7 +181,7 @@
 			{
 				"name": "pharo-run-test-method",
 				"displayName": "Pharo: exécuter un test",
-				"modelDescription": "Exécute une méthode de test (classe + sélecteur) dans l'image Pharo.",
+				"modelDescription": "%lmTool.runTestMethod.modelDescription%",
 				"tags": ["pharo", "smalltalk", "test"],
 				"inputSchema": {
 					"type": "object",
@@ -202,7 +202,7 @@
 					"scope": "window",
 					"type": "string",
 					"default": "pharo",
-					"description": "The Pharo VM that will be used to run the Pharo Image holding the Pharo Language server. You should select a VM that can run the selected image",
+					"description": "%configuration.pharo.pathToVM.description%",
 					"ignoreSync": true
 				},
 				"pharo.pathToImage": {
@@ -210,7 +210,7 @@
 					"scope": "window",
 					"type": "string",
 					"default": "",
-					"description": "The Pharo Image that can run the Pharo Language server (https://github.com/badetitou/Pharo-LanguageServer).",
+					"description": "%configuration.pharo.pathToImage.description%",
 					"ignoreSync": true
 				},
 				"pharo.imageWorkspace": {
@@ -218,42 +218,42 @@
 					"scope": "window",
 					"type": "boolean",
 					"default": false,
-					"description": "Expose pharoImage:/ as a workspace folder so extensions supporting virtual workspaces (for example AI assistants) can read classes from the running image."
+					"description": "%configuration.pharo.imageWorkspace.description%"
 				},
 				"pharo.headless": {
 					"title": "Headless",
 					"scope": "window",
 					"type": "boolean",
 					"default": "true",
-					"description": "Should the Pharo Image appears"
+					"description": "%configuration.pharo.headless.description%"
 				},
 				"pharo.debugMode": {
 					"title": "Debug mode",
 					"scope": "window",
 					"type": "boolean",
 					"default": "false",
-					"description": "Debug mode of the image (can not be use in headless mode)"
+					"description": "%configuration.pharo.debugMode.description%"
 				},
 				"pharo quick install.image name": {
 					"title": "Quick install image name",
 					"scope": "window",
 					"type": "string",
 					"default": "Moose64-12-PLS",
-					"description": "The image to download by default with install command"
+					"description": "%configuration.pharo.quickInstall.imageName.description%"
 				},
 				"pharo quick install.server version": {
 					"title": "Quick install server version",
 					"scope": "window",
 					"type": "string",
-					"default": "v5.0.2",
-					"description": "The version of the server to install by default"
+					"default": "5.1.0",
+					"description": "%configuration.pharo.quickInstall.serverVersion.description%"
 				},
 				"pharo quick install.server VM version": {
 					"title": "Quick install server VM version",
 					"scope": "window",
 					"type": "string",
 					"default": "120",
-					"description": "The VM version required by the server to install by default"
+					"description": "%configuration.pharo.quickInstall.serverVmVersion.description%"
 				},
 				"pharoLanguageServer.trace.server": {
 					"title": "Trace Level",
@@ -282,14 +282,14 @@
 		},
 		"icons": {
 			"pls-icon": {
-				"description": "pls-icon",
+				"description": "%icons.plsIcon.description%",
 				"default": {
 					"fontPath": "res/pls-font.woff",
 					"fontCharacter": "\\41"
 				}
 			},
 			"moose-icon": {
-				"description": "moose-icon",
+				"description": "%icons.mooseIcon.description%",
 				"default": {
 					"fontPath": "res/pls-font.woff",
 					"fontCharacter": "\\42"
@@ -519,7 +519,7 @@
 						"properties": {
 							"program": {
 								"type": "string",
-								"description": "Absolute path to a text file.",
+								"description": "%debuggers.pharodb.launch.program.description%",
 								"default": "${workspaceFolder}/${command:AskForProgramName}"
 							}
 						}
@@ -543,12 +543,12 @@
 			{
 				"id": "setup",
 				"title": "Set Up PLS",
-				"description": "Set Up Pharo Language Server",
+				"description": "%walkthrough.setup.description%",
 				"steps": [
 					{
 						"id": "downloadImage",
 						"title": "Download Pharo Language Server Image",
-						"description": "In this step, you have to download the last version of Pharo Language Server from the [GitHub Release page](https://github.com/badetitou/Pharo-LanguageServer/releases)",
+						"description": "%walkthrough.setup.steps.downloadImage.description%",
 						"media": {
 							"image": "media/releases.png",
 							"altText": ""
@@ -557,7 +557,7 @@
 					{
 						"id": "downloadVM",
 						"title": "Download Pharo VM",
-						"description": "In this step, you have to download the last version of the [VM for your pharo image](https://files.pharo.org/vm/pharo-spur64-headless/)",
+						"description": "%walkthrough.setup.steps.downloadVM.description%",
 						"media": {
 							"image": "media/vms.png",
 							"altText": ""
@@ -566,7 +566,7 @@
 					{
 						"id": "modifySetting",
 						"title": "Update Setting",
-						"description": "Update the pharo setting with the corresponding Image and VM path\n[Open Settings](command:workbench.action.openSettings)",
+						"description": "%walkthrough.setup.steps.modifySetting.description%",
 						"media": {
 							"image": "media/pharo-bar.svg",
 							"altText": ""
