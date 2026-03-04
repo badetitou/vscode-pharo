@@ -21,6 +21,8 @@ import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
 import { IceControlManager } from './ice/IceControlManager';
 import { initTestController } from './testController/testController';
 import { PharoImagesExplorer } from './treeProvider/pharoImages';
+import { registerPharoLanguageModelTools } from './ai/pharoLmTools';
+import { registerPharoChatParticipant } from './ai/pharoChatParticipant';
 
 
 export let client: LanguageClient;
@@ -31,57 +33,76 @@ export let extensionContext: ExtensionContext;
 export let pharoImagesClients: Array<LanguageClient>;
 
 let plsStatusBar: StatusBarItem;
+const PHARO_IMAGE_WORKSPACE_SCHEME = 'pharoImage';
+const PHARO_IMAGE_WORKSPACE_NAME = 'Pharo Image';
+const PHARO_IMAGE_REPOSITORY_QUERY_KEY = 'iceRepository';
+let pharoImageExplorer: PharoImageExplorer;
 
 export async function activate(context: ExtensionContext) {
 
 	pharoImagesClients = [];
 
 	extensionContext = context;
+	// AI entrypoints: @pharo participant + tool-calls (pharo.*)
+	registerPharoLanguageModelTools(context);
+	registerPharoChatParticipant(context);
 	initStatusBar(extensionContext);
 	// Create new command
 	createCommands(context);
+	pharoImageExplorer = new PharoImageExplorer(context);
+	syncPharoImageWorkspaceFolder();
+	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
+		if (event.affectsConfiguration('pharo.imageWorkspace')) {
+			syncPharoImageWorkspaceFolder();
+			void commands.executeCommand('pharo.ice.refresh');
+		}
+	}));
 
 	// Testing Pharo can be used
-	return requirements.resolveRequirements().catch(error => {
+	let resolvedRequirements: requirements.RequirementsData;
+	try {
+		resolvedRequirements = await requirements.resolveRequirements();
+	} catch (error) {
 		window.showErrorMessage(error.message, error.label).then((selection) => {
 			if (error.label && error.label === selection && error.command) {
 				commands.executeCommand(error.command, error.commandParam);
 			}
 		});
-	}).then(
-		async (requirements: requirements.RequirementsData) => {
+		setStatusBarText('Configuration error');
+		return;
+	}
 
-			// Create the pharo language server client
-			client = createPharoLanguageServer(requirements, context);
+	// Create the pharo language server client
+	client = createPharoLanguageServer(resolvedRequirements, context);
 
-			// Start the client. This will also launch the server
-			client.start().then(e => {
-				context.subscriptions.push(client);
+	try {
+		// Start the client. This will also launch the server
+		await client.start();
+		context.subscriptions.push(client);
 
-				pharoImagesClients.push(client);
+		pharoImagesClients.push(client);
 
-				new PharoImagesExplorer(context, pharoImagesClients);
-				new PharoImageExplorer(context);
-				documentExplorer = new PharoDocumentExplorer(context);
+		new PharoImagesExplorer(context, pharoImagesClients);
+		pharoImageExplorer.refresh();
+		documentExplorer = new PharoDocumentExplorer(context);
 
-				// Create debugguer
-				let factory = new DebugAdapterFactory();
-				activateDebug(context, factory);
-				context.subscriptions.push(workspace.registerNotebookSerializer('moosebook', new MoosebookSerializer()));
-				context.subscriptions.push(new MoosebookController());
+		// Create debugguer
+		let factory = new DebugAdapterFactory();
+		activateDebug(context, factory);
+		context.subscriptions.push(workspace.registerNotebookSerializer('moosebook', new MoosebookSerializer()));
+		context.subscriptions.push(new MoosebookController());
 
-				// Create Ice
-				let iceControlManager = new IceControlManager(client, context);
-				context.subscriptions.push(iceControlManager);
+		// Create Ice
+		let iceControlManager = new IceControlManager(client);
+		context.subscriptions.push(iceControlManager);
 
-				// Create Tests
-				initTestController();
+		// Create Tests
+		initTestController();
 
-				resetStatusBarText();
-			}).catch(err => {
-				setStatusBarText('Error Pharo Language Server')
-			});
-		});
+		resetStatusBarText();
+	} catch (err) {
+		setStatusBarText('Error Pharo Language Server');
+	}
 }
 
 function createCommands(context: ExtensionContext) {
@@ -90,10 +111,14 @@ function createCommands(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('pharo.showIt', commandPharoShowIt));
 	context.subscriptions.push(commands.registerCommand('pharo.doIt', commandPharoDoIt));
 	context.subscriptions.push(commands.registerCommand('pharo.save', commandPharoSave));
+	context.subscriptions.push(commands.registerCommand('pharo.createPackage', commandPharoCreatePackage));
+	context.subscriptions.push(commands.registerCommand('pharo.createClass', commandPharoCreateClass));
+	context.subscriptions.push(commands.registerCommand('pharo.ice.addPackage', commandPharoIceAddPackage));
 	context.subscriptions.push(commands.registerCommand('pharo.executeTest', commandPharoExecuteTest));
 	context.subscriptions.push(commands.registerCommand('pharo.executeClassTests', commandPharoExecuteClassTests));
 	context.subscriptions.push(commands.registerCommand('pharo.installIt', commandPharoInstallLastVersion));
 	context.subscriptions.push(commands.registerCommand('pharo.createProject', commandPharoCreateProject));
+	context.subscriptions.push(commands.registerCommand('pharo.addImageToWorkspace', commandPharoAddImageToWorkspace));
 	context.subscriptions.push(commands.registerCommand('pharo.openLog', commandPharoOpenLog));
 	context.subscriptions.push(commands.registerCommand('pharo.clearLog', commandPharoClearLog));
 }
@@ -146,6 +171,185 @@ function commandPharoSave() {
 	}).catch((error) => window.showErrorMessage(error));
 }
 
+async function commandPharoCreatePackage(_target?: unknown) {
+	const packageName = (await window.showInputBox({
+		title: 'Create Pharo Package',
+		placeHolder: 'Package name',
+		validateInput: (value) => value.trim().length === 0 ? 'Package name is required.' : undefined
+	}))?.trim();
+	if (!packageName) {
+		return;
+	}
+
+	client.sendRequest('pls:createPackage', { packageName }).then((result: string) => {
+		window.showInformationMessage(result);
+		pharoImageExplorer.refresh();
+	}).catch((error) => window.showErrorMessage(error));
+}
+
+async function commandPharoCreateClass(target?: unknown) {
+	const packageName = packageNameFromPharoFolderTarget(target) ?? await pickPharoPackageName();
+	if (!packageName) {
+		return;
+	}
+
+	const className = (await window.showInputBox({
+		title: 'Create Pharo Class',
+		placeHolder: 'Class name (e.g. MyNewClass)',
+		validateInput: (value) => value.trim().length === 0 ? 'Class name is required.' : undefined
+	}))?.trim();
+	if (!className) {
+		return;
+	}
+
+	const superclassName = (await window.showInputBox({
+		title: 'Superclass',
+		value: 'Object',
+		placeHolder: 'Superclass name'
+	}))?.trim() || 'Object';
+
+	const instanceVariables = (await window.showInputBox({
+		title: 'Instance Variables',
+		placeHolder: "Space-separated names (e.g. name age), optional"
+	}))?.trim() ?? '';
+
+	client.sendRequest('pls:createClass', {
+		packageName,
+		className,
+		superclassName,
+		instanceVariables
+	}).then((result: string) => {
+		window.showInformationMessage(result);
+		pharoImageExplorer.refresh();
+		void commands.executeCommand(
+			'vscode.open',
+			Uri.from({ scheme: 'pharoImage', path: `/${packageName}/${className}.class.st` })
+		);
+	}).catch((error) => window.showErrorMessage(error));
+}
+
+async function commandPharoIceAddPackage() {
+	const packageName = await pickPharoPackageName();
+	if (!packageName) {
+		return;
+	}
+
+	let repositories: Array<{ name: string; valid: boolean }> = [];
+	try {
+		repositories = await client.sendRequest('pls-ice:repositories') as Array<{ name: string; valid: boolean }>;
+	} catch (error) {
+		window.showErrorMessage('Unable to load Iceberg repositories from Pharo.');
+		return;
+	}
+
+	const validRepositories = repositories.filter((repository) => repository.valid).map((repository) => repository.name);
+	if (validRepositories.length === 0) {
+		window.showWarningMessage('No valid Iceberg repository available in this image.');
+		return;
+	}
+
+	const selectedRepository = await window.showQuickPick(validRepositories.sort((left, right) => left.localeCompare(right)), {
+		title: 'Add Package To Iceberg',
+		placeHolder: 'Select the target Iceberg repository'
+	});
+	if (!selectedRepository) {
+		return;
+	}
+
+	client.sendRequest('pls-ice:addPackage', {
+		aRepositoryName: selectedRepository,
+		packageName
+	}).then((result: string) => {
+		window.showInformationMessage(result);
+		void commands.executeCommand('pharo.ice.refresh');
+	}).catch((error) => window.showErrorMessage(error));
+}
+
+async function pickPharoPackageName(): Promise<string | undefined> {
+	let packages: string[] = [];
+	try {
+		packages = await client.sendRequest('pls:packages', {}) as string[];
+	} catch (_error) {
+		// Fall back to a free-form input below.
+	}
+
+	const createNewPackageLabel = '$(add) Create New Package';
+	const options = packages.length === 0
+		? [createNewPackageLabel]
+		: [createNewPackageLabel, ...packages.sort((left, right) => left.localeCompare(right))];
+
+	const selected = await window.showQuickPick(options, {
+		title: 'Select Package',
+		placeHolder: 'Choose an existing package or create a new one'
+	});
+	if (!selected) {
+		return undefined;
+	}
+
+	if (selected === createNewPackageLabel) {
+		const newPackageName = (await window.showInputBox({
+			title: 'New Package Name',
+			placeHolder: 'Package name',
+			validateInput: (value) => value.trim().length === 0 ? 'Package name is required.' : undefined
+		}))?.trim();
+		if (!newPackageName) {
+			return undefined;
+		}
+		try {
+			await client.sendRequest('pls:createPackage', { packageName: newPackageName });
+			pharoImageExplorer.refresh();
+			return newPackageName;
+		} catch (error) {
+			window.showErrorMessage(String(error));
+			return undefined;
+		}
+	}
+
+	return selected;
+}
+
+function packageNameFromPharoFolderTarget(target: unknown): string | undefined {
+	const uri = uriFromCommandTarget(target);
+	if (!uri || uri.scheme !== PHARO_IMAGE_WORKSPACE_SCHEME) {
+		return undefined;
+	}
+
+	const segments = uri.path
+		.split('/')
+		.filter((segment) => segment.length > 0)
+		.map((segment) => decodeURIComponent(segment));
+	return segments.length === 1 ? segments[0] : undefined;
+}
+
+function uriFromCommandTarget(target: unknown): Uri | undefined {
+	if (!target) {
+		return undefined;
+	}
+
+	if (target instanceof Uri) {
+		return target;
+	}
+
+	if (typeof target === 'string') {
+		return Uri.parse(target, true);
+	}
+
+	if (typeof target === 'object') {
+		const possibleTarget = target as { resourceUri?: Uri; uri?: Uri | string };
+		if (possibleTarget.resourceUri instanceof Uri) {
+			return possibleTarget.resourceUri;
+		}
+		if (possibleTarget.uri instanceof Uri) {
+			return possibleTarget.uri;
+		}
+		if (typeof possibleTarget.uri === 'string') {
+			return Uri.parse(possibleTarget.uri, true);
+		}
+	}
+
+	return undefined;
+}
+
 function commandPharoExecuteTest(aClass: string, testMethod: string) {
 	client.sendRequest('pls:executeClassTest', { class: aClass, testMethod: testMethod }).then((result: string) => {
 		window.showInformationMessage(result);
@@ -174,6 +378,20 @@ function commandPharoOpenLog() {
 
 function commandPharoClearLog() {
 	client.sendRequest('pls-developer:clearLog').then(() => { }).catch((error) => window.showErrorMessage(error));
+}
+
+async function commandPharoAddImageToWorkspace() {
+	const added = ensurePharoImageWorkspaceFolder();
+	if (!added) {
+		window.showWarningMessage('Unable to add the Pharo image workspace folder.');
+		return;
+	}
+
+	const hasWorkspaceFolder = (workspace.workspaceFolders ?? []).length > 0;
+	// `update(..., false)` targets workspace settings when a workspace is open.
+	await workspace.getConfiguration('pharo').update('imageWorkspace', true, hasWorkspaceFolder ? false : true);
+	void commands.executeCommand('pharo.ice.refresh');
+	window.showInformationMessage('Pharo image added to workspace.');
 }
 
 export async function commandPharoInstallLastVersion() {
@@ -284,6 +502,54 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 	);
 }
 
+function syncPharoImageWorkspaceFolder() {
+	const shouldUseImageWorkspace = workspace.getConfiguration('pharo').get<boolean>('imageWorkspace', false);
+
+	if (shouldUseImageWorkspace) {
+		ensurePharoImageWorkspaceFolder();
+		return;
+	}
+
+	removePharoImageWorkspaceFolders();
+}
+
+function ensurePharoImageWorkspaceFolder(): boolean {
+	const folders = workspace.workspaceFolders ?? [];
+	const imageWorkspaceFolderIndex = folders.findIndex((folder) =>
+		folder.uri.scheme === PHARO_IMAGE_WORKSPACE_SCHEME && !isRepositoryScopedImageFolder(folder.uri)
+	);
+	if (imageWorkspaceFolderIndex !== -1) {
+		return true;
+	}
+
+	return workspace.updateWorkspaceFolders(folders.length, 0, {
+		uri: Uri.parse(`${PHARO_IMAGE_WORKSPACE_SCHEME}:/`),
+		name: PHARO_IMAGE_WORKSPACE_NAME
+	});
+}
+
+function removePharoImageWorkspaceFolders(): void {
+	const folders = workspace.workspaceFolders ?? [];
+	const folderIndexesToRemove = folders
+		.map((folder, index) => ({ folder, index }))
+		.filter(({ folder }) => folder.uri.scheme === PHARO_IMAGE_WORKSPACE_SCHEME)
+		.map(({ index }) => index)
+		.sort((left, right) => right - left);
+
+	folderIndexesToRemove.forEach((index) => {
+		workspace.updateWorkspaceFolders(index, 1);
+	});
+}
+
+function isRepositoryScopedImageFolder(uri: Uri): boolean {
+	if (!uri.query) {
+		return false;
+	}
+	const query = new URLSearchParams(uri.query);
+	const repositoryName = query.get(PHARO_IMAGE_REPOSITORY_QUERY_KEY);
+	return repositoryName !== null && repositoryName.trim().length > 0;
+}
+
 async function createServerWithSocket(pharoPath: string, pathToImage: string, context: ExtensionContext): Promise<StreamInfo> {
 
 	let options = [pathToImage, 'st', context.asAbsolutePath('/res/run-server.st')];
@@ -327,12 +593,16 @@ function initStatusBar(context: ExtensionContext) {
 	plsStatusBar.command = 'extension.showQuickPick';
 
 	commands.registerCommand('extension.showQuickPick', async () => {
-		const options = ['$(settings-gear) Open Settings'];
+		const addImageOption = '$(folder-opened) Add Image to Workspace';
+		const openSettingsOption = '$(settings-gear) Open Settings';
+		const options = [addImageOption, openSettingsOption];
 		const selection = await window.showQuickPick(options, {
 			canPickMany: false,
 			title: 'Select option'
 		});
-		if (selection === options.at(0)) {
+		if (selection === addImageOption) {
+			commands.executeCommand('pharo.addImageToWorkspace');
+		} else if (selection === openSettingsOption) {
 			commands.executeCommand('workbench.action.openSettings', '@ext:badetitou.pharo-language-server');
 		}
 	});

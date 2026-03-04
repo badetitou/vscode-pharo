@@ -1,0 +1,44 @@
+{
+	"extension.description": "Coloration syntaxique, auto-complétion, exécution, et plus encore.",
+
+	"chatParticipant.pharo.description": "Créer/lire des classes, exécuter du code et lancer des tests dans votre image Pharo.",
+	"chatParticipant.pharo.command.help.description": "Afficher les commandes disponibles.",
+	"chatParticipant.pharo.command.createPackage.description": "Créer un package Pharo (entrée : JSON ou texte).",
+	"chatParticipant.pharo.command.createClass.description": "Créer une classe Pharo (entrée : JSON).",
+	"chatParticipant.pharo.command.readClass.description": "Lire le code Tonel d'une classe (entrée : nom de classe).",
+	"chatParticipant.pharo.command.listPackages.description": "Lister les packages présents dans l'image.",
+	"chatParticipant.pharo.command.listClasses.description": "Lister les classes d'un package (entrée : nom de package).",
+	"chatParticipant.pharo.command.eval.description": "Exécuter du Smalltalk et retourner le résultat (confirmation requise).",
+	"chatParticipant.pharo.command.runClassTests.description": "Exécuter tous les tests d'une classe.",
+	"chatParticipant.pharo.command.runTest.description": "Exécuter une méthode de test (entrée : JSON).",
+
+	"lmTool.createPackage.modelDescription": "Crée un package dans l'image Pharo (effets de bord).",
+	"lmTool.createPackage.input.packageName.description": "Nom du package (ex : MyPackage)",
+	"lmTool.createClass.modelDescription": "Crée une classe (Tonel) dans un package de l'image Pharo (effets de bord).",
+	"lmTool.createClass.input.instanceVariables.description": "Variables d'instance séparées par des espaces",
+	"lmTool.readClass.modelDescription": "Lit le code Tonel d'une classe depuis l'image Pharo (sans effet de bord).",
+	"lmTool.listPackages.modelDescription": "Liste les packages présents dans l'image Pharo (sans effet de bord).",
+	"lmTool.listClasses.modelDescription": "Liste les classes d'un package dans l'image Pharo (sans effet de bord).",
+	"lmTool.eval.modelDescription": "Exécute du code Smalltalk dans l'image Pharo et renvoie le résultat (effets de bord possibles).",
+	"lmTool.runClassTests.modelDescription": "Exécute tous les tests d'une classe dans l'image Pharo.",
+	"lmTool.runTestMethod.modelDescription": "Exécute une méthode de test (classe + sélecteur) dans l'image Pharo.",
+
+	"configuration.pharo.pathToVM.description": "La VM Pharo utilisée pour exécuter l'image hébergeant le Pharo Language Server. Choisissez une VM compatible avec l'image sélectionnée.",
+	"configuration.pharo.pathToImage.description": "L'image Pharo capable d'exécuter le Pharo Language Server (https://github.com/badetitou/Pharo-LanguageServer).",
+	"configuration.pharo.imageWorkspace.description": "Expose pharoImage:/ comme dossier d'espace de travail afin que les extensions supportant les espaces de travail virtuels (par ex. assistants IA) puissent lire des classes depuis l'image en cours d'exécution.",
+	"configuration.pharo.headless.description": "Exécuter l'image Pharo en mode headless.",
+	"configuration.pharo.debugMode.description": "Exécuter l'image en mode debug (incompatible avec le mode headless).",
+	"configuration.pharo.quickInstall.imageName.description": "Image à télécharger par défaut via la commande d'installation.",
+	"configuration.pharo.quickInstall.serverVersion.description": "Version du serveur à installer par défaut.",
+	"configuration.pharo.quickInstall.serverVmVersion.description": "Version de VM requise par défaut pour le serveur sélectionné.",
+
+	"icons.plsIcon.description": "Icône PLS",
+	"icons.mooseIcon.description": "Icône Moose",
+
+	"debuggers.pharodb.launch.program.description": "Chemin absolu vers un fichier texte.",
+
+	"walkthrough.setup.description": "Configurer le Pharo Language Server",
+	"walkthrough.setup.steps.downloadImage.description": "Dans cette étape, vous devez télécharger la dernière image Pharo Language Server depuis la [page des releases GitHub](https://github.com/badetitou/Pharo-LanguageServer/releases)",
+	"walkthrough.setup.steps.downloadVM.description": "Dans cette étape, vous devez télécharger la dernière [VM pour votre image Pharo](https://files.pharo.org/vm/pharo-spur64-headless/)",
+	"walkthrough.setup.steps.modifySetting.description": "Mettez à jour les paramètres Pharo avec les chemins de l'image et de la VM correspondants\n[Ouvrir les paramètres](command:workbench.action.openSettings)"
+}

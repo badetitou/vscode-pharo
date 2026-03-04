@@ -1,0 +1,44 @@
+{
+	"extension.description": "Syntax highlighting, auto-completion, execution, and more.",
+
+	"chatParticipant.pharo.description": "Create/read classes, evaluate code, and run tests in your Pharo image.",
+	"chatParticipant.pharo.command.help.description": "Show available commands.",
+	"chatParticipant.pharo.command.createPackage.description": "Create a Pharo package (input: JSON or text).",
+	"chatParticipant.pharo.command.createClass.description": "Create a Pharo class (input: JSON).",
+	"chatParticipant.pharo.command.readClass.description": "Read a class Tonel source (input: class name).",
+	"chatParticipant.pharo.command.listPackages.description": "List packages available in the image.",
+	"chatParticipant.pharo.command.listClasses.description": "List classes of a package (input: package name).",
+	"chatParticipant.pharo.command.eval.description": "Evaluate Smalltalk and return the result (confirmation required).",
+	"chatParticipant.pharo.command.runClassTests.description": "Run all tests of a class.",
+	"chatParticipant.pharo.command.runTest.description": "Run a test method (input: JSON).",
+
+	"lmTool.createPackage.modelDescription": "Creates a package in the Pharo image (has side effects).",
+	"lmTool.createPackage.input.packageName.description": "Package name (e.g. MyPackage)",
+	"lmTool.createClass.modelDescription": "Creates a class (Tonel) in a package in the Pharo image (has side effects).",
+	"lmTool.createClass.input.instanceVariables.description": "Instance variables separated by spaces",
+	"lmTool.readClass.modelDescription": "Reads the Tonel source of a class from the Pharo image (no side effects).",
+	"lmTool.listPackages.modelDescription": "Lists packages present in the Pharo image (no side effects).",
+	"lmTool.listClasses.modelDescription": "Lists classes of a package in the Pharo image (no side effects).",
+	"lmTool.eval.modelDescription": "Executes Smalltalk code in the Pharo image and returns the result (may have side effects).",
+	"lmTool.runClassTests.modelDescription": "Runs all tests of a class in the Pharo image.",
+	"lmTool.runTestMethod.modelDescription": "Runs a test method (class + selector) in the Pharo image.",
+
+	"configuration.pharo.pathToVM.description": "The Pharo VM used to run the Pharo image hosting the Pharo Language Server. Choose a VM compatible with the selected image.",
+	"configuration.pharo.pathToImage.description": "The Pharo image that can run the Pharo Language Server (https://github.com/badetitou/Pharo-LanguageServer).",
+	"configuration.pharo.imageWorkspace.description": "Expose pharoImage:/ as a workspace folder so extensions supporting virtual workspaces (for example AI assistants) can read classes from the running image.",
+	"configuration.pharo.headless.description": "Whether the Pharo image should run in headless mode.",
+	"configuration.pharo.debugMode.description": "Run the image in debug mode (cannot be used in headless mode).",
+	"configuration.pharo.quickInstall.imageName.description": "The image to download by default when using the install command.",
+	"configuration.pharo.quickInstall.serverVersion.description": "The server version to install by default.",
+	"configuration.pharo.quickInstall.serverVmVersion.description": "The VM version required by default for the selected server.",
+
+	"icons.plsIcon.description": "PLS icon",
+	"icons.mooseIcon.description": "Moose icon",
+
+	"debuggers.pharodb.launch.program.description": "Absolute path to a text file.",
+
+	"walkthrough.setup.description": "Set up Pharo Language Server",
+	"walkthrough.setup.steps.downloadImage.description": "In this step, you have to download the latest Pharo Language Server image from the [GitHub Release page](https://github.com/badetitou/Pharo-LanguageServer/releases)",
+	"walkthrough.setup.steps.downloadVM.description": "In this step, you have to download the latest [VM for your Pharo image](https://files.pharo.org/vm/pharo-spur64-headless/)",
+	"walkthrough.setup.steps.modifySetting.description": "Update the Pharo settings with the corresponding image and VM paths\n[Open Settings](command:workbench.action.openSettings)"
+}

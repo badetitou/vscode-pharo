@@ -1,10 +1,10 @@
 {
 	"name": "pharo-language-server",
 	"displayName": "Pharo Language Support",
-	"description": "Highlighting, Auto-completion, Execution, ...",
+	"description": "%extension.description%",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.1.21",
+	"version": "2.2.0",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -30,7 +30,8 @@
 	"activationEvents": [
 		"onDebugResolve:pharodb",
 		"onFileSystem:pharoImage",
-		"onNotebook:moosebook"
+		"onNotebook:moosebook",
+		"onChatParticipant:pharo-language-server.pharo"
 	],
 	"extensionDependencies": [
 		"mindaro-dev.file-downloader",
@@ -38,6 +39,160 @@
 	],
 	"main": "./dist/extension",
 	"contributes": {
+		"chatParticipants": [
+			{
+				"id": "pharo-language-server.pharo",
+				"name": "pharo",
+				"fullName": "Pharo",
+				"description": "%chatParticipant.pharo.description%",
+				"isSticky": true,
+				"commands": [
+					{
+						"name": "help",
+						"description": "%chatParticipant.pharo.command.help.description%"
+					},
+					{
+						"name": "createPackage",
+						"description": "%chatParticipant.pharo.command.createPackage.description%"
+					},
+					{
+						"name": "createClass",
+						"description": "%chatParticipant.pharo.command.createClass.description%"
+					},
+					{
+						"name": "readClass",
+						"description": "%chatParticipant.pharo.command.readClass.description%"
+					},
+					{
+						"name": "listPackages",
+						"description": "%chatParticipant.pharo.command.listPackages.description%"
+					},
+					{
+						"name": "listClasses",
+						"description": "%chatParticipant.pharo.command.listClasses.description%"
+					},
+					{
+						"name": "eval",
+						"description": "%chatParticipant.pharo.command.eval.description%"
+					},
+					{
+						"name": "runClassTests",
+						"description": "%chatParticipant.pharo.command.runClassTests.description%"
+					},
+					{
+						"name": "runTest",
+						"description": "%chatParticipant.pharo.command.runTest.description%"
+					}
+				]
+			}
+		],
+		"languageModelTools": [
+			{
+				"name": "pharo-create-package",
+				"displayName": "Pharo: créer un package",
+				"modelDescription": "%lmTool.createPackage.modelDescription%",
+				"tags": ["pharo", "smalltalk", "workspace", "create"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"packageName": { "type": "string", "description": "%lmTool.createPackage.input.packageName.description%" }
+					},
+					"required": ["packageName"]
+				}
+			},
+			{
+				"name": "pharo-create-class",
+				"displayName": "Pharo: créer une classe",
+				"modelDescription": "%lmTool.createClass.modelDescription%",
+				"tags": ["pharo", "smalltalk", "create"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"packageName": { "type": "string" },
+						"className": { "type": "string" },
+						"superclassName": { "type": "string", "default": "Object" },
+						"instanceVariables": { "type": "string", "description": "%lmTool.createClass.input.instanceVariables.description%" }
+					},
+					"required": ["packageName", "className"]
+				}
+			},
+			{
+				"name": "pharo-read-class",
+				"displayName": "Pharo: lire une classe",
+				"modelDescription": "%lmTool.readClass.modelDescription%",
+				"tags": ["pharo", "smalltalk", "read"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"className": { "type": "string" }
+					},
+					"required": ["className"]
+				}
+			},
+			{
+				"name": "pharo-list-packages",
+				"displayName": "Pharo: lister les packages",
+				"modelDescription": "%lmTool.listPackages.modelDescription%",
+				"tags": ["pharo", "smalltalk", "read", "list"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {}
+				}
+			},
+			{
+				"name": "pharo-list-classes",
+				"displayName": "Pharo: lister les classes",
+				"modelDescription": "%lmTool.listClasses.modelDescription%",
+				"tags": ["pharo", "smalltalk", "read", "list"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"packageName": { "type": "string" }
+					},
+					"required": ["packageName"]
+				}
+			},
+			{
+				"name": "pharo-eval",
+				"displayName": "Pharo: exécuter du code",
+				"modelDescription": "%lmTool.eval.modelDescription%",
+				"tags": ["pharo", "smalltalk", "execute"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"code": { "type": "string" }
+					},
+					"required": ["code"]
+				}
+			},
+			{
+				"name": "pharo-run-class-tests",
+				"displayName": "Pharo: exécuter tests de classe",
+				"modelDescription": "%lmTool.runClassTests.modelDescription%",
+				"tags": ["pharo", "smalltalk", "test"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"className": { "type": "string" }
+					},
+					"required": ["className"]
+				}
+			},
+			{
+				"name": "pharo-run-test-method",
+				"displayName": "Pharo: exécuter un test",
+				"modelDescription": "%lmTool.runTestMethod.modelDescription%",
+				"tags": ["pharo", "smalltalk", "test"],
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"className": { "type": "string" },
+						"testMethod": { "type": "string" }
+					},
+					"required": ["className", "testMethod"]
+				}
+			}
+		],
 		"configuration": {
 			"type": "object",
 			"title": "Pharo",
@@ -47,7 +202,7 @@
 					"scope": "window",
 					"type": "string",
 					"default": "pharo",
-					"description": "The Pharo VM that will be used to run the Pharo Image holding the Pharo Language server. You should select a VM that can run the selected image",
+					"description": "%configuration.pharo.pathToVM.description%",
 					"ignoreSync": true
 				},
 				"pharo.pathToImage": {
@@ -55,43 +210,50 @@
 					"scope": "window",
 					"type": "string",
 					"default": "",
-					"description": "The Pharo Image that can run the Pharo Language server (https://github.com/badetitou/Pharo-LanguageServer).",
+					"description": "%configuration.pharo.pathToImage.description%",
 					"ignoreSync": true
+				},
+				"pharo.imageWorkspace": {
+					"title": "Expose Pharo Image Workspace",
+					"scope": "window",
+					"type": "boolean",
+					"default": false,
+					"description": "%configuration.pharo.imageWorkspace.description%"
 				},
 				"pharo.headless": {
 					"title": "Headless",
 					"scope": "window",
 					"type": "boolean",
 					"default": "true",
-					"description": "Should the Pharo Image appears"
+					"description": "%configuration.pharo.headless.description%"
 				},
 				"pharo.debugMode": {
 					"title": "Debug mode",
 					"scope": "window",
 					"type": "boolean",
 					"default": "false",
-					"description": "Debug mode of the image (can not be use in headless mode)"
+					"description": "%configuration.pharo.debugMode.description%"
 				},
 				"pharo quick install.image name": {
 					"title": "Quick install image name",
 					"scope": "window",
 					"type": "string",
 					"default": "Moose64-12-PLS",
-					"description": "The image to download by default with install command"
+					"description": "%configuration.pharo.quickInstall.imageName.description%"
 				},
 				"pharo quick install.server version": {
 					"title": "Quick install server version",
 					"scope": "window",
 					"type": "string",
-					"default": "v5.0.2",
-					"description": "The version of the server to install by default"
+					"default": "5.1.0",
+					"description": "%configuration.pharo.quickInstall.serverVersion.description%"
 				},
 				"pharo quick install.server VM version": {
 					"title": "Quick install server VM version",
 					"scope": "window",
 					"type": "string",
 					"default": "120",
-					"description": "The VM version required by the server to install by default"
+					"description": "%configuration.pharo.quickInstall.serverVmVersion.description%"
 				},
 				"pharoLanguageServer.trace.server": {
 					"title": "Trace Level",
@@ -120,14 +282,14 @@
 		},
 		"icons": {
 			"pls-icon": {
-				"description": "pls-icon",
+				"description": "%icons.plsIcon.description%",
 				"default": {
 					"fontPath": "res/pls-font.woff",
 					"fontCharacter": "\\41"
 				}
 			},
 			"moose-icon": {
-				"description": "moose-icon",
+				"description": "%icons.mooseIcon.description%",
 				"default": {
 					"fontPath": "res/pls-font.woff",
 					"fontCharacter": "\\42"
@@ -178,6 +340,18 @@
 				"category": "Pharo"
 			},
 			{
+				"command": "pharo.createPackage",
+				"title": "Create Package",
+				"category": "Pharo",
+				"icon": "$(package)"
+			},
+			{
+				"command": "pharo.createClass",
+				"title": "Create Class",
+				"category": "Pharo",
+				"icon": "$(symbol-class)"
+			},
+			{
 				"command": "pharo.printIt",
 				"title": "Print the result of selected lines",
 				"category": "Pharo"
@@ -203,6 +377,11 @@
 				"category": "Pharo"
 			},
 			{
+				"command": "pharo.addImageToWorkspace",
+				"title": "Add Image To Workspace",
+				"category": "Pharo Developer"
+			},
+			{
 				"command": "pharo.executeTest",
 				"title": "Execute the test",
 				"category": "Pharo",
@@ -225,6 +404,33 @@
 				"command": "pharo.openLog",
 				"title": "Open Log",
 				"category": "Pharo Developer"
+			},
+			{
+				"command": "pharo.openImage",
+				"title": "Open Pharo Image",
+				"category": "Pharo Developer"
+			},
+			{
+				"command": "pharo.ice.refresh",
+				"title": "Refresh Iceberg Repositories",
+				"category": "Pharo Git"
+			},
+			{
+				"command": "pharo.ice.commit",
+				"title": "Commit Iceberg Repository",
+				"category": "Pharo Git",
+				"icon": "$(check)"
+			},
+			{
+				"command": "pharo.ice.push",
+				"title": "Push Iceberg Repository",
+				"category": "Pharo Git",
+				"icon": "$(cloud-upload)"
+			},
+			{
+				"command": "pharo.ice.addPackage",
+				"title": "Add Package To Iceberg Repository",
+				"category": "Pharo Git"
 			},
 			{
 				"command": "pharo.clearLog",
@@ -256,6 +462,35 @@
 					"when": "resourceLangId == pharo",
 					"group": "Pharo@2"
 				}
+			],
+			"explorer/context": [
+				{
+					"command": "pharo.createPackage",
+					"when": "resourceScheme == pharoImage && explorerResourceIsFolder && (explorerResourceIsRoot || resourcePath == '/')",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.createClass",
+					"when": "resourceScheme == pharoImage && explorerResourceIsFolder && resourcePath =~ /^\\/[^\\/]+$/",
+					"group": "navigation@2"
+				}
+			],
+			"scm/title": [
+				{
+					"command": "pharo.ice.commit",
+					"when": "scmProvider == pharo-iceberg",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.ice.push",
+					"when": "scmProvider == pharo-iceberg",
+					"group": "navigation@2"
+				},
+				{
+					"command": "pharo.ice.refresh",
+					"when": "scmProvider == pharo-iceberg",
+					"group": "navigation@3"
+				}
 			]
 		},
 		"keybindings": [
@@ -284,7 +519,7 @@
 						"properties": {
 							"program": {
 								"type": "string",
-								"description": "Absolute path to a text file.",
+								"description": "%debuggers.pharodb.launch.program.description%",
 								"default": "${workspaceFolder}/${command:AskForProgramName}"
 							}
 						}
@@ -308,12 +543,12 @@
 			{
 				"id": "setup",
 				"title": "Set Up PLS",
-				"description": "Set Up Pharo Language Server",
+				"description": "%walkthrough.setup.description%",
 				"steps": [
 					{
 						"id": "downloadImage",
 						"title": "Download Pharo Language Server Image",
-						"description": "In this step, you have to download the last version of Pharo Language Server from the [GitHub Release page](https://github.com/badetitou/Pharo-LanguageServer/releases)",
+						"description": "%walkthrough.setup.steps.downloadImage.description%",
 						"media": {
 							"image": "media/releases.png",
 							"altText": ""
@@ -322,7 +557,7 @@
 					{
 						"id": "downloadVM",
 						"title": "Download Pharo VM",
-						"description": "In this step, you have to download the last version of the [VM for your pharo image](https://files.pharo.org/vm/pharo-spur64-headless/)",
+						"description": "%walkthrough.setup.steps.downloadVM.description%",
 						"media": {
 							"image": "media/vms.png",
 							"altText": ""
@@ -331,7 +566,7 @@
 					{
 						"id": "modifySetting",
 						"title": "Update Setting",
-						"description": "Update the pharo setting with the corresponding Image and VM path\n[Open Settings](command:workbench.action.openSettings)",
+						"description": "%walkthrough.setup.steps.modifySetting.description%",
 						"media": {
 							"image": "media/pharo-bar.svg",
 							"altText": ""
@@ -354,6 +589,7 @@
 	},
 	"scripts": {
 		"compile": "tsc -b",
+		"test": "npm run compile && node ./dist/test/runTest.js",
 		"vscode:prepublish": "webpack --mode production",
 		"webpack": "webpack --mode development",
 		"webpack-dev": "webpack --mode development --watch",

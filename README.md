@@ -146,6 +146,7 @@ Or, to install the extension in an existing image :
       2. Linux: `/path/to/pharo`
       3. MacOS: `/path/to/Pharo.app/Contents/MacOS/Pharo`
    2. pharo.pathToImage: is the absolute path to the image
+   3. pharo.imageWorkspace: expose `pharoImage:/` as a workspace folder (useful for tools that read workspace files, such as AI assistants with virtual workspace support)
 
 > From version v1.0.0, please use at least version v1.1.0 of the Pharo Language Server.
 
