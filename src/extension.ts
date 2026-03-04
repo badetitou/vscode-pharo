@@ -20,7 +20,7 @@ const os = require('os');
 import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
 import { IceControlManager } from './ice/IceControlManager';
 import { initTestController } from './testController/testController';
-import { PharoImagesExplorer } from './treeProvider/pharoImages';
+import { PharoImagesExplorer, PharoImagesNode } from './treeProvider/pharoImages';
 import { registerPharoLanguageModelTools } from './ai/pharoLmTools';
 import { registerPharoChatParticipant } from './ai/pharoChatParticipant';
 
@@ -30,7 +30,7 @@ export let documentExplorer: PharoDocumentExplorer;
 let dls: child_process.ChildProcess;
 export let extensionContext: ExtensionContext;
 
-export let pharoImagesClients: Array<LanguageClient>;
+let pharoImagesExplorer: PharoImagesExplorer;
 
 let plsStatusBar: StatusBarItem;
 const PHARO_IMAGE_WORKSPACE_SCHEME = 'pharoImage';
@@ -40,7 +40,6 @@ let pharoImageExplorer: PharoImageExplorer;
 
 export async function activate(context: ExtensionContext) {
 
-	pharoImagesClients = [];
 
 	extensionContext = context;
 	// AI entrypoints: @pharo participant + tool-calls (pharo.*)
@@ -49,6 +48,8 @@ export async function activate(context: ExtensionContext) {
 	initStatusBar(extensionContext);
 	// Create new command
 	createCommands(context);
+	pharoImagesExplorer = new PharoImagesExplorer(context);
+	registerPharoImagesCommands(context);
 	pharoImageExplorer = new PharoImageExplorer(context);
 	syncPharoImageWorkspaceFolder();
 	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
@@ -80,9 +81,6 @@ export async function activate(context: ExtensionContext) {
 		await client.start();
 		context.subscriptions.push(client);
 
-		pharoImagesClients.push(client);
-
-		new PharoImagesExplorer(context, pharoImagesClients);
 		pharoImageExplorer.refresh();
 		documentExplorer = new PharoDocumentExplorer(context);
 
@@ -121,6 +119,15 @@ function createCommands(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('pharo.addImageToWorkspace', commandPharoAddImageToWorkspace));
 	context.subscriptions.push(commands.registerCommand('pharo.openLog', commandPharoOpenLog));
 	context.subscriptions.push(commands.registerCommand('pharo.clearLog', commandPharoClearLog));
+}
+
+function registerPharoImagesCommands(context: ExtensionContext) {
+	context.subscriptions.push(commands.registerCommand('pharo.images.refresh', () => {
+		pharoImagesExplorer?.refresh();
+	}));
+	context.subscriptions.push(commands.registerCommand('pharo.images.play', async (node?: PharoImagesNode) => {
+		await pharoImagesExplorer?.play(node);
+	}));
 }
 
 export function deactivate() {

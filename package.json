@@ -4,7 +4,7 @@
 	"description": "%extension.description%",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.2.0",
+	"version": "2.2.1",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -268,15 +268,18 @@
 			"pharoView": [
 				{
 					"id": "images",
-					"name": "Pharo Images"
+					"name": "%views.images.name%",
+					"icon": "media/pharo-bar.svg"
 				},
 				{
 					"id": "pharoImage",
-					"name": "Image Browser"
+					"name": "Image Browser",
+					"icon": "media/pharo-bar.svg"
 				},
 				{
 					"id": "pharoBindingView",
-					"name": "Variables"
+					"name": "Variables",
+					"icon": "media/pharo-bar.svg"
 				}
 			]
 		},
@@ -328,6 +331,18 @@
 				"command": "pharo.browseImage",
 				"title": "Browse Pharo Image",
 				"enablement": "false"
+			},
+			{
+				"command": "pharo.images.play",
+				"title": "%commands.pharo.images.play.title%",
+				"category": "Pharo",
+				"icon": "$(play)"
+			},
+			{
+				"command": "pharo.images.refresh",
+				"title": "%commands.pharo.images.refresh.title%",
+				"category": "Pharo",
+				"icon": "$(refresh)"
 			},
 			{
 				"command": "pharo.extensionVersion",
@@ -439,6 +454,20 @@
 			}
 		],
 		"menus": {
+			"view/title": [
+				{
+					"command": "pharo.images.refresh",
+					"when": "view == images",
+					"group": "navigation@1"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "pharo.images.play",
+					"when": "view == images && viewItem == pharoImages.image",
+					"group": "inline"
+				}
+			],
 			"editor/context": [
 				{
 					"command": "pharo.showIt",
