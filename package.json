@@ -345,6 +345,12 @@
 				"icon": "$(refresh)"
 			},
 			{
+				"command": "pharo.images.download",
+				"title": "%commands.pharo.images.download.title%",
+				"category": "Pharo",
+				"icon": "$(cloud-download)"
+			},
+			{
 				"command": "pharo.extensionVersion",
 				"title": "Show Pharo Language Server Version",
 				"category": "Pharo"
@@ -455,6 +461,11 @@
 		],
 		"menus": {
 			"view/title": [
+				{
+					"command": "pharo.images.download",
+					"when": "view == images",
+					"group": "navigation@0"
+				},
 				{
 					"command": "pharo.images.refresh",
 					"when": "view == images",

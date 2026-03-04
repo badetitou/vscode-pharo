@@ -77,7 +77,7 @@ async function resolveWorkspaceForImage(imageUri: vscode.Uri): Promise<Workspace
 	return undefined;
 }
 
-async function createWorkspaceForImage(imageUri: vscode.Uri): Promise<vscode.Uri> {
+export async function createWorkspaceForImage(imageUri: vscode.Uri): Promise<vscode.Uri> {
 	const folderPath = path.dirname(imageUri.fsPath);
 	const base = path.basename(imageUri.fsPath, '.image');
 	const candidateNames = [

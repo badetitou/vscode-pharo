@@ -40,6 +40,7 @@
 	"views.images.name": "Pharo Images",
 	"commands.pharo.images.play.title": "Open Pharo Image Workspace",
 	"commands.pharo.images.refresh.title": "Refresh Pharo Images",
+	"commands.pharo.images.download.title": "Download Pharo Language Server Image",
 
 	"walkthrough.setup.description": "Set up Pharo Language Server",
 	"walkthrough.setup.steps.downloadImage.description": "In this step, you have to download the latest Pharo Language Server image from the [GitHub Release page](https://github.com/badetitou/Pharo-LanguageServer/releases)",

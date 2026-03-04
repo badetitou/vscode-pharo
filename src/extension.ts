@@ -1,4 +1,4 @@
-import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
@@ -15,12 +15,13 @@ import { PharoImageExplorer } from './treeProvider/imageExplorer';
 import { PharoDocumentExplorer } from './treeProvider/documentBinding';
 import { MoosebookSerializer } from './moosebook/MoosebookSerializer';
 import { MoosebookController } from './moosebook/MoosebookController';
+import * as path from 'path';
 const os = require('os');
 
 import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
 import { IceControlManager } from './ice/IceControlManager';
 import { initTestController } from './testController/testController';
-import { PharoImagesExplorer, PharoImagesNode } from './treeProvider/pharoImages';
+import { PharoImagesExplorer, PharoImagesNode, createWorkspaceForImage } from './treeProvider/pharoImages';
 import { registerPharoLanguageModelTools } from './ai/pharoLmTools';
 import { registerPharoChatParticipant } from './ai/pharoChatParticipant';
 
@@ -128,6 +129,143 @@ function registerPharoImagesCommands(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('pharo.images.play', async (node?: PharoImagesNode) => {
 		await pharoImagesExplorer?.play(node);
 	}));
+	context.subscriptions.push(commands.registerCommand('pharo.images.download', async () => {
+		await commandPharoImagesDownload();
+	}));
+}
+
+function pharoImagesRootFolderFsPath(): string {
+	return path.join(os.homedir(), 'Documents', 'Pharo', 'images');
+}
+
+async function copyDirectoryRecursive(source: Uri, destination: Uri): Promise<void> {
+	await workspace.fs.createDirectory(destination);
+	const entries = await workspace.fs.readDirectory(source);
+	for (const [name, fileType] of entries) {
+		const src = Uri.joinPath(source, name);
+		const dst = Uri.joinPath(destination, name);
+		if (fileType === FileType.Directory) {
+			await copyDirectoryRecursive(src, dst);
+		} else {
+			await workspace.fs.copy(src, dst, { overwrite: true });
+		}
+	}
+}
+
+async function commandPharoImagesDownload(): Promise<void> {
+	const localName = (await window.showInputBox({
+		title: 'Télécharger une image Pharo Language Server',
+		placeHolder: 'Nom local (dossier + .image/.changes) (ex: MonProjet-PLS)',
+		validateInput: (value) => {
+			const trimmed = value.trim();
+			if (trimmed.length === 0) {
+				return 'Le nom est requis.';
+			}
+			if (/[\\/]/.test(trimmed)) {
+				return 'Le nom ne doit pas contenir de / ou \\.';
+			}
+			return undefined;
+		}
+	}))?.trim();
+
+	if (!localName) {
+		return;
+	}
+
+	const quickInstallConfig = workspace.getConfiguration('pharo quick install');
+	const serverVersion: string = quickInstallConfig.get('server version');
+	const sourceImageName: string = quickInstallConfig.get('image name');
+	const zipUri = pharoLanguageServerImageZipUri(serverVersion, sourceImageName);
+
+	let downloadedDirectory: Uri;
+	try {
+		downloadedDirectory = await download(zipUri, true, sourceImageName);
+	} catch (error) {
+		window.showErrorMessage(`Téléchargement impossible: ${error?.message ?? String(error)}`);
+		return;
+	}
+
+	const rootFolder = Uri.file(pharoImagesRootFolderFsPath());
+	const targetFolder = Uri.joinPath(rootFolder, localName);
+	try {
+		await workspace.fs.createDirectory(rootFolder);
+		await copyDirectoryRecursive(downloadedDirectory, targetFolder);
+	} catch (error) {
+		window.showErrorMessage(`Impossible de copier l'image vers ${targetFolder.fsPath}: ${error?.message ?? String(error)}`);
+		return;
+	}
+
+	async function renameIfExists(from: Uri, to: Uri): Promise<void> {
+		try {
+			await workspace.fs.stat(from);
+		} catch {
+			return;
+		}
+		try {
+			await workspace.fs.delete(to, { recursive: false, useTrash: false });
+		} catch {
+			// ignore
+		}
+		await workspace.fs.rename(from, to);
+	}
+
+	async function findFirstWithExtension(dir: Uri, ext: string): Promise<Uri | undefined> {
+		try {
+			const entries = await workspace.fs.readDirectory(dir);
+			const found = entries.find(([name, type]) => type === FileType.File && name.toLowerCase().endsWith(ext));
+			return found ? Uri.joinPath(dir, found[0]) : undefined;
+		} catch {
+			return undefined;
+		}
+	}
+
+	// Rename downloaded .image/.changes to match the requested local name.
+	const desiredImageUri = Uri.joinPath(targetFolder, `${localName}.image`);
+	const desiredChangesUri = Uri.joinPath(targetFolder, `${localName}.changes`);
+
+	const sourceImageUriByName = Uri.joinPath(targetFolder, `${sourceImageName}.image`);
+	const sourceChangesUriByName = Uri.joinPath(targetFolder, `${sourceImageName}.changes`);
+
+	if (localName !== sourceImageName) {
+		await renameIfExists(sourceImageUriByName, desiredImageUri);
+		await renameIfExists(sourceChangesUriByName, desiredChangesUri);
+
+		// Fallback: if the upstream name differs, rename the first matching file.
+		const anyImage = await findFirstWithExtension(targetFolder, '.image');
+		if (anyImage && anyImage.fsPath !== desiredImageUri.fsPath) {
+			await renameIfExists(anyImage, desiredImageUri);
+		}
+		const anyChanges = await findFirstWithExtension(targetFolder, '.changes');
+		if (anyChanges && anyChanges.fsPath !== desiredChangesUri.fsPath) {
+			await renameIfExists(anyChanges, desiredChangesUri);
+		}
+	}
+
+	try {
+		await workspace.fs.stat(desiredImageUri);
+	} catch {
+		window.showErrorMessage(`Téléchargement incomplet: fichier image introuvable (${desiredImageUri.fsPath}).`);
+		return;
+	}
+
+	const imageUri = desiredImageUri;
+	let workspaceUri: Uri;
+	try {
+		workspaceUri = await createWorkspaceForImage(imageUri);
+	} catch (error) {
+		window.showErrorMessage(`Impossible de créer le workspace: ${error?.message ?? String(error)}`);
+		return;
+	}
+
+	// Show the config (workspace file) then open it in a new VS Code window.
+	try {
+		await commands.executeCommand('vscode.open', workspaceUri);
+	} catch {
+		// ignore
+	}
+
+	pharoImagesExplorer?.refresh();
+	await commands.executeCommand('vscode.openFolder', workspaceUri, true);
 }
 
 export function deactivate() {
@@ -401,6 +539,41 @@ async function commandPharoAddImageToWorkspace() {
 	window.showInformationMessage('Pharo image added to workspace.');
 }
 
+function pharoVmZipUri(vmVersion: string): Uri {
+	if (os.platform() === 'linux') {
+		return Uri.parse(`https://files.pharo.org/get-files/${vmVersion}/pharo-vm-Linux-x86_64-stable.zip`);
+	}
+	if (os.platform() === 'darwin') {
+		const arch = os.arch();
+		if (arch === 'arm64') {
+			return Uri.parse(`https://files.pharo.org/get-files/${vmVersion}/pharo-vm-Darwin-arm64-latest.zip`);
+		}
+		return Uri.parse(`https://files.pharo.org/get-files/${vmVersion}/pharo-vm-Darwin-x86_64-latest.zip`);
+	}
+	return Uri.parse(`https://files.pharo.org/get-files/${vmVersion}/pharo-vm-Windows-x86_64-stable.zip`);
+}
+
+function pharoVmExecutablePath(vmDirectory: Uri): string {
+	if (os.platform() === 'linux') {
+		return vmDirectory.fsPath + '/pharo';
+	}
+	if (os.platform() === 'darwin') {
+		return vmDirectory.fsPath + '/Pharo.app/Contents/MacOS/Pharo';
+	}
+	return vmDirectory.fsPath + '\\Pharo.exe';
+}
+
+function pharoLanguageServerImageZipUri(serverVersion: string, imageName: string): Uri {
+	return Uri.parse(`https://github.com/badetitou/Pharo-LanguageServer/releases/download/${serverVersion}/${imageName}.zip`);
+}
+
+function pharoImageFilePath(pharoDirectory: Uri, imageName: string): string {
+	if (os.platform() === 'linux' || os.platform() === 'darwin') {
+		return pharoDirectory.fsPath + '/' + imageName + '.image';
+	}
+	return pharoDirectory.fsPath + '\\' + imageName + '.image';
+}
+
 export async function commandPharoInstallLastVersion() {
 
 	if (dls !== undefined) {
@@ -408,43 +581,16 @@ export async function commandPharoInstallLastVersion() {
 	}
 
 	// Download pharo VM
-
-	let vmPath = '';
 	let vmVersion: string = workspace.getConfiguration('pharo quick install').get('server VM version');
-	if (os.platform() === 'linux') {
-		vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo-vm-Linux-x86_64-stable.zip';
-	} else if (os.platform() === 'darwin') { // MacOSX
-		const arch = os.arch(); // 'arm64', 'x64', etc.
-		if (arch === "arm64") {
-			vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo-vm-Darwin-arm64-latest.zip';
-		} else {
-			vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo-vm-Darwin-x86_64-latest.zip';
-		}
-	} else {
-		vmPath = 'https://files.pharo.org/get-files/' + vmVersion + '/pharo-vm-Windows-x86_64-stable.zip';
-	}
-
-	let vmDirectory = await download(Uri.parse(vmPath), true, 'pharoVM');
-
-	if (os.platform() === 'linux') {
-		workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "/pharo", true);
-	} else if (os.platform() === 'darwin') { // MacOSX
-		workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "/Pharo.app/Contents/MacOS/Pharo", true);
-	} else {
-		workspace.getConfiguration('pharo').update('pathToVM', vmDirectory.fsPath + "\\Pharo.exe", true);
-	}
+	let vmDirectory = await download(pharoVmZipUri(vmVersion), true, 'pharoVM');
+	workspace.getConfiguration('pharo').update('pathToVM', pharoVmExecutablePath(vmDirectory), true);
 	window.showInformationMessage('VM updated. Please wait');
 
 	// Download image
 	let imageName: string = workspace.getConfiguration('pharo quick install').get('image name');
 	let serverVersion: string = workspace.getConfiguration('pharo quick install').get('server version');
-	let pharoDirectory = await download(Uri.parse("https://github.com/badetitou/Pharo-LanguageServer/releases/download/" + serverVersion + "/" + imageName + ".zip"), true, imageName);
-
-	if (os.platform() === 'linux' || os.platform() === 'darwin') {
-		workspace.getConfiguration('pharo').update('pathToImage', pharoDirectory.fsPath + "/" + imageName + ".image", true);
-	} else {
-		workspace.getConfiguration('pharo').update('pathToImage', pharoDirectory.fsPath + "\\" + imageName + ".image", true);
-	}
+	let pharoDirectory = await download(pharoLanguageServerImageZipUri(serverVersion, imageName), true, imageName);
+	workspace.getConfiguration('pharo').update('pathToImage', pharoImageFilePath(pharoDirectory, imageName), true);
 
 	window.showInformationMessage('Pharo updated. Please restart', 'Restart VSCode').then(() => {
 		commands.executeCommand('workbench.action.reloadWindow');
