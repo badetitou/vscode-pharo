@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.2.1
+
+- Add a dedicated **Pharo Images** view (with icons) to browse images from `~/Documents/Pharo/images`
+- New image actions: **Download** a Pharo Language Server image, **Refresh** the list, and **Open** an image in its own VS Code window
+- Automatically creates a `.code-workspace` for an image when none exists (and reuses an existing workspace/settings when found)
+- Improve quick install reliability by refactoring VM/image download URLs and OS-specific executable/image paths
+- Server startup script now bootstraps Pharo-LanguageServer into the image when missing (then snapshots to persist)
+
 ## v2.2.0
 
 - Initial Iceberg integration (repository navigation/control)
