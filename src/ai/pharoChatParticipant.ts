@@ -78,7 +78,7 @@ async function invokeAndRenderTool(
 			stream.markdown(`\n\n\`\`\`smalltalk\n${text}\n\`\`\`\n`);
 			return;
 		}
-		stream.markdown(text ? `\n\n${text}\n` : '\n\n(aucun résultat)\n');
+		stream.markdown(text ? `\n\n${text}\n` : '\n\n(no result)\n');
 	} catch (e) {
 		stream.markdown(`\n\nErreur tool **${toolName}**: ${String((e as any)?.message ?? e)}\n`);
 	}
@@ -173,16 +173,62 @@ async function handleExplicitCommand(
 }
 
 const BASE_PROMPT = [
-	'Tu es un assistant Pharo intégré à VS Code.',
-	'Objectif: manipuler l\'image Pharo via les outils disponibles (création de package/classe, lecture de classe, exécution, tests).',
-	'Règles:',
-	'- Quand une action est nécessaire, préfère appeler un tool `pharo-*` plutôt que d\'inventer.',
-	'- Demande une précision si une info manque (nom de package, nom de classe, etc.).',
-	'- Retourne des réponses concises en français.',
+	'You are a Pharo assistant integrated into VS Code.',
+	'Goal: manipulate the Pharo image using the available tools (package/class creation, class reading, execution, tests).',
+	'Rules:',
+	'- When an action is needed, prefer calling a `pharo-*` tool rather than inventing.',
+	'- Ask for clarification if information is missing (package name, class name, etc.).',
+	'- Return concise answers',
 ].join('\n');
 
+function chatContextToModelMessages(chatContext: vscode.ChatContext, maxTurns: number): vscode.LanguageModelChatMessage[] {
+	// VS Code only includes turns for the current participant.
+	const history = chatContext.history ?? [];
+
+	// Keep the last N turns to avoid prompt bloat.
+	const sliced = history.slice(Math.max(0, history.length - maxTurns));
+
+	const messages: vscode.LanguageModelChatMessage[] = [];
+	for (const turn of sliced) {
+		if (turn instanceof vscode.ChatRequestTurn) {
+			const prompt = String((turn as any).prompt ?? '');
+			const command = (turn as any).command as (string | undefined);
+			const rendered = command ? `/${command}\n${prompt}` : prompt;
+			if (rendered.trim().length > 0) {
+				messages.push(vscode.LanguageModelChatMessage.User(rendered));
+			}
+			continue;
+		}
+
+		if (turn instanceof vscode.ChatResponseTurn) {
+			const parts = (turn as any).response as ReadonlyArray<any> | undefined;
+			if (!parts || parts.length === 0) {
+				continue;
+			}
+			// ChatResponseTurn only keeps content parts (e.g. markdown). We fold them into plain text.
+			const text = parts
+				.map((p) => {
+					if (p instanceof vscode.ChatResponseMarkdownPart) {
+						return p.value;
+					}
+					// Fallback for other parts (file tree, buttons, anchors, ...)
+					return '';
+				})
+				.join('')
+				.trim();
+
+			// Avoid polluting the next turn with low-signal boilerplate.
+			if (text.length > 0 && text !== '(no result)') {
+				messages.push(vscode.LanguageModelChatMessage.Assistant(text));
+			}
+		}
+	}
+
+	return messages;
+}
+
 export function registerPharoChatParticipant(context: vscode.ExtensionContext): void {
-	const handler: vscode.ChatRequestHandler = async (request, _chatContext, stream, token) => {
+	const handler: vscode.ChatRequestHandler = async (request, chatContext, stream, token) => {
 		if (await handleExplicitCommand(request, stream, token)) {
 			return;
 		}
@@ -195,6 +241,7 @@ export function registerPharoChatParticipant(context: vscode.ExtensionContext): 
 
 		const messages: vscode.LanguageModelChatMessage[] = [
 			vscode.LanguageModelChatMessage.User(BASE_PROMPT),
+			...chatContextToModelMessages(chatContext, 12),
 			vscode.LanguageModelChatMessage.User(request.prompt),
 		];
 

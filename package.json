@@ -1,10 +1,11 @@
 {
+	"extensionKind": ["workspace", "ui"],
 	"name": "pharo-language-server",
 	"displayName": "Pharo Language Support",
 	"description": "%extension.description%",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.2.0",
+	"version": "2.2.1",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -46,6 +47,17 @@
 				"fullName": "Pharo",
 				"description": "%chatParticipant.pharo.description%",
 				"isSticky": true,
+				"disambiguation": [
+					{
+						"category": "pharo",
+						"description": "%chatParticipant.pharo.disambiguation.description%",
+						"examples": [
+							"%chatParticipant.pharo.disambiguation.example.createClass%",
+							"%chatParticipant.pharo.disambiguation.example.readClass%",
+							"%chatParticipant.pharo.disambiguation.example.runTests%"
+						]
+					}
+				],
 				"commands": [
 					{
 						"name": "help",
@@ -87,12 +99,15 @@
 			}
 		],
 		"languageModelTools": [
-			{
-				"name": "pharo-create-package",
-				"displayName": "Pharo: créer un package",
-				"modelDescription": "%lmTool.createPackage.modelDescription%",
-				"tags": ["pharo", "smalltalk", "workspace", "create"],
-				"inputSchema": {
+				{
+					"name": "pharo-create-package",
+					"displayName": "Pharo: créer un package",
+					"modelDescription": "%lmTool.createPackage.modelDescription%",
+					"userDescription": "%lmTool.createPackage.userDescription%",
+					"toolReferenceName": "pharoCreatePackage",
+					"canBeReferencedInPrompt": true,
+					"tags": ["pharo", "smalltalk", "workspace", "create"],
+					"inputSchema": {
 					"type": "object",
 					"properties": {
 						"packageName": { "type": "string", "description": "%lmTool.createPackage.input.packageName.description%" }
@@ -100,12 +115,15 @@
 					"required": ["packageName"]
 				}
 			},
-			{
-				"name": "pharo-create-class",
-				"displayName": "Pharo: créer une classe",
-				"modelDescription": "%lmTool.createClass.modelDescription%",
-				"tags": ["pharo", "smalltalk", "create"],
-				"inputSchema": {
+				{
+					"name": "pharo-create-class",
+					"displayName": "Pharo: créer une classe",
+					"modelDescription": "%lmTool.createClass.modelDescription%",
+					"userDescription": "%lmTool.createClass.userDescription%",
+					"toolReferenceName": "pharoCreateClass",
+					"canBeReferencedInPrompt": true,
+					"tags": ["pharo", "smalltalk", "create"],
+					"inputSchema": {
 					"type": "object",
 					"properties": {
 						"packageName": { "type": "string" },
@@ -116,12 +134,15 @@
 					"required": ["packageName", "className"]
 				}
 			},
-			{
-				"name": "pharo-read-class",
-				"displayName": "Pharo: lire une classe",
-				"modelDescription": "%lmTool.readClass.modelDescription%",
-				"tags": ["pharo", "smalltalk", "read"],
-				"inputSchema": {
+				{
+					"name": "pharo-read-class",
+					"displayName": "Pharo: lire une classe",
+					"modelDescription": "%lmTool.readClass.modelDescription%",
+					"userDescription": "%lmTool.readClass.userDescription%",
+					"toolReferenceName": "pharoReadClass",
+					"canBeReferencedInPrompt": true,
+					"tags": ["pharo", "smalltalk", "read"],
+					"inputSchema": {
 					"type": "object",
 					"properties": {
 						"className": { "type": "string" }
@@ -129,22 +150,28 @@
 					"required": ["className"]
 				}
 			},
-			{
-				"name": "pharo-list-packages",
-				"displayName": "Pharo: lister les packages",
-				"modelDescription": "%lmTool.listPackages.modelDescription%",
-				"tags": ["pharo", "smalltalk", "read", "list"],
-				"inputSchema": {
+				{
+					"name": "pharo-list-packages",
+					"displayName": "Pharo: lister les packages",
+					"modelDescription": "%lmTool.listPackages.modelDescription%",
+					"userDescription": "%lmTool.listPackages.userDescription%",
+					"toolReferenceName": "pharoListPackages",
+					"canBeReferencedInPrompt": true,
+					"tags": ["pharo", "smalltalk", "read", "list"],
+					"inputSchema": {
 					"type": "object",
 					"properties": {}
 				}
 			},
-			{
-				"name": "pharo-list-classes",
-				"displayName": "Pharo: lister les classes",
-				"modelDescription": "%lmTool.listClasses.modelDescription%",
-				"tags": ["pharo", "smalltalk", "read", "list"],
-				"inputSchema": {
+				{
+					"name": "pharo-list-classes",
+					"displayName": "Pharo: lister les classes",
+					"modelDescription": "%lmTool.listClasses.modelDescription%",
+					"userDescription": "%lmTool.listClasses.userDescription%",
+					"toolReferenceName": "pharoListClasses",
+					"canBeReferencedInPrompt": true,
+					"tags": ["pharo", "smalltalk", "read", "list"],
+					"inputSchema": {
 					"type": "object",
 					"properties": {
 						"packageName": { "type": "string" }
@@ -152,12 +179,15 @@
 					"required": ["packageName"]
 				}
 			},
-			{
-				"name": "pharo-eval",
-				"displayName": "Pharo: exécuter du code",
-				"modelDescription": "%lmTool.eval.modelDescription%",
-				"tags": ["pharo", "smalltalk", "execute"],
-				"inputSchema": {
+				{
+					"name": "pharo-eval",
+					"displayName": "Pharo: exécuter du code",
+					"modelDescription": "%lmTool.eval.modelDescription%",
+					"userDescription": "%lmTool.eval.userDescription%",
+					"toolReferenceName": "pharoEval",
+					"canBeReferencedInPrompt": true,
+					"tags": ["pharo", "smalltalk", "execute"],
+					"inputSchema": {
 					"type": "object",
 					"properties": {
 						"code": { "type": "string" }
@@ -165,12 +195,15 @@
 					"required": ["code"]
 				}
 			},
-			{
-				"name": "pharo-run-class-tests",
-				"displayName": "Pharo: exécuter tests de classe",
-				"modelDescription": "%lmTool.runClassTests.modelDescription%",
-				"tags": ["pharo", "smalltalk", "test"],
-				"inputSchema": {
+				{
+					"name": "pharo-run-class-tests",
+					"displayName": "Pharo: exécuter tests de classe",
+					"modelDescription": "%lmTool.runClassTests.modelDescription%",
+					"userDescription": "%lmTool.runClassTests.userDescription%",
+					"toolReferenceName": "pharoRunClassTests",
+					"canBeReferencedInPrompt": true,
+					"tags": ["pharo", "smalltalk", "test"],
+					"inputSchema": {
 					"type": "object",
 					"properties": {
 						"className": { "type": "string" }
@@ -178,12 +211,15 @@
 					"required": ["className"]
 				}
 			},
-			{
-				"name": "pharo-run-test-method",
-				"displayName": "Pharo: exécuter un test",
-				"modelDescription": "%lmTool.runTestMethod.modelDescription%",
-				"tags": ["pharo", "smalltalk", "test"],
-				"inputSchema": {
+				{
+					"name": "pharo-run-test-method",
+					"displayName": "Pharo: exécuter un test",
+					"modelDescription": "%lmTool.runTestMethod.modelDescription%",
+					"userDescription": "%lmTool.runTestMethod.userDescription%",
+					"toolReferenceName": "pharoRunTestMethod",
+					"canBeReferencedInPrompt": true,
+					"tags": ["pharo", "smalltalk", "test"],
+					"inputSchema": {
 					"type": "object",
 					"properties": {
 						"className": { "type": "string" },
@@ -268,15 +304,18 @@
 			"pharoView": [
 				{
 					"id": "images",
-					"name": "Pharo Images"
+					"name": "%views.images.name%",
+					"icon": "media/pharo-bar.svg"
 				},
 				{
 					"id": "pharoImage",
-					"name": "Image Browser"
+					"name": "Image Browser",
+					"icon": "media/pharo-bar.svg"
 				},
 				{
 					"id": "pharoBindingView",
-					"name": "Variables"
+					"name": "Variables",
+					"icon": "media/pharo-bar.svg"
 				}
 			]
 		},
@@ -328,6 +367,24 @@
 				"command": "pharo.browseImage",
 				"title": "Browse Pharo Image",
 				"enablement": "false"
+			},
+			{
+				"command": "pharo.images.play",
+				"title": "%commands.pharo.images.play.title%",
+				"category": "Pharo",
+				"icon": "$(play)"
+			},
+			{
+				"command": "pharo.images.refresh",
+				"title": "%commands.pharo.images.refresh.title%",
+				"category": "Pharo",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "pharo.images.download",
+				"title": "%commands.pharo.images.download.title%",
+				"category": "Pharo",
+				"icon": "$(cloud-download)"
 			},
 			{
 				"command": "pharo.extensionVersion",
@@ -439,6 +496,25 @@
 			}
 		],
 		"menus": {
+			"view/title": [
+				{
+					"command": "pharo.images.download",
+					"when": "view == images",
+					"group": "navigation@0"
+				},
+				{
+					"command": "pharo.images.refresh",
+					"when": "view == images",
+					"group": "navigation@1"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "pharo.images.play",
+					"when": "view == images && viewItem == pharoImages.image",
+					"group": "inline"
+				}
+			],
 			"editor/context": [
 				{
 					"command": "pharo.showIt",
