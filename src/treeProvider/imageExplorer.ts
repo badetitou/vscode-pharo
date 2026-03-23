@@ -176,9 +176,10 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		}
 		return this.getClasses(element.name).then((result: Array<string>) => {
 			return result.sort().map((item) => {
+				let name = this.toClassName(item.split('/').slice(-1)[0]);
 				return {
-					name: item,
-					resource: this.classUri(element.name, item),
+					name: name,
+					resource: this.classUri(element.name, name),
 					isDirectory: false
 				};
 			});
