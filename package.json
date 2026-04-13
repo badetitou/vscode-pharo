@@ -665,6 +665,7 @@
 	},
 	"scripts": {
 		"compile": "tsc -b",
+		"watch": "tsc -b -w",
 		"test": "npm run compile && node ./dist/test/runTest.js",
 		"vscode:prepublish": "webpack --mode production",
 		"webpack": "webpack --mode development",
