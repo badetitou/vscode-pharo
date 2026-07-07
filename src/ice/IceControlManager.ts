@@ -40,17 +40,18 @@ export class IceRepository {
     public stagedGroup?: SourceControlResourceGroup;
     public changesGroup?: SourceControlResourceGroup;
 
-    constructor(public name: string, public valid: boolean) {}
+    constructor(public name: string, public valid: boolean) { }
 }
 
 class IceQuickDiffProvider implements QuickDiffProvider {
-    constructor(private client: LanguageClient) {}
+    constructor(private client: LanguageClient) { }
 
     provideOriginalResource(uri: Uri, _token: CancellationToken): ProviderResult<Uri> {
         return this.client
-            .sendRequest('pls-ice:originalResource', { uri: uri.toString() })
-            .then((originalUri: string) => Uri.parse(originalUri, true))
-            .catch(() => undefined);
+            .sendRequest('pls-ice:originalResource', { uri: uri.toString(true) })
+            .then((originalUri) => Uri.parse(originalUri as string, true),
+                () => undefined)
+            ;
     }
 }
 

@@ -2,6 +2,13 @@ import * as vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
 import { client } from '../extension';
 
+type TestResult = {
+	failures: any[];
+	errors: any[];
+	skipped: any[];
+	passed: any[];
+};
+
 export function initTestController() {
 	const testController = vscode.tests.createTestController('pharo-tests', 'Pharo Tests');
 	testController.resolveHandler = async test => {
@@ -25,11 +32,13 @@ export async function discoverAllTests(client: LanguageClient, testController: v
 		return []; // handle the case of no open folders
 	}
 
-	return client.sendRequest('pls:test-packages').then((tests: any[]) => {
-		for (const test of tests) {
-			testController.items.add(getTest(vscode.Uri.parse(test, true), testController));
-		}
-	});
+	return client.sendRequest('pls:test-packages')
+		.then((tests: unknown) => {
+			const testArray = tests as any[];
+			for (const test of testArray) {
+				testController.items.add(getTest(vscode.Uri.parse(test, true), testController));
+			}
+		});
 }
 
 function getTest(uri: vscode.Uri, testController: vscode.TestController, withChildren = true) {
@@ -38,7 +47,7 @@ function getTest(uri: vscode.Uri, testController: vscode.TestController, withChi
 		return existing;
 	}
 	const label = uri.path === '' ? uri.authority : (uri.fragment === '' ? uri.path.split('/').pop() : uri.fragment);
-	const file = testController.createTestItem(uri.toString(), label, uri);
+	const file = testController.createTestItem(uri.toString(), label as string, uri);
 	file.canResolveChildren = withChildren;
 	return file;
 }
@@ -46,19 +55,23 @@ function getTest(uri: vscode.Uri, testController: vscode.TestController, withChi
 function discoverTestOf(testItem: vscode.TestItem, testController: vscode.TestController) {
 	if (testItem.parent === undefined) {
 		// I am a test package
-		client.sendRequest('pls:test-in-package', { "aPackageURI": testItem.uri }).then((testClasses: any[]) => {
-			for (const test of testClasses) {
+		client.sendRequest('pls:test-in-package', { "aPackageURI": testItem.uri })
+		.then((testClasses: unknown) => {
+			const classes = testClasses as any[];
+			for (const test of classes) {
 				testItem.children.add(getTest(vscode.Uri.parse(test, true), testController));
 			}
 		});
 	}
 	else {
 		// I am a Test class
-		client.sendRequest('pls:test-in-class', { "aClassURI": testItem.uri }).then((testMethods: any[]) => {
-			for (const test of testMethods) {
-				testItem.children.add(getTest(vscode.Uri.parse(test, true), testController, false));
-			}
-		});
+		client.sendRequest('pls:test-in-class', { "aClassURI": testItem.uri })
+			.then((testMethods: unknown) => {
+				const methods = testMethods as any[];
+				for (const test of methods) {
+					testItem.children.add(getTest(vscode.Uri.parse(test, true), testController, false));
+				}
+			});
 	}
 }
 
@@ -97,7 +110,7 @@ async function runTestHandler(
 				const result = await assertTestPasses(test);
 				result.passed.length === 0 ? run.failed(test, new vscode.TestMessage('fail')) : run.passed(test, Date.now() - start);
 			} catch (e) {
-				run.failed(test, new vscode.TestMessage(e.message), Date.now() - start);
+				run.failed(test, new vscode.TestMessage((e as Error).message), Date.now() - start);
 			}
 		} else {
 			test.children.forEach(test => queue.push(test));
@@ -108,9 +121,9 @@ async function runTestHandler(
 	run.end();
 }
 
-function assertTestPasses(test: vscode.TestItem): Promise<{ failures: any[], errors: any[], skipped: any[], passed: any[] }> {
-	return client.sendRequest('pls:test-execute-test', { "aTestURI": test.uri }).then((result: { failures: any[], errors: any[], skipped: any[], passed: any[] }) => {
-		console.log(result);
-		return result;
+function assertTestPasses(test: vscode.TestItem): Promise<TestResult> {
+	return client.sendRequest('pls:test-execute-test', { "aTestURI": test.uri })
+	.then((result: unknown) => {
+		return result as TestResult;
 	});
 }

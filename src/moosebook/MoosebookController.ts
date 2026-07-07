@@ -47,9 +47,11 @@ export class MoosebookController {
 		const execution = this._controller.createNotebookCellExecution(cell);
 		execution.executionOrder = ++this._executionOrder;
 		execution.start(Date.now()); // Keep track of elapsed time to execute cell.
-		await client.sendRequest('command:notebookPrintIt', { "line": cell.document.getText(), "textDocumentURI": cell.document.uri  }).then((results: PharoResponse[]) => {
-			let items = [];
-			results.forEach((value) => {
+		await client.sendRequest('command:notebookPrintIt', { "line": cell.document.getText(), "textDocumentURI": cell.document.uri  })
+		.then((results: unknown) => {
+			const pharoResults = results as PharoResponse[];
+			let items: NotebookCellOutputItem[] = [];
+			pharoResults.forEach((value) => {
 				if(value.mimetype === 'error') {
 					items.push(NotebookCellOutputItem.error(new Error(value.content)));
 				} else {

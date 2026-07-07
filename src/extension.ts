@@ -66,11 +66,13 @@ export async function activate(context: ExtensionContext) {
 	try {
 		resolvedRequirements = await requirements.resolveRequirements();
 	} catch (error) {
-		window.showErrorMessage(error.message, error.label).then((selection) => {
-			if (error.label && error.label === selection && error.command) {
-				commands.executeCommand(error.command, error.commandParam);
-			}
-		});
+		if (error instanceof requirements.RequirementsError) {
+			window.showErrorMessage(error.message, error.label).then((selection) => {
+				if (error.label && error.label === selection && error.command) {
+					commands.executeCommand(error.command, error.commandParam);
+				}
+			});
+		}
 		setStatusBarText('Configuration error');
 		return;
 	}
@@ -174,15 +176,15 @@ async function commandPharoImagesDownload(): Promise<void> {
 	}
 
 	const quickInstallConfig = workspace.getConfiguration('pharo quick install');
-	const serverVersion: string = quickInstallConfig.get('server version');
-	const sourceImageName: string = quickInstallConfig.get('image name');
+	const serverVersion: string = quickInstallConfig.get('server version') as string;
+	const sourceImageName: string = quickInstallConfig.get('image name') as string;
 	const zipUri = pharoLanguageServerImageZipUri(serverVersion, sourceImageName);
 
 	let downloadedDirectory: Uri;
 	try {
 		downloadedDirectory = await download(zipUri, true, sourceImageName);
 	} catch (error) {
-		window.showErrorMessage(`Téléchargement impossible: ${error?.message ?? String(error)}`);
+		window.showErrorMessage(`Téléchargement impossible: ${(error as Error).message ?? String(error)}`);
 		return;
 	}
 
@@ -192,7 +194,7 @@ async function commandPharoImagesDownload(): Promise<void> {
 		await workspace.fs.createDirectory(rootFolder);
 		await copyDirectoryRecursive(downloadedDirectory, targetFolder);
 	} catch (error) {
-		window.showErrorMessage(`Impossible de copier l'image vers ${targetFolder.fsPath}: ${error?.message ?? String(error)}`);
+		window.showErrorMessage(`Impossible de copier l'image vers ${targetFolder.fsPath}: ${(error as Error)?.message ?? String(error)}`);
 		return;
 	}
 
@@ -254,7 +256,7 @@ async function commandPharoImagesDownload(): Promise<void> {
 	try {
 		workspaceUri = await createWorkspaceForImage(imageUri);
 	} catch (error) {
-		window.showErrorMessage(`Impossible de créer le workspace: ${error?.message ?? String(error)}`);
+		window.showErrorMessage(`Impossible de créer le workspace: ${(error as Error)?.message ?? String(error)}`);
 		return;
 	}
 
@@ -277,25 +279,34 @@ export function deactivate() {
  */
 
 function commandPharoExtensionVersion() {
-	client.sendRequest("command:version").then((result: string) => {
+	client.sendRequest("command:version").then((result) => {
 		console.log(result);
-		window.showInformationMessage(result);
+		window.showInformationMessage(result as string);
 	});
 }
 
 function commandPharoDoIt() {
 	let editor = window.activeTextEditor;
+	if (!editor) {
+		return;
+	}
 	let selection = editor.selection;
-	client.sendRequest('command:printIt', { "line": editor.document.getText(selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
-		documentExplorer.refresh();
-	}).catch((error) => window.showErrorMessage(error));
+	client.sendRequest('command:printIt', { "line": editor.document.getText(selection), "textDocumentURI": editor.document.uri })
+		.then(() => {
+			documentExplorer.refresh();
+		}).catch((error) => window.showErrorMessage(error));
+
 }
 
 
 function commandPharoPrintIt() {
 	let editor = window.activeTextEditor;
+	if (!editor) {
+		return;
+	}
 	let selection = editor.selection;
-	client.sendRequest('command:printIt', { "line": editor.document.getText(selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
+	client.sendRequest('command:printIt', { "line": editor.document.getText(selection), "textDocumentURI": editor.document.uri })
+	.then((result) => {
 		editor.edit(editBuilder => {
 			editBuilder.replace(new Selection(selection.end, selection.end), ' "' + result + '" ');
 		});
@@ -305,15 +316,19 @@ function commandPharoPrintIt() {
 
 function commandPharoShowIt() {
 	let editor = window.activeTextEditor;
-	client.sendRequest('command:printIt', { "line": editor.document.getText(editor.selection), "textDocumentURI": editor.document.uri }).then((result: string) => {
-		window.showInformationMessage(result);
+	if (!editor) {
+		return;
+	}
+	client.sendRequest('command:printIt', { "line": editor.document.getText(editor.selection), "textDocumentURI": editor.document.uri })
+	.then((result) => {
+		window.showInformationMessage(result as string);
 		documentExplorer.refresh();
 	}).catch((error) => window.showErrorMessage(error));
 }
 
 function commandPharoSave() {
-	client.sendRequest('command:save').then((result: string) => {
-		window.showInformationMessage(result);
+	client.sendRequest('command:save').then((result) => {
+		window.showInformationMessage(result as string);
 	}).catch((error) => window.showErrorMessage(error));
 }
 
@@ -327,8 +342,8 @@ async function commandPharoCreatePackage(_target?: unknown) {
 		return;
 	}
 
-	client.sendRequest('pls:createPackage', { packageName }).then((result: string) => {
-		window.showInformationMessage(result);
+	client.sendRequest('pls:createPackage', { packageName }).then((result) => {
+		window.showInformationMessage(result as string);
 		pharoImageExplorer.refresh();
 	}).catch((error) => window.showErrorMessage(error));
 }
@@ -364,8 +379,8 @@ async function commandPharoCreateClass(target?: unknown) {
 		className,
 		superclassName,
 		instanceVariables
-	}).then((result: string) => {
-		window.showInformationMessage(result);
+	}).then((result) => {
+		window.showInformationMessage(result as string);
 		pharoImageExplorer.refresh();
 		void commands.executeCommand(
 			'vscode.open',
@@ -405,8 +420,8 @@ async function commandPharoIceAddPackage() {
 	client.sendRequest('pls-ice:addPackage', {
 		aRepositoryName: selectedRepository,
 		packageName
-	}).then((result: string) => {
-		window.showInformationMessage(result);
+	}).then((result) => {
+		window.showInformationMessage(result as string);
 		void commands.executeCommand('pharo.ice.refresh');
 	}).catch((error) => window.showErrorMessage(error));
 }
@@ -497,19 +512,19 @@ function uriFromCommandTarget(target: unknown): Uri | undefined {
 }
 
 function commandPharoExecuteTest(aClass: string, testMethod: string) {
-	client.sendRequest('pls:executeClassTest', { class: aClass, testMethod: testMethod }).then((result: string) => {
-		window.showInformationMessage(result);
+	client.sendRequest('pls:executeClassTest', { class: aClass, testMethod: testMethod }).then((result) => {
+		window.showInformationMessage(result as string);
 	}).catch((error) => window.showErrorMessage(error));
 }
 
 function commandPharoExecuteClassTests(aClass: string) {
-	client.sendRequest('pls:executeClassTests', { className: aClass }).then((result: string) => {
-		window.showInformationMessage(result);
+	client.sendRequest('pls:executeClassTests', { className: aClass }).then((result) => {
+		window.showInformationMessage(result as string);
 	}).catch((error) => window.showErrorMessage(error));
 }
 
 function commandPharoCreateProject() {
-	let rootProject: Uri = workspace.workspaceFolders.at(0).uri;
+	let rootProject: Uri = workspace.workspaceFolders![0].uri;
 	workspace.fs.createDirectory(Uri.file(rootProject.fsPath + "/src"));
 	workspace.fs.writeFile(
 		Uri.file(rootProject.fsPath + "\\.project"),
@@ -582,14 +597,14 @@ export async function commandPharoInstallLastVersion() {
 	}
 
 	// Download pharo VM
-	let vmVersion: string = workspace.getConfiguration('pharo quick install').get('server VM version');
+	let vmVersion: string = workspace.getConfiguration('pharo quick install').get('server VM version') as string;
 	let vmDirectory = await download(pharoVmZipUri(vmVersion), true, 'pharoVM');
 	workspace.getConfiguration('pharo').update('pathToVM', pharoVmExecutablePath(vmDirectory), true);
 	window.showInformationMessage('VM updated. Please wait');
 
 	// Download image
-	let imageName: string = workspace.getConfiguration('pharo quick install').get('image name');
-	let serverVersion: string = workspace.getConfiguration('pharo quick install').get('server version');
+	let imageName: string = workspace.getConfiguration('pharo quick install').get('image name') as string;
+	let serverVersion: string = workspace.getConfiguration('pharo quick install').get('server version') as string;
 	let pharoDirectory = await download(pharoLanguageServerImageZipUri(serverVersion, imageName), true, imageName);
 	workspace.getConfiguration('pharo').update('pathToImage', pharoImageFilePath(pharoDirectory, imageName), true);
 
@@ -728,6 +743,9 @@ async function createServerWithSocket(pharoPath: string, pathToImage: string, co
 async function getSocket(dls: child_process.ChildProcess): Promise<net.Socket> {
 	return new Promise(function (resolve) {
 		let socket: net.Socket;
+		if (dls.stdout === null) {
+			throw new Error('Pharo Language Server stdout is null');
+		}
 		dls.stdout.on('data', (data) => {
 			console.log(`Try to connect to port ${data}`);
 			socket = net.connect({ port: parseInt(data), host: '127.0.0.1' }, () => {

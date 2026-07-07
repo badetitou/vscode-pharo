@@ -3,6 +3,7 @@
 ## v2.3.0
 
 - Better support of images in workspace folders.
+- Upgrade plugin dependencies
 
 ## v2.2.1
 

@@ -7,8 +7,8 @@ export class DebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory
 
 	async createDebugAdapterDescriptor(session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable): Promise<vscode.ProviderResult<vscode.DebugAdapterDescriptor>> {
 
-		const port : Promise<number> = client.sendRequest('dap:startServer', { }).then((result: number) => {
-			return result;
+		const port : Promise<number> = client.sendRequest('dap:startServer', { }).then((result) => {
+			return result as number;
 		});
 
 		// make VS Code connect to debug server
