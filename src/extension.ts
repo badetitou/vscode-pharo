@@ -24,6 +24,7 @@ import { initTestController } from './testController/testController';
 import { PharoImagesExplorer, PharoImagesNode, createWorkspaceForImage } from './treeProvider/pharoImages';
 import { registerPharoLanguageModelTools } from './ai/pharoLmTools';
 import { registerPharoChatParticipant } from './ai/pharoChatParticipant';
+import { buildPharoUri, ICE_REPOSITORY_QUERY_KEY, repositoryNameFromPharoUri } from './treeProvider/pharoUri';
 
 
 export let client: LanguageClient;
@@ -35,9 +36,9 @@ export let iceControlManager: IceControlManager;
 let pharoImagesExplorer: PharoImagesExplorer;
 
 let plsStatusBar: StatusBarItem;
+let pharoRepositoryStatusBar: StatusBarItem;
 const PHARO_IMAGE_WORKSPACE_SCHEME = 'pharoImage';
 const PHARO_IMAGE_WORKSPACE_NAME = 'Pharo Image';
-const PHARO_IMAGE_REPOSITORY_QUERY_KEY = 'iceRepository';
 let pharoImageExplorer: PharoImageExplorer;
 
 export async function activate(context: ExtensionContext) {
@@ -48,6 +49,7 @@ export async function activate(context: ExtensionContext) {
 	registerPharoLanguageModelTools(context);
 	registerPharoChatParticipant(context);
 	initStatusBar(extensionContext);
+	registerRepositoryContextUi(context);
 	// Create new command
 	createCommands(context);
 	pharoImagesExplorer = new PharoImagesExplorer(context);
@@ -105,6 +107,11 @@ export async function activate(context: ExtensionContext) {
 	} catch (err) {
 		setStatusBarText('Error Pharo Language Server');
 	}
+}
+
+function registerRepositoryContextUi(context: ExtensionContext) {
+	context.subscriptions.push(window.onDidChangeActiveTextEditor(() => updateRepositoryStatusBar()));
+	updateRepositoryStatusBar();
 }
 
 function createCommands(context: ExtensionContext) {
@@ -332,7 +339,7 @@ function commandPharoSave() {
 	}).catch((error) => window.showErrorMessage(error));
 }
 
-async function commandPharoCreatePackage(_target?: unknown) {
+async function commandPharoCreatePackage(target?: unknown) {
 	const packageName = (await window.showInputBox({
 		title: 'Create Pharo Package',
 		placeHolder: 'Package name',
@@ -342,7 +349,16 @@ async function commandPharoCreatePackage(_target?: unknown) {
 		return;
 	}
 
-	client.sendRequest('pls:createPackage', { packageName }).then((result) => {
+	const targetUri = uriFromCommandTarget(target);
+	const repositoryName = repositoryNameFromPharoUri(targetUri);
+
+	client.sendRequest('pls:createPackage', { packageName }).then(async (result) => {
+		if (repositoryName) {
+			await client.sendRequest('pls-ice:addPackage', {
+				aRepositoryName: repositoryName,
+				packageName
+			});
+		}
 		window.showInformationMessage(result as string);
 		pharoImageExplorer.refresh();
 	}).catch((error) => window.showErrorMessage(error));
@@ -380,11 +396,12 @@ async function commandPharoCreateClass(target?: unknown) {
 		superclassName,
 		instanceVariables
 	}).then((result) => {
+		const targetUri = uriFromCommandTarget(target);
 		window.showInformationMessage(result as string);
 		pharoImageExplorer.refresh();
 		void commands.executeCommand(
 			'vscode.open',
-			Uri.from({ scheme: 'pharoImage', path: `/${packageName}/${className}.class.st` })
+			pharoClassUri(packageName, className, targetUri)
 		);
 	}).catch((error) => window.showErrorMessage(error));
 }
@@ -480,6 +497,11 @@ function packageNameFromPharoFolderTarget(target: unknown): string | undefined {
 		.filter((segment) => segment.length > 0)
 		.map((segment) => decodeURIComponent(segment));
 	return segments.length === 1 ? segments[0] : undefined;
+}
+
+function pharoClassUri(packageName: string, className: string, sourceUri?: Uri): Uri {
+	const repositoryName = repositoryNameFromPharoUri(sourceUri);
+	return buildPharoUri(`/${packageName}/${className}.class.st`, repositoryName, PHARO_IMAGE_WORKSPACE_SCHEME);
 }
 
 function uriFromCommandTarget(target: unknown): Uri | undefined {
@@ -715,7 +737,7 @@ function isRepositoryScopedImageFolder(uri: Uri): boolean {
 		return false;
 	}
 	const query = new URLSearchParams(uri.query);
-	const repositoryName = query.get(PHARO_IMAGE_REPOSITORY_QUERY_KEY);
+	const repositoryName = query.get(ICE_REPOSITORY_QUERY_KEY);
 	return repositoryName !== null && repositoryName.trim().length > 0;
 }
 
@@ -764,6 +786,11 @@ function initStatusBar(context: ExtensionContext) {
 	plsStatusBar.tooltip = 'Pharo Language Server';
 	plsStatusBar.command = 'extension.showQuickPick';
 
+	pharoRepositoryStatusBar = window.createStatusBarItem(StatusBarAlignment.Right, 99);
+	pharoRepositoryStatusBar.name = 'Pharo Iceberg Repository';
+	pharoRepositoryStatusBar.tooltip = 'Iceberg repository for the active Pharo document';
+	context.subscriptions.push(pharoRepositoryStatusBar);
+
 	commands.registerCommand('extension.showQuickPick', async () => {
 		const addImageOption = '$(folder-opened) Add Image to Workspace';
 		const openSettingsOption = '$(settings-gear) Open Settings';
@@ -781,6 +808,7 @@ function initStatusBar(context: ExtensionContext) {
 
 	plsStatusBar.show();
 	setStatusBarText('Starting Up');
+	updateRepositoryStatusBar();
 }
 
 function setStatusBarText(text: string) {
@@ -789,4 +817,17 @@ function setStatusBarText(text: string) {
 
 function resetStatusBarText() {
 	plsStatusBar.text = "$(pls-icon)";
+}
+
+function updateRepositoryStatusBar() {
+	const uri = window.activeTextEditor?.document.uri;
+	const repositoryName = repositoryNameFromPharoUri(uri);
+	if (!repositoryName) {
+		pharoRepositoryStatusBar?.hide();
+		return;
+	}
+
+	pharoRepositoryStatusBar.text = `$(repo) ${repositoryName}`;
+	pharoRepositoryStatusBar.tooltip = `Iceberg repository: ${repositoryName}`;
+	pharoRepositoryStatusBar.show();
 }

@@ -1,17 +1,17 @@
 import * as vscode from 'vscode';
 import { client } from '../extension';
+import { buildPharoUri, ICE_REPOSITORY_QUERY_KEY, repositoryNameFromPharoUri } from './pharoUri';
 
 export interface PharoNode {
 	name: string;
 	resource: vscode.Uri;
 	isDirectory: boolean;
+	repositoryName?: string;
 }
 
 const CLASS_FILE_SUFFIX = '.class.st';
 const PACKAGES_CACHE_TTL_MS = 2000;
 const CLASSES_CACHE_TTL_MS = 2000;
-const ICE_REPOSITORY_QUERY_KEY = 'iceRepository';
-
 export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vscode.FileSystemProvider {
 
 	private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>();
@@ -175,13 +175,15 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 				return result.sort().map((item) => { return { name: item, resource: this.packageUri(item), isDirectory: true }; });
 			});
 		}
+		const repositoryName = element.repositoryName ?? this.repositoryNameFrom(element.resource);
 		return this.getClasses(element.name).then((result: Array<string>) => {
 			return result.sort().map((item) => {
 				let name = this.toClassName(item.split('/').slice(-1)[0]);
 				return {
 					name: name,
-					resource: this.classUri(element.name, name),
-					isDirectory: false
+					resource: this.classUri(element.name, name, repositoryName),
+					isDirectory: false,
+					repositoryName
 				};
 			});
 		});
@@ -308,12 +310,7 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 	}
 
 	private repositoryNameFrom(uri: vscode.Uri): string | undefined {
-		if (!uri.query) {
-			return undefined;
-		}
-		const query = new URLSearchParams(uri.query);
-		const repositoryName = query.get(ICE_REPOSITORY_QUERY_KEY);
-		return repositoryName && repositoryName.length > 0 ? repositoryName : undefined;
+		return repositoryNameFromPharoUri(uri);
 	}
 
 	private async createPackageForUri(packageName: string, uri: vscode.Uri): Promise<void> {
@@ -339,12 +336,16 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		return run;
 	}
 
-	private packageUri(packageName: string): vscode.Uri {
-		return vscode.Uri.from({ scheme: 'pharoImage', path: `/${packageName}` });
+	private packageUri(packageName: string, repositoryName?: string): vscode.Uri {
+		return this.pharoUri(`/${packageName}`, repositoryName);
 	}
 
-	private classUri(packageName: string, className: string): vscode.Uri {
-		return vscode.Uri.from({ scheme: 'pharoImage', path: `/${packageName}/${this.toClassFilename(className)}` });
+	private classUri(packageName: string, className: string, repositoryName?: string): vscode.Uri {
+		return this.pharoUri(`/${packageName}/${this.toClassFilename(className)}`, repositoryName);
+	}
+
+	private pharoUri(path: string, repositoryName?: string): vscode.Uri {
+		return buildPharoUri(path, repositoryName);
 	}
 
 	private directoryStat(): vscode.FileStat {

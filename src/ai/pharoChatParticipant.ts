@@ -179,7 +179,38 @@ const BASE_PROMPT = [
 	'- When an action is needed, prefer calling a `pharo-*` tool rather than inventing.',
 	'- Ask for clarification if information is missing (package name, class name, etc.).',
 	'- Return concise answers',
+	'- Virtual file systems with scheme `pharoImage` are registered as workspace folders.',
+	'  Use VS Code built-in file tools (list_directory, read_file) on `pharoImage://` URIs to browse packages and classes.',
+	'  Structure: `pharoImage:/` → root lists packages (directories); `pharoImage:/PackageName/` → lists class files (*.class.st).',
+	'  A `pharoImage:/?iceRepository=RepoName` URI scopes the view to a specific Iceberg repository.',
+	'- Prefer VFS navigation for exploration; use `pharo-*` tools for actions (create, eval, test).',
+	'- To EDIT a Pharo class: use VS Code built-in edit_file on its `pharoImage:/PackageName/ClassName.class.st` URI.',
+	'  Saving the file (after editing) automatically propagates the change to the Pharo image via the language server (textDocument/didSave).',
+	'  Do NOT use pharo-eval to rewrite entire class definitions; prefer direct file editing on the pharoImage:// URI.',
 ].join('\n');
+
+function buildWorkspaceFoldersContextMessage(): vscode.LanguageModelChatMessage {
+	const folders = vscode.workspace.workspaceFolders ?? [];
+	if (folders.length === 0) {
+		return vscode.LanguageModelChatMessage.User('No workspace folders are currently open.');
+	}
+
+	const lines: string[] = ['Available workspace folders:'];
+	for (const folder of folders) {
+		const uri = folder.uri.toString(true);
+		if (folder.uri.scheme === 'pharoImage') {
+			const query = folder.uri.query ? new URLSearchParams(folder.uri.query) : undefined;
+			const repo = query?.get('iceRepository');
+			const annotation = repo
+				? `virtual Pharo FS scoped to Iceberg repository "${repo}"`
+				: 'virtual Pharo FS: root lists all packages, subdirectories list classes as *.class.st files';
+			lines.push(`- "${folder.name}"  ${uri}  (${annotation})`);
+		} else {
+			lines.push(`- "${folder.name}"  ${uri}`);
+		}
+	}
+	return vscode.LanguageModelChatMessage.User(lines.join('\n'));
+}
 
 function chatContextToModelMessages(chatContext: vscode.ChatContext, maxTurns: number): vscode.LanguageModelChatMessage[] {
 	// VS Code only includes turns for the current participant.
@@ -242,6 +273,7 @@ export function registerPharoChatParticipant(context: vscode.ExtensionContext): 
 		const messages: vscode.LanguageModelChatMessage[] = [
 			vscode.LanguageModelChatMessage.User(BASE_PROMPT),
 			...chatContextToModelMessages(chatContext, 12),
+			buildWorkspaceFoldersContextMessage(),
 			vscode.LanguageModelChatMessage.User(request.prompt),
 		];
 
