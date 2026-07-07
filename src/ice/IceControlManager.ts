@@ -285,13 +285,13 @@ export class IceControlManager implements IDisposable {
                     command: {
                         command: 'pharo.ice.openDiff',
                         title: 'Open Changes',
-                        arguments: [repositoryName, resourceUri.toString()]
+                        arguments: [repositoryName, resourceUri.toString(true)]
                     },
                     decorations: this.decorationsForStatus(resource.status),
                     contextValue: this.contextValueFor(resource.status)
                 };
             })
-            .sort((left, right) => left.resourceUri.toString().localeCompare(right.resourceUri.toString()));
+            .sort((left, right) => left.resourceUri.toString(true).localeCompare(right.resourceUri.toString(true)));
     }
 
     private contextValueFor(status?: string): string {
@@ -344,7 +344,7 @@ export class IceControlManager implements IDisposable {
         try {
             const originalUriString = await this._client.sendRequest(
                 'pls-ice:originalResource',
-                { uri: resourceUri.toString() }
+                { uri: resourceUri.toString(true) }
             ) as string | undefined;
 
             if (!originalUriString) {
@@ -439,7 +439,7 @@ export class IceControlManager implements IDisposable {
 
     private displayNameFor(uri: Uri): string {
         const segments = uri.path.split('/');
-        return segments.length > 0 ? segments[segments.length - 1] : uri.toString();
+        return segments.length > 0 ? segments[segments.length - 1] : uri.toString(true);
     }
 
     private syncRepositoryWorkspaceFolders(repositories: IceRepository[]): void {

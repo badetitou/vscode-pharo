@@ -101,7 +101,8 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		}
 
 		if (this.isIceOriginalUri(uri)) {
-			return this.sendRequestSerialized<string>('pls-ice:originalContent', { uri: uri.toString() }).then((result: string) => Buffer.from(result));
+			return this.sendRequestSerialized<string>('pls-ice:originalContent', { uri: uri.toString(true) })
+			.then((result: string) => Buffer.from(result));
 		}
 
 		const className = this.toClassName(segments[segments.length - 1]);

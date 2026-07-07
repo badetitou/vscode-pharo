@@ -281,8 +281,8 @@ export function registerPharoLanguageModelTools(context: vscode.ExtensionContext
 				snapshot.forEach((state, name) => {
 					if (repositoryName && name !== repositoryName) { return; }
 					result[name] = {
-						changes: state.changes.map(r => r.resourceUri.toString()),
-						stagedChanges: state.stagedChanges.map(r => r.resourceUri.toString())
+						changes: state.changes.map(r => r.resourceUri.toString(true)),
+						stagedChanges: state.stagedChanges.map(r => r.resourceUri.toString(true))
 					};
 				});
 				return jsonResult(result);
@@ -334,7 +334,7 @@ export function registerPharoLanguageModelTools(context: vscode.ExtensionContext
 				return textResult(computeUnifiedDiff(
 					originalContent,
 					modifiedContent,
-					originalUri.toString(),
+					originalUri.toString(true),
 					uri
 				));
 			}

@@ -42,12 +42,12 @@ export async function discoverAllTests(client: LanguageClient, testController: v
 }
 
 function getTest(uri: vscode.Uri, testController: vscode.TestController, withChildren = true) {
-	const existing = testController.items.get(uri.toString());
+	const existing = testController.items.get(uri.toString(true));
 	if (existing) {
 		return existing;
 	}
 	const label = uri.path === '' ? uri.authority : (uri.fragment === '' ? uri.path.split('/').pop() : uri.fragment);
-	const file = testController.createTestItem(uri.toString(), label as string, uri);
+	const file = testController.createTestItem(uri.toString(true), label as string, uri);
 	file.canResolveChildren = withChildren;
 	return file;
 }
