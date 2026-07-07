@@ -29,6 +29,7 @@
 		"vscode": "^1.96.0"
 	},
 	"activationEvents": [
+		"onLanguage:pharo",
 		"onDebugResolve:pharodb",
 		"onFileSystem:pharoImage",
 		"onNotebook:moosebook",
