@@ -35,6 +35,16 @@
 	"lmTool.runTestMethod.modelDescription": "Runs a test method (class + selector) in the Pharo image.",
 	"lmTool.runTestMethod.userDescription": "Run one test method in the active Pharo image.",
 
+	"lmTool.iceListChanges.modelDescription": "Lists modified/staged resources tracked by Iceberg. Reads from the in-memory SCM state — no extra LSP call. Returns JSON with changes and stagedChanges (URIs) per repository. Use those URIs as input to pharo-ice-show-diff.",
+	"lmTool.iceListChanges.userDescription": "List Iceberg changes in the active Pharo image.",
+	"lmTool.iceListChanges.input.repositoryName.description": "Name of the Iceberg repository to inspect. If omitted, all valid repositories are listed.",
+
+	"lmTool.iceShowDiff.modelDescription": "Returns the unified diff of a resource tracked by Iceberg and optionally opens the diff editor. The original content is fetched via the existing pharoImage FileSystem provider (no extra LSP call). Call pharo-ice-list-changes first to get a URI.",
+	"lmTool.iceShowDiff.userDescription": "Show the Iceberg diff for a resource in the active Pharo image.",
+	"lmTool.iceShowDiff.input.uri.description": "URI of the changed resource (e.g. pharoImage:/MyPackage/MyClass.class.st).",
+	"lmTool.iceShowDiff.input.repositoryName.description": "Repository name used in the diff editor title (optional).",
+	"lmTool.iceShowDiff.input.openEditor.description": "Open the VS Code diff editor in addition to returning the patch text (default: true).",
+
 	"configuration.pharo.pathToVM.description": "The Pharo VM used to run the Pharo image hosting the Pharo Language Server. Choose a VM compatible with the selected image.",
 	"configuration.pharo.pathToImage.description": "The Pharo image that can run the Pharo Language Server (https://github.com/badetitou/Pharo-LanguageServer).",
 	"configuration.pharo.imageWorkspace.description": "Expose pharoImage:/ as a workspace folder so extensions supporting virtual workspaces (for example AI assistants) can read classes from the running image.",

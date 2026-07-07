@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.3.0
+
+- Better support of images in workspace folders.
+
 ## v2.2.1
 
 - Add a dedicated **Pharo Images** view (with icons) to browse images from `~/Documents/Pharo/images`

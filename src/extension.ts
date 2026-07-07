@@ -30,6 +30,7 @@ export let client: LanguageClient;
 export let documentExplorer: PharoDocumentExplorer;
 let dls: child_process.ChildProcess;
 export let extensionContext: ExtensionContext;
+export let iceControlManager: IceControlManager;
 
 let pharoImagesExplorer: PharoImagesExplorer;
 
@@ -92,7 +93,7 @@ export async function activate(context: ExtensionContext) {
 		context.subscriptions.push(new MoosebookController());
 
 		// Create Ice
-		let iceControlManager = new IceControlManager(client);
+		iceControlManager = new IceControlManager(client);
 		context.subscriptions.push(iceControlManager);
 
 		// Create Tests

@@ -227,6 +227,39 @@
 					},
 					"required": ["className", "testMethod"]
 				}
+			},
+				{
+					"name": "pharo-ice-list-changes",
+					"displayName": "Pharo Iceberg: lister les modifications",
+					"modelDescription": "%lmTool.iceListChanges.modelDescription%",
+					"userDescription": "%lmTool.iceListChanges.userDescription%",
+					"toolReferenceName": "pharoIceListChanges",
+					"canBeReferencedInPrompt": true,
+					"tags": ["pharo", "smalltalk", "iceberg", "git", "diff"],
+					"inputSchema": {
+					"type": "object",
+					"properties": {
+						"repositoryName": { "type": "string", "description": "%lmTool.iceListChanges.input.repositoryName.description%" }
+					}
+				}
+			},
+				{
+					"name": "pharo-ice-show-diff",
+					"displayName": "Pharo Iceberg: afficher le diff",
+					"modelDescription": "%lmTool.iceShowDiff.modelDescription%",
+					"userDescription": "%lmTool.iceShowDiff.userDescription%",
+					"toolReferenceName": "pharoIceShowDiff",
+					"canBeReferencedInPrompt": true,
+					"tags": ["pharo", "smalltalk", "iceberg", "git", "diff"],
+					"inputSchema": {
+					"type": "object",
+					"properties": {
+						"uri": { "type": "string", "description": "%lmTool.iceShowDiff.input.uri.description%" },
+						"repositoryName": { "type": "string", "description": "%lmTool.iceShowDiff.input.repositoryName.description%" },
+						"openEditor": { "type": "boolean", "description": "%lmTool.iceShowDiff.input.openEditor.description%", "default": true }
+					},
+					"required": ["uri"]
+				}
 			}
 		],
 		"configuration": {

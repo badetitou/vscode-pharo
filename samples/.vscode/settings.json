@@ -1,6 +1,6 @@
 {
 	"pharo.debugMode": true,
     "pharo.headless": false,
-    "pharo.imageWorkspace": false,
+    "pharo.imageWorkspace": true,
     "pharoLanguageServer.trace.server": "verbose"
 }

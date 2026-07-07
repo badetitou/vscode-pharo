@@ -35,6 +35,16 @@
 	"lmTool.runTestMethod.modelDescription": "Exécute une méthode de test (classe + sélecteur) dans l'image Pharo.",
 	"lmTool.runTestMethod.userDescription": "Exécuter une méthode de test dans l'image Pharo active.",
 
+	"lmTool.iceListChanges.modelDescription": "Liste les ressources modifiées ou en staged suivies par Iceberg. Lit l'état SCM en mémoire — aucun appel LSP supplémentaire. Retourne du JSON avec changes et stagedChanges (URI) par dépôt. Utilisez ces URI dans pharo-ice-show-diff.",
+	"lmTool.iceListChanges.userDescription": "Lister les modifications Iceberg dans l'image Pharo active.",
+	"lmTool.iceListChanges.input.repositoryName.description": "Nom du dépôt Iceberg à inspecter. Si omis, tous les dépôts valides sont listés.",
+
+	"lmTool.iceShowDiff.modelDescription": "Retourne le diff unifié d'une ressource suivie par Iceberg et ouvre optionnellement l'éditeur de diff. Le contenu original est lu via le FileSystem provider pharoImage existant — pas d'appel LSP supplémentaire. Appelez d'abord pharo-ice-list-changes pour obtenir une URI.",
+	"lmTool.iceShowDiff.userDescription": "Afficher le diff Iceberg d'une ressource dans l'image Pharo active.",
+	"lmTool.iceShowDiff.input.uri.description": "URI de la ressource modifiée (ex : pharoImage:/MonPackage/MaClasse.class.st).",
+	"lmTool.iceShowDiff.input.repositoryName.description": "Nom du dépôt utilisé dans le titre de l'éditeur de diff (optionnel).",
+	"lmTool.iceShowDiff.input.openEditor.description": "Ouvrir l'éditeur de diff VS Code en plus de retourner le patch texte (défaut : true).",
+
 	"configuration.pharo.pathToVM.description": "La VM Pharo utilisée pour exécuter l'image hébergeant le Pharo Language Server. Choisissez une VM compatible avec l'image sélectionnée.",
 	"configuration.pharo.pathToImage.description": "L'image Pharo capable d'exécuter le Pharo Language Server (https://github.com/badetitou/Pharo-LanguageServer).",
 	"configuration.pharo.imageWorkspace.description": "Expose pharoImage:/ comme dossier d'espace de travail afin que les extensions supportant les espaces de travail virtuels (par ex. assistants IA) puissent lire des classes depuis l'image en cours d'exécution.",

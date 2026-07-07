@@ -74,6 +74,18 @@ export class IceControlManager implements IDisposable {
         this.disposables.forEach((d) => d.dispose());
     }
 
+    /** Returns the current in-memory SCM state — zero LSP calls. */
+    public getChangesSnapshot(): Map<string, { changes: SourceControlResourceState[]; stagedChanges: SourceControlResourceState[] }> {
+        const result = new Map<string, { changes: SourceControlResourceState[]; stagedChanges: SourceControlResourceState[] }>();
+        this.repositories.forEach((repo, name) => {
+            result.set(name, {
+                changes: repo.changesGroup?.resourceStates ?? [],
+                stagedChanges: repo.stagedGroup?.resourceStates ?? []
+            });
+        });
+        return result;
+    }
+
     constructor(private _client: LanguageClient) {
         this.quickDiffProvider = new IceQuickDiffProvider(this._client);
         this.disposables.push(
