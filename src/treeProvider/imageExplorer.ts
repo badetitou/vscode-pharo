@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { client } from '../extension';
 import { buildPharoUri, ICE_REPOSITORY_QUERY_KEY, repositoryNameFromPharoUri } from './pharoUri';
+import { expectStringArray, isMethodNotFoundError } from '../rpcContracts';
 
 export interface PharoNode {
 	name: string;
@@ -191,7 +192,7 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 
 	private getPackages(repositoryName?: string): Promise<Array<string>> {
 		if (!this.isClientReady()) {
-			return Promise.resolve([]);
+			return Promise.reject(vscode.FileSystemError.Unavailable('Pharo language server is not running.'));
 		}
 
 		if (repositoryName) {
@@ -207,9 +208,10 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 			return this.packagesInFlight;
 		}
 
-		this.packagesInFlight = this.sendRequestSerialized<Array<string>>('pls:packages', {}).then((result) => {
-			this.packagesCache = { values: result, loadedAt: Date.now() };
-			return result;
+		this.packagesInFlight = this.sendRequestSerialized<unknown>('pls:packages', {}).then((result) => {
+			const packages = expectStringArray(result, 'pls:packages');
+			this.packagesCache = { values: packages, loadedAt: Date.now() };
+			return packages;
 		}).finally(() => {
 			this.packagesInFlight = undefined;
 		});
@@ -228,11 +230,14 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 			return inFlight;
 		}
 
-		const request = this.sendRequestSerialized<Array<string>>('pls-ice:repositoryPackages', { aRepositoryName: repositoryName }).then((result) => {
-			this.repositoryPackagesCache.set(repositoryName, { values: result, loadedAt: Date.now() });
-			return result;
-		}).catch(() => {
-			// Server might not support repository packages yet; fall back to global packages.
+		const request = this.sendRequestSerialized<unknown>('pls-ice:repositoryPackages', { aRepositoryName: repositoryName }).then((result) => {
+			const packages = expectStringArray(result, 'pls-ice:repositoryPackages');
+			this.repositoryPackagesCache.set(repositoryName, { values: packages, loadedAt: Date.now() });
+			return packages;
+		}).catch((error: unknown) => {
+			if (!isMethodNotFoundError(error)) {
+				throw error;
+			}
 			return this.getPackages();
 		}).finally(() => {
 			this.repositoryPackagesInFlight.delete(repositoryName);
@@ -243,7 +248,7 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 
 	private getClasses(packageName: string): Promise<Array<string>> {
 		if (!this.isClientReady()) {
-			return Promise.resolve([]);
+			return Promise.reject(vscode.FileSystemError.Unavailable('Pharo language server is not running.'));
 		}
 
 		const now = Date.now();
@@ -257,9 +262,10 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 			return inFlight;
 		}
 
-		const request = this.sendRequestSerialized<Array<string>>('pls:classes', { package: packageName }).then((result) => {
-			this.classesCache.set(packageName, { values: result, loadedAt: Date.now() });
-			return result;
+		const request = this.sendRequestSerialized<unknown>('pls:classes', { package: packageName }).then((result) => {
+			const classes = expectStringArray(result, 'pls:classes');
+			this.classesCache.set(packageName, { values: classes, loadedAt: Date.now() });
+			return classes;
 		}).finally(() => {
 			this.classesInFlight.delete(packageName);
 		});

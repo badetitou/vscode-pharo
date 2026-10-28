@@ -41,6 +41,8 @@ We present here the existing features
 
 ![Native test image](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/native-test.png)
 
+The native Test Explorer integration requires Pharo Language Server **5.0.1 or later**.
+
 ### Supported Language Server feature
 
 **Code formatting**

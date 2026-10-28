@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { client, iceControlManager } from '../extension';
+import { expectStringArray } from '../rpcContracts';
 
 // ---------------------------------------------------------------------------
 // Unified-diff utilities — no external dependencies
@@ -183,7 +184,7 @@ export function registerPharoLanguageModelTools(context: vscode.ExtensionContext
 		vscode.lm.registerTool('pharo-list-packages', {
 			invoke: async () => {
 				ensureClientRunning();
-				const packages = await client.sendRequest('pls:packages', {});
+				const packages = expectStringArray(await client.sendRequest('pls:packages', {}), 'pls:packages');
 				return jsonResult(packages);
 			}
 		})
@@ -194,7 +195,10 @@ export function registerPharoLanguageModelTools(context: vscode.ExtensionContext
 			invoke: async ({ input }) => {
 				ensureClientRunning();
 				const { packageName } = input as { packageName: string };
-				const classes = await client.sendRequest('pls:classes', { package: packageName });
+				const classes = expectStringArray(
+					await client.sendRequest('pls:classes', { package: packageName }),
+					'pls:classes'
+				);
 				return jsonResult(classes);
 			}
 		})

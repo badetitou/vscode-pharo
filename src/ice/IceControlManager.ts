@@ -11,11 +11,13 @@ import {
     SourceControlResourceState,
     TextDocument,
     Uri,
+    OutputChannel,
     window,
     workspace
 } from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
 import { IDisposable } from '../util';
+import { expectString, expectStringArray, isMethodNotFoundError } from '../rpcContracts';
 
 interface IceRepositoryResource {
     uri: string;
@@ -44,14 +46,22 @@ export class IceRepository {
 }
 
 class IceQuickDiffProvider implements QuickDiffProvider {
-    constructor(private client: LanguageClient) { }
+    constructor(
+        private client: LanguageClient,
+        private reportError: (action: string, error: unknown, notify?: boolean) => void
+    ) { }
 
-    provideOriginalResource(uri: Uri, _token: CancellationToken): ProviderResult<Uri> {
-        return this.client
-            .sendRequest('pls-ice:originalResource', { uri: uri.toString(true) })
-            .then((originalUri) => Uri.parse(originalUri as string, true),
-                () => undefined)
-            ;
+    async provideOriginalResource(uri: Uri, _token: CancellationToken): Promise<Uri | undefined> {
+        try {
+            const originalUri = await this.client.sendRequest(
+                'pls-ice:originalResource',
+                { uri: uri.toString(true) }
+            );
+            return originalUri ? Uri.parse(expectString(originalUri, 'pls-ice:originalResource'), true) : undefined;
+        } catch (error) {
+            this.reportError('Unable to resolve the original Iceberg resource', error, false);
+            return undefined;
+        }
     }
 }
 
@@ -65,6 +75,7 @@ export class IceControlManager implements IDisposable {
     private disposables: Disposable[] = [];
     private repositories = new Map<string, IceRepository>();
     private readonly quickDiffProvider: QuickDiffProvider;
+    private readonly outputChannel: OutputChannel;
     private refreshing = false;
     private pendingRefresh = false;
 
@@ -88,7 +99,11 @@ export class IceControlManager implements IDisposable {
     }
 
     constructor(private _client: LanguageClient) {
-        this.quickDiffProvider = new IceQuickDiffProvider(this._client);
+        this.outputChannel = window.createOutputChannel('Pharo Iceberg');
+        this.quickDiffProvider = new IceQuickDiffProvider(this._client, (action, error, notify) =>
+            this.reportError(action, error, notify)
+        );
+        this.disposables.push(this.outputChannel);
         this.disposables.push(
             commands.registerCommand('pharo.ice.refresh', () => this.refresh()),
             commands.registerCommand('pharo.ice.openDiff', (repositoryName: string | undefined, uriOrState: unknown) =>
@@ -112,16 +127,19 @@ export class IceControlManager implements IDisposable {
         }
 
         this.refreshing = true;
-        do {
-            this.pendingRefresh = false;
-            await this.refreshRepositories();
-        } while (this.pendingRefresh);
-        this.refreshing = false;
+        try {
+            do {
+                this.pendingRefresh = false;
+                await this.refreshRepositories();
+            } while (this.pendingRefresh);
+        } finally {
+            this.refreshing = false;
+        }
     }
 
     private async refreshRepositories(): Promise<void> {
         try {
-            const repositories = await this._client.sendRequest('pls-ice:repositories') as IceRepository[];
+            const repositories = this.parseRepositories(await this._client.sendRequest('pls-ice:repositories'));
             this.syncRepositories(repositories);
             this.syncRepositoryWorkspaceFolders(repositories);
             await Promise.all(
@@ -130,8 +148,35 @@ export class IceControlManager implements IDisposable {
                 )
             );
         } catch (error) {
-            window.showWarningMessage('Unable to refresh Iceberg repositories in VSCode.');
+            this.reportError('Unable to refresh Iceberg repositories in VS Code', error);
         }
+    }
+
+    private parseRepositories(value: unknown): IceRepository[] {
+        if (!Array.isArray(value) || value.some((repository) =>
+            !repository
+            || typeof repository !== 'object'
+            || typeof repository.name !== 'string'
+            || repository.name.trim().length === 0
+            || typeof repository.valid !== 'boolean'
+        )) {
+            throw new Error('Pharo Language Server returned an invalid response for "pls-ice:repositories".');
+        }
+        return value as IceRepository[];
+    }
+
+    private reportError(action: string, error: unknown, notify = true): void {
+        const detail = error instanceof Error ? error.message : String(error);
+        this.outputChannel.appendLine(`${action}: ${detail}`);
+        if (!notify) {
+            return;
+        }
+        void window.showErrorMessage(`${action}. See the Pharo Iceberg output for details.`, 'Show Output')
+            .then((selection) => {
+                if (selection === 'Show Output') {
+                    this.outputChannel.show(true);
+                }
+            });
     }
 
     private syncRepositories(repositories: IceRepository[]): void {
@@ -191,9 +236,7 @@ export class IceControlManager implements IDisposable {
             ice.changesGroup.resourceStates = changedStates;
             ice.sourceControl.count = stagedStates.length + changedStates.length;
         } catch (error) {
-            ice.stagedGroup.resourceStates = [];
-            ice.changesGroup.resourceStates = [];
-            ice.sourceControl.count = 0;
+            this.reportError(`Unable to refresh Iceberg status for ${ice.name}`, error);
         }
     }
 
@@ -205,23 +248,26 @@ export class IceControlManager implements IDisposable {
     }
 
     private async resolveRepositoryStatusOf(repositoryName: string): Promise<IceRepositoryState> {
+        let repositoryStatus: unknown;
         try {
-            const repositoryStatus = await this._client.sendRequest(
+            repositoryStatus = await this._client.sendRequest(
                 'pls-ice:repositoryStatus',
                 { 'aRepositoryName': repositoryName }
-            ) as unknown;
-            const parsedStatus = this.parseRepositoryStatusResponse(repositoryStatus);
-            if (parsedStatus) {
-                return parsedStatus;
+            );
+        } catch (error) {
+            if (!isMethodNotFoundError(error)) {
+                throw error;
             }
-        } catch (_error) {
-            // Fallback kept for servers that only expose `pls-ice:repository`.
         }
 
-        const modifiedClasses = await this._client.sendRequest(
-            'pls-ice:repository',
-            { 'aRepositoryName': repositoryName }
-        ) as string[];
+        if (repositoryStatus !== undefined) {
+            return this.parseRepositoryStatusResponse(repositoryStatus);
+        }
+
+        const modifiedClasses = expectStringArray(
+            await this._client.sendRequest('pls-ice:repository', { aRepositoryName: repositoryName }),
+            'pls-ice:repository'
+        );
 
         return {
             stagedChanges: [],
@@ -232,7 +278,7 @@ export class IceControlManager implements IDisposable {
         };
     }
 
-    private parseRepositoryStatusResponse(rawStatus: unknown): IceRepositoryState | undefined {
+    private parseRepositoryStatusResponse(rawStatus: unknown): IceRepositoryState {
         if (Array.isArray(rawStatus)) {
             return {
                 stagedChanges: [],
@@ -241,10 +287,20 @@ export class IceControlManager implements IDisposable {
         }
 
         if (!rawStatus || typeof rawStatus !== 'object') {
-            return undefined;
+            throw new Error('Pharo Language Server returned an invalid response for "pls-ice:repositoryStatus".');
         }
 
         const statusResponse = rawStatus as IceRepositoryStatusResponse;
+        const resourceFields = [
+            statusResponse.changes,
+            statusResponse.workingChanges,
+            statusResponse.modifiedChanges,
+            statusResponse.stagedChanges,
+            statusResponse.indexChanges
+        ].filter((field) => field !== undefined);
+        if (resourceFields.length === 0) {
+            throw new Error('Pharo Language Server returned an invalid response for "pls-ice:repositoryStatus".');
+        }
         const changes = this.normalizeResourceList(
             statusResponse.changes ?? statusResponse.workingChanges ?? statusResponse.modifiedChanges ?? []
         );
@@ -255,7 +311,10 @@ export class IceControlManager implements IDisposable {
         return { changes, stagedChanges };
     }
 
-    private normalizeResourceList(rawResources: Array<IceRepositoryResource | string>): IceRepositoryResource[] {
+    private normalizeResourceList(rawResources: unknown): IceRepositoryResource[] {
+        if (!Array.isArray(rawResources)) {
+            throw new Error('Pharo Language Server returned an invalid Iceberg resource list.');
+        }
         const uniqueResources = new Map<string, IceRepositoryResource>();
         rawResources.forEach((resource) => {
             if (typeof resource === 'string') {
@@ -263,12 +322,14 @@ export class IceControlManager implements IDisposable {
                 return;
             }
 
-            if (resource && typeof resource.uri === 'string') {
-                uniqueResources.set(resource.uri, {
-                    uri: resource.uri,
-                    status: this.normalizeStatus(resource.status)
-                });
+            if (!resource || typeof resource !== 'object' || typeof resource.uri !== 'string'
+                || (resource.status !== undefined && typeof resource.status !== 'string')) {
+                throw new Error('Pharo Language Server returned an invalid Iceberg resource.');
             }
+            uniqueResources.set(resource.uri, {
+                uri: resource.uri,
+                status: this.normalizeStatus(resource.status)
+            });
         });
         return Array.from(uniqueResources.values());
     }
@@ -360,7 +421,7 @@ export class IceControlManager implements IDisposable {
                 `${this.displayNameFor(resourceUri)} (${repositoryName ?? 'Iceberg'})`
             );
         } catch (_error) {
-            window.showErrorMessage('Unable to open Iceberg diff.');
+            this.reportError('Unable to open Iceberg diff', _error);
         }
     }
 
@@ -398,7 +459,7 @@ export class IceControlManager implements IDisposable {
                 ? response
                 : `Committed ${repository.name} with Iceberg.`);
         } catch (_error) {
-            window.showErrorMessage(`Unable to commit ${repository.name} with Iceberg.`);
+            this.reportError(`Unable to commit ${repository.name} with Iceberg`, _error);
         }
     }
 
@@ -418,7 +479,7 @@ export class IceControlManager implements IDisposable {
                 ? response
                 : `Pushed ${repository.name} with Iceberg.`);
         } catch (_error) {
-            window.showErrorMessage(`Unable to push ${repository.name} with Iceberg.`);
+            this.reportError(`Unable to push ${repository.name} with Iceberg`, _error);
         }
     }
 

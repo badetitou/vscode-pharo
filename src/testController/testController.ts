@@ -1,13 +1,7 @@
 import * as vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
 import { client } from '../extension';
-
-type TestResult = {
-	failures?: unknown[];
-	errors?: unknown[];
-	skipped?: unknown[];
-	passed?: unknown[];
-};
+import { expectStringArray, expectTestResult, PharoTestResult } from '../rpcContracts';
 
 export function initTestController(): vscode.TestController {
 	const testController = vscode.tests.createTestController('pharo-tests', 'Pharo Tests');
@@ -33,7 +27,7 @@ export async function discoverAllTests(client: LanguageClient, testController: v
 		return;
 	}
 
-	const tests = await client.sendRequest('pls:test-packages') as string[];
+	const tests = expectStringArray(await client.sendRequest('pls:test-packages'), 'pls:test-packages');
 	for (const test of tests) {
 		testController.items.add(getTest(vscode.Uri.parse(test, true), testController));
 	}
@@ -66,20 +60,20 @@ async function discoverTestOf(testItem: vscode.TestItem, testController: vscode.
 	}
 
 	if (testItem.parent === undefined) {
-		const classes = await client.sendRequest('pls:test-in-package', {
+		const classes = expectStringArray(await client.sendRequest('pls:test-in-package', {
 			aPackageURI: { path: uri.path }
-		}) as string[];
+		}), 'pls:test-in-package');
 		for (const test of classes) {
 			testItem.children.add(getTest(vscode.Uri.parse(test, true), testController, true, testItem.children));
 		}
 	}
 	else {
-		const methods = await client.sendRequest('pls:test-in-class', {
+		const methods = expectStringArray(await client.sendRequest('pls:test-in-class', {
 			aClassURI: {
 				path: uri.path,
 				external: uri.toString(true)
 			}
-		}) as string[];
+		}), 'pls:test-in-class');
 		for (const test of methods) {
 			testItem.children.add(getTest(vscode.Uri.parse(test, true), testController, false, testItem.children));
 		}
@@ -154,7 +148,7 @@ async function runTestHandler(
 	}
 }
 
-function assertTestPasses(test: vscode.TestItem): Promise<TestResult> {
+function assertTestPasses(test: vscode.TestItem): Promise<PharoTestResult> {
 	const uri = test.uri;
 	if (!uri) {
 		throw new Error('Pharo test item has no URI.');
@@ -166,15 +160,10 @@ function assertTestPasses(test: vscode.TestItem): Promise<TestResult> {
 			fragment: uri.fragment
 		}
 	})
-	.then((result: unknown) => {
-		if (!result || typeof result !== 'object') {
-			throw new Error('Pharo returned an invalid test result.');
-		}
-		return result as TestResult;
-	});
+	.then((result: unknown) => expectTestResult(result, 'pls:test-execute-test'));
 }
 
-function formatTestResult(result: TestResult): string {
+function formatTestResult(result: PharoTestResult): string {
 	const failures = [...(result.failures ?? []), ...(result.errors ?? [])];
 	if (failures.length === 0) {
 		return 'Pharo did not report this test as passed.';

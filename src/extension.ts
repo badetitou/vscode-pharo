@@ -25,6 +25,7 @@ import { PharoImagesExplorer, PharoImagesNode, createWorkspaceForImage } from '.
 import { registerPharoLanguageModelTools } from './ai/pharoLmTools';
 import { registerPharoChatParticipant } from './ai/pharoChatParticipant';
 import { buildPharoUri, ICE_REPOSITORY_QUERY_KEY, repositoryNameFromPharoUri } from './treeProvider/pharoUri';
+import { expectStringArray } from './rpcContracts';
 
 
 export let client: LanguageClient;
@@ -502,9 +503,9 @@ async function commandPharoIceAddPackage() {
 async function pickPharoPackageName(): Promise<string | undefined> {
 	let packages: string[] = [];
 	try {
-		packages = await client.sendRequest('pls:packages', {}) as string[];
-	} catch (_error) {
-		// Fall back to a free-form input below.
+		packages = expectStringArray(await client.sendRequest('pls:packages', {}), 'pls:packages');
+	} catch (error) {
+		outputChannel.appendLine(`Unable to load Pharo packages: ${formatError(error)}`);
 	}
 
 	const createNewPackageLabel = '$(add) Create New Package';
