@@ -514,6 +514,12 @@
 				"icon": "$(list-tree)"
 			},
 			{
+				"command": "pharo.goTo",
+				"title": "%commands.pharo.goTo.title%",
+				"category": "Pharo",
+				"icon": "$(search)"
+			},
+			{
 				"command": "pharo.browseImage",
 				"title": "Browse Pharo Image",
 				"enablement": "false"

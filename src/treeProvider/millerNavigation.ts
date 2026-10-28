@@ -1,11 +1,17 @@
 import * as crypto from 'crypto';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { expectStringArray } from '../rpcContracts';
+import { expectStringArray, isMethodNotFoundError } from '../rpcContracts';
 import { buildPharoUri } from './pharoUri';
 
 const COMMAND_ID = 'pharo.millerNavigation.open';
+const GO_TO_COMMAND_ID = 'pharo.goTo';
 const CLASS_FILE_SUFFIX = '.class.st';
+
+interface PharoRepository {
+	name: string;
+	valid: boolean;
+}
 
 export interface TonelMethod {
 	id: string;
@@ -93,7 +99,7 @@ export function registerPharoMillerNavigation(
 	getClient: () => PharoNavigationClient | undefined
 ): vscode.Disposable {
 	let panel: vscode.WebviewPanel | undefined;
-	const command = vscode.commands.registerCommand(COMMAND_ID, async () => {
+	const openPanel = async (focusSearch: boolean) => {
 		const client = getClient();
 		if (!client?.isRunning()) {
 			void vscode.window.showErrorMessage('The Pharo Language Server is not running.');
@@ -102,18 +108,24 @@ export function registerPharoMillerNavigation(
 
 		if (panel) {
 			panel.reveal(vscode.ViewColumn.Beside);
+			if (focusSearch) {
+				void panel.webview.postMessage({ type: 'focusSearch' });
+			}
 			return;
 		}
-		panel = openNavigationPanel(client);
+		panel = openNavigationPanel(client, focusSearch);
 		panel.onDidDispose(() => { panel = undefined; });
-	});
+	};
+	const command = vscode.commands.registerCommand(COMMAND_ID, () => openPanel(false));
+	const goToCommand = vscode.commands.registerCommand(GO_TO_COMMAND_ID, () => openPanel(true));
 	return vscode.Disposable.from(
 		command,
+		goToCommand,
 		new vscode.Disposable(() => panel?.dispose())
 	);
 }
 
-function openNavigationPanel(client: PharoNavigationClient): vscode.WebviewPanel {
+function openNavigationPanel(client: PharoNavigationClient, focusSearch: boolean): vscode.WebviewPanel {
 	const imagePath = vscode.workspace.getConfiguration('pharo').get<string>('pathToImage');
 	const imageName = imagePath ? path.basename(imagePath, path.extname(imagePath)) : 'Pharo Image';
 	const panel = vscode.window.createWebviewPanel(
@@ -125,6 +137,8 @@ function openNavigationPanel(client: PharoNavigationClient): vscode.WebviewPanel
 	panel.webview.html = getWebviewHtml(panel.webview);
 
 	let packages: string[] = [];
+	let repositories: PharoRepository[] = [];
+	let selectedRepositoryName: string | undefined;
 	let classes: string[] = [];
 	let methods: TonelMethod[] = [];
 	let packageName: string | undefined;
@@ -183,6 +197,8 @@ function openNavigationPanel(client: PharoNavigationClient): vscode.WebviewPanel
 		void panel.webview.postMessage({
 			type: 'update',
 			columns,
+			repositories,
+			selectedRepositoryName,
 			breadcrumb: [packageName, className, protocol].filter((part): part is string => part !== undefined)
 		});
 	};
@@ -207,12 +223,28 @@ function openNavigationPanel(client: PharoNavigationClient): vscode.WebviewPanel
 		protocol = undefined;
 		render(0);
 		try {
-			const result = await client.sendRequest<unknown>('pls:packages', {});
+			let rawRepositories: unknown;
+			try {
+				rawRepositories = await client.sendRequest<unknown>('pls-ice:repositories');
+			} catch (error) {
+				if (!isMethodNotFoundError(error)) {
+					throw error;
+				}
+				rawRepositories = [];
+			}
+			if (requestGeneration !== generation) {
+				return;
+			}
+			repositories = parseRepositories(rawRepositories).filter((repository) => repository.valid);
+			if (selectedRepositoryName && !repositories.some((repository) => repository.name === selectedRepositoryName)) {
+				selectedRepositoryName = undefined;
+			}
+			const result = await packagesForRepository(client, selectedRepositoryName);
 			if (requestGeneration !== generation) {
 				return;
 			}
 			packagesLoading = false;
-			packages = expectStringArray(result, 'pls:packages').sort((left, right) => left.localeCompare(right));
+			packages = result.sort((left, right) => left.localeCompare(right));
 			render();
 		} catch (error) {
 			if (requestGeneration === generation) {
@@ -227,7 +259,13 @@ function openNavigationPanel(client: PharoNavigationClient): vscode.WebviewPanel
 		if (!message || typeof message !== 'object') {
 			return;
 		}
-		const request = message as { type?: unknown; column?: unknown; value?: unknown; action?: unknown };
+		const request = message as {
+			type?: unknown;
+			column?: unknown;
+			value?: unknown;
+			action?: unknown;
+			repositoryName?: unknown;
+		};
 		if (request.type === 'ready') {
 			webviewReady = true;
 			render(packagesLoading ? 0 : undefined);
@@ -239,6 +277,38 @@ function openNavigationPanel(client: PharoNavigationClient): vscode.WebviewPanel
 		}
 		if (request.type === 'refresh') {
 			await refreshNavigation();
+			return;
+		}
+		if (request.type === 'repository' && (request.repositoryName === undefined || typeof request.repositoryName === 'string')) {
+			const repositoryName = request.repositoryName as string | undefined;
+			if (repositoryName !== undefined && !repositories.some((repository) => repository.name === repositoryName)) {
+				return;
+			}
+			const requestGeneration = ++generation;
+			selectedRepositoryName = repositoryName;
+			packages = [];
+			classes = [];
+			methods = [];
+			packageName = undefined;
+			className = undefined;
+			protocol = undefined;
+			packagesLoading = true;
+			render(0);
+			try {
+				packages = (await packagesForRepository(client, selectedRepositoryName))
+					.sort((left, right) => left.localeCompare(right));
+				if (requestGeneration !== generation) {
+					return;
+				}
+				packagesLoading = false;
+				render();
+			} catch (error) {
+				if (requestGeneration === generation) {
+					packagesLoading = false;
+					render();
+					showError(error);
+				}
+			}
 			return;
 		}
 		let requestGeneration: number | undefined;
@@ -331,11 +401,47 @@ function openNavigationPanel(client: PharoNavigationClient): vscode.WebviewPanel
 	});
 
 	function classUri(selectedPackage: string, selectedClass: string): vscode.Uri {
-		return buildPharoUri(`/${selectedPackage}/${selectedClass}${CLASS_FILE_SUFFIX}`);
+		return buildPharoUri(`/${selectedPackage}/${selectedClass}${CLASS_FILE_SUFFIX}`, selectedRepositoryName);
 	}
 
-	void refreshNavigation();
+	void refreshNavigation().then(() => {
+		if (focusSearch) {
+			void panel.webview.postMessage({ type: 'focusSearch' });
+		}
+	});
 	return panel;
+}
+
+function parseRepositories(value: unknown): PharoRepository[] {
+	if (!Array.isArray(value) || value.some((repository) =>
+		!repository
+		|| typeof repository !== 'object'
+		|| typeof repository.name !== 'string'
+		|| typeof repository.valid !== 'boolean'
+	)) {
+		throw new Error('Pharo Language Server returned an invalid response for "pls-ice:repositories".');
+	}
+	return value as PharoRepository[];
+}
+
+async function packagesForRepository(
+	client: PharoNavigationClient,
+	repositoryName?: string
+): Promise<string[]> {
+	if (!repositoryName) {
+		return expectStringArray(await client.sendRequest('pls:packages', {}), 'pls:packages');
+	}
+	try {
+		return expectStringArray(
+			await client.sendRequest('pls-ice:repositoryPackages', { aRepositoryName: repositoryName }),
+			'pls-ice:repositoryPackages'
+		);
+	} catch (error) {
+		if (!isMethodNotFoundError(error)) {
+			throw error;
+		}
+		return expectStringArray(await client.sendRequest('pls:packages', {}), 'pls:packages');
+	}
 }
 
 function getWebviewHtml(webview: vscode.Webview): string {
@@ -352,8 +458,10 @@ function getWebviewHtml(webview: vscode.Webview): string {
 		:root { color-scheme: light dark; }
 		body { padding: 0; color: var(--vscode-foreground); background: var(--vscode-editor-background); font-family: var(--vscode-font-family); }
 		#toolbar { display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-bottom: 1px solid var(--vscode-panel-border); }
+		#context { display: flex; align-items: center; gap: 8px; }
 		#breadcrumb { color: var(--vscode-descriptionForeground); }
 		#refresh { width: auto; padding: 4px 8px; }
+		select { max-width: 260px; padding: 4px; color: var(--vscode-dropdown-foreground); background: var(--vscode-dropdown-background); border: 1px solid var(--vscode-dropdown-border); }
 		#error { display: none; padding: 8px 12px; color: var(--vscode-errorForeground); }
 		#columns { display: flex; height: calc(100vh - 45px); overflow-x: auto; }
 		.column { display: flex; flex: 0 0 250px; flex-direction: column; border-right: 1px solid var(--vscode-panel-border); }
@@ -372,7 +480,10 @@ function getWebviewHtml(webview: vscode.Webview): string {
 </head>
 <body>
 	<div id="toolbar">
-		<div id="breadcrumb" aria-live="polite">Loading Pharo packages…</div>
+		<div id="context">
+			<select id="repository" aria-label="Iceberg repository"><option value="">All image packages</option></select>
+			<div id="breadcrumb" aria-live="polite">Loading Pharo packages…</div>
+		</div>
 		<button id="refresh" type="button" title="Reload packages from the active image">Refresh</button>
 	</div>
 	<div id="error" role="alert"></div>
@@ -383,11 +494,29 @@ function getWebviewHtml(webview: vscode.Webview): string {
 		const breadcrumb = document.getElementById('breadcrumb');
 		const errorBox = document.getElementById('error');
 		let pendingColumnFocus;
+		const repositoryPicker = document.getElementById('repository');
 		document.getElementById('refresh').addEventListener('click', () => vscode.postMessage({ type: 'refresh' }));
+		repositoryPicker.addEventListener('change', () => vscode.postMessage({
+			type: 'repository',
+			repositoryName: repositoryPicker.value || undefined
+		}));
 
 		function render(data) {
 			errorBox.style.display = 'none';
 			breadcrumb.textContent = data.breadcrumb.length ? data.breadcrumb.join('  ›  ') : 'Select a package to begin';
+			const currentRepository = data.selectedRepositoryName || '';
+			repositoryPicker.replaceChildren();
+			const allPackages = document.createElement('option');
+			allPackages.value = '';
+			allPackages.textContent = 'All image packages';
+			repositoryPicker.appendChild(allPackages);
+			data.repositories.forEach((repository) => {
+				const option = document.createElement('option');
+				option.value = repository.name;
+				option.textContent = repository.name;
+				repositoryPicker.appendChild(option);
+			});
+			repositoryPicker.value = currentRepository;
 			columnsRoot.replaceChildren();
 			data.columns.forEach((column, index) => {
 				const section = document.createElement('section');
@@ -520,6 +649,11 @@ function getWebviewHtml(webview: vscode.Webview): string {
 			} else if (message.type === 'error') {
 				errorBox.textContent = message.message;
 				errorBox.style.display = 'block';
+			} else if (message.type === 'focusSearch') {
+				const firstFilter = columnsRoot.querySelector('input[type="search"]');
+				if (firstFilter) {
+					firstFilter.focus();
+				}
 			}
 		});
 		vscode.postMessage({ type: 'ready' });
