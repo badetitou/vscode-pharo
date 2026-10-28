@@ -400,14 +400,14 @@
 					"title": "Headless",
 					"scope": "window",
 					"type": "boolean",
-					"default": "true",
+					"default": true,
 					"description": "%configuration.pharo.headless.description%"
 				},
 				"pharo.debugMode": {
 					"title": "Debug mode",
 					"scope": "window",
 					"type": "boolean",
-					"default": "false",
+					"default": false,
 					"description": "%configuration.pharo.debugMode.description%"
 				},
 				"pharo quick install.image name": {

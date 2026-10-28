@@ -3,13 +3,13 @@ import { LanguageClient } from 'vscode-languageclient/node';
 import { client } from '../extension';
 
 type TestResult = {
-	failures: any[];
-	errors: any[];
-	skipped: any[];
-	passed: any[];
+	failures?: unknown[];
+	errors?: unknown[];
+	skipped?: unknown[];
+	passed?: unknown[];
 };
 
-export function initTestController() {
+export function initTestController(): vscode.TestController {
 	const testController = vscode.tests.createTestController('pharo-tests', 'Pharo Tests');
 	testController.resolveHandler = async test => {
 		if (!test) {
@@ -22,27 +22,30 @@ export function initTestController() {
 		'Pharo Test',
 		vscode.TestRunProfileKind.Run,
 		(request, token) => {
-			runTestHandler(false, request, token, testController);
+			void runTestHandler(request, token, testController);
 		}
 	);
+	return testController;
 }
 
 export async function discoverAllTests(client: LanguageClient, testController: vscode.TestController) {
 	if (!client.isRunning()) {
-		return []; // handle the case of no open folders
+		return;
 	}
 
-	return client.sendRequest('pls:test-packages')
-		.then((tests: unknown) => {
-			const testArray = tests as any[];
-			for (const test of testArray) {
-				testController.items.add(getTest(vscode.Uri.parse(test, true), testController));
-			}
-		});
+	const tests = await client.sendRequest('pls:test-packages') as string[];
+	for (const test of tests) {
+		testController.items.add(getTest(vscode.Uri.parse(test, true), testController));
+	}
 }
 
-function getTest(uri: vscode.Uri, testController: vscode.TestController, withChildren = true) {
-	const existing = testController.items.get(uri.toString(true));
+function getTest(
+	uri: vscode.Uri,
+	testController: vscode.TestController,
+	withChildren = true,
+	parentItems: vscode.TestItemCollection = testController.items
+) {
+	const existing = parentItems.get(uri.toString(true));
 	if (existing) {
 		return existing;
 	}
@@ -52,31 +55,38 @@ function getTest(uri: vscode.Uri, testController: vscode.TestController, withChi
 	return file;
 }
 
-function discoverTestOf(testItem: vscode.TestItem, testController: vscode.TestController) {
+async function discoverTestOf(testItem: vscode.TestItem, testController: vscode.TestController) {
+	if (!client.isRunning()) {
+		throw new Error('Pharo Language Server is not running.');
+	}
+
+	const uri = testItem.uri;
+	if (!uri) {
+		throw new Error('Pharo test item has no URI.');
+	}
+
 	if (testItem.parent === undefined) {
-		// I am a test package
-		client.sendRequest('pls:test-in-package', { "aPackageURI": testItem.uri })
-		.then((testClasses: unknown) => {
-			const classes = testClasses as any[];
-			for (const test of classes) {
-				testItem.children.add(getTest(vscode.Uri.parse(test, true), testController));
-			}
-		});
+		const classes = await client.sendRequest('pls:test-in-package', {
+			aPackageURI: { path: uri.path }
+		}) as string[];
+		for (const test of classes) {
+			testItem.children.add(getTest(vscode.Uri.parse(test, true), testController, true, testItem.children));
+		}
 	}
 	else {
-		// I am a Test class
-		client.sendRequest('pls:test-in-class', { "aClassURI": testItem.uri })
-			.then((testMethods: unknown) => {
-				const methods = testMethods as any[];
-				for (const test of methods) {
-					testItem.children.add(getTest(vscode.Uri.parse(test, true), testController, false));
-				}
-			});
+		const methods = await client.sendRequest('pls:test-in-class', {
+			aClassURI: {
+				path: uri.path,
+				external: uri.toString(true)
+			}
+		}) as string[];
+		for (const test of methods) {
+			testItem.children.add(getTest(vscode.Uri.parse(test, true), testController, false, testItem.children));
+		}
 	}
 }
 
 async function runTestHandler(
-	shouldDebug: boolean,
 	request: vscode.TestRunRequest,
 	token: vscode.CancellationToken,
 	testController: vscode.TestController
@@ -91,39 +101,92 @@ async function runTestHandler(
 		testController.items.forEach(test => queue.push(test));
 	}
 
-	// For every test that was queued, try to run it. Call run.passed() or run.failed().
-	// The `TestMessage` can contain extra information, like a failing location or
-	// a diff output. But here we'll just give it a textual message.
-	while (queue.length > 0 && !token.isCancellationRequested) {
-		const test = queue.pop()!;
+	try {
+		while (queue.length > 0 && !token.isCancellationRequested) {
+			const test = queue.pop()!;
+			if (request.exclude?.includes(test)) {
+				run.skipped(test);
+				continue;
+			}
 
-		// Skip tests the user asked to exclude
-		if (request.exclude?.includes(test)) {
-			continue;
-		}
+			if (test.canResolveChildren && test.children.size === 0) {
+				run.enqueued(test);
+				try {
+					await discoverTestOf(test, testController);
+				} catch (error) {
+					run.failed(test, new vscode.TestMessage(error instanceof Error ? error.message : String(error)));
+					continue;
+				}
+			}
 
-		// Otherwise, just run the test case. Note that we don't need to manually
-		// set the state of parent tests; they'll be set automatically.
-		const start = Date.now();
-		if (test.children.size === 0) {
+			if (test.children.size > 0) {
+				run.enqueued(test);
+				test.children.forEach(child => queue.push(child));
+				continue;
+			}
+
+			run.enqueued(test);
+			run.started(test);
+			const start = Date.now();
 			try {
 				const result = await assertTestPasses(test);
-				result.passed.length === 0 ? run.failed(test, new vscode.TestMessage('fail')) : run.passed(test, Date.now() - start);
-			} catch (e) {
-				run.failed(test, new vscode.TestMessage((e as Error).message), Date.now() - start);
+				const failures = [...(result.failures ?? []), ...(result.errors ?? [])];
+				if ((result.skipped?.length ?? 0) > 0 && (result.passed?.length ?? 0) === 0 && failures.length === 0) {
+					run.skipped(test);
+				} else if (failures.length > 0 || (result.passed?.length ?? 0) === 0) {
+					run.failed(test, new vscode.TestMessage(formatTestResult(result)), Date.now() - start);
+				} else {
+					run.passed(test, Date.now() - start);
+				}
+			} catch (error) {
+				run.failed(
+					test,
+					new vscode.TestMessage(error instanceof Error ? error.message : String(error)),
+					Date.now() - start
+				);
 			}
-		} else {
-			test.children.forEach(test => queue.push(test));
 		}
+		while (queue.length > 0) {
+			run.skipped(queue.pop()!);
+		}
+	} finally {
+		run.end();
 	}
-
-	// Make sure to end the run after all tests have been executed:
-	run.end();
 }
 
 function assertTestPasses(test: vscode.TestItem): Promise<TestResult> {
-	return client.sendRequest('pls:test-execute-test', { "aTestURI": test.uri })
+	const uri = test.uri;
+	if (!uri) {
+		throw new Error('Pharo test item has no URI.');
+	}
+
+	return client.sendRequest('pls:test-execute-test', {
+		aTestURI: {
+			path: uri.path,
+			fragment: uri.fragment
+		}
+	})
 	.then((result: unknown) => {
+		if (!result || typeof result !== 'object') {
+			throw new Error('Pharo returned an invalid test result.');
+		}
 		return result as TestResult;
 	});
+}
+
+function formatTestResult(result: TestResult): string {
+	const failures = [...(result.failures ?? []), ...(result.errors ?? [])];
+	if (failures.length === 0) {
+		return 'Pharo did not report this test as passed.';
+	}
+	return failures.map((failure) => {
+		if (typeof failure === 'string') {
+			return failure;
+		}
+		try {
+			return JSON.stringify(failure);
+		} catch {
+			return String(failure);
+		}
+	}).join('\n');
 }

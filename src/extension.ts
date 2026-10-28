@@ -1,4 +1,4 @@
-import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
@@ -29,7 +29,7 @@ import { buildPharoUri, ICE_REPOSITORY_QUERY_KEY, repositoryNameFromPharoUri } f
 
 export let client: LanguageClient;
 export let documentExplorer: PharoDocumentExplorer;
-let dls: child_process.ChildProcess;
+let dls: child_process.ChildProcess | undefined;
 export let extensionContext: ExtensionContext;
 export let iceControlManager: IceControlManager;
 
@@ -37,6 +37,11 @@ let pharoImagesExplorer: PharoImagesExplorer;
 
 let plsStatusBar: StatusBarItem;
 let pharoRepositoryStatusBar: StatusBarItem;
+let outputChannel: OutputChannel;
+let serverStarted = false;
+let isDeactivating = false;
+const SERVER_START_TIMEOUT_MS = 30_000;
+const PROCESS_STOP_TIMEOUT_MS = 5_000;
 const PHARO_IMAGE_WORKSPACE_SCHEME = 'pharoImage';
 const PHARO_IMAGE_WORKSPACE_NAME = 'Pharo Image';
 let pharoImageExplorer: PharoImageExplorer;
@@ -45,6 +50,10 @@ export async function activate(context: ExtensionContext) {
 
 
 	extensionContext = context;
+	outputChannel = window.createOutputChannel('Pharo Language Server');
+	context.subscriptions.push(outputChannel);
+	isDeactivating = false;
+	serverStarted = false;
 	// AI entrypoints: @pharo participant + tool-calls (pharo.*)
 	registerPharoLanguageModelTools(context);
 	registerPharoChatParticipant(context);
@@ -69,9 +78,20 @@ export async function activate(context: ExtensionContext) {
 		resolvedRequirements = await requirements.resolveRequirements();
 	} catch (error) {
 		if (error instanceof requirements.RequirementsError) {
+			outputChannel.appendLine(error.message);
 			window.showErrorMessage(error.message, error.label).then((selection) => {
 				if (error.label && error.label === selection && error.command) {
 					commands.executeCommand(error.command, error.commandParam);
+				}
+			});
+		} else {
+			outputChannel.appendLine(`Unable to validate Pharo configuration: ${formatError(error)}`);
+			window.showErrorMessage(
+				`Unable to validate Pharo configuration: ${formatError(error)}. See the Pharo Language Server output for details.`,
+				'Show Output'
+			).then((selection) => {
+				if (selection === 'Show Output') {
+					outputChannel.show(true);
 				}
 			});
 		}
@@ -85,6 +105,7 @@ export async function activate(context: ExtensionContext) {
 	try {
 		// Start the client. This will also launch the server
 		await client.start();
+		serverStarted = true;
 		context.subscriptions.push(client);
 
 		pharoImageExplorer.refresh();
@@ -101,12 +122,37 @@ export async function activate(context: ExtensionContext) {
 		context.subscriptions.push(iceControlManager);
 
 		// Create Tests
-		initTestController();
+		context.subscriptions.push(initTestController());
 
 		resetStatusBarText();
 	} catch (err) {
-		setStatusBarText('Error Pharo Language Server');
+		serverStarted = false;
+		outputChannel.appendLine(`Failed to start the Pharo Language Server: ${formatError(err)}`);
+		if (err instanceof Error && err.stack) {
+			outputChannel.appendLine(err.stack);
+		}
+		setStatusBarText('Server startup failed');
+		window.showErrorMessage(
+			`Could not start the Pharo Language Server: ${formatError(err)}. See the Pharo Language Server output for details.`,
+			'Show Output'
+		).then((selection) => {
+			if (selection === 'Show Output') {
+				outputChannel.show(true);
+			}
+		});
+		if (client) {
+			try {
+				await client.stop();
+			} catch (stopError) {
+				outputChannel.appendLine(`Error cleaning up the Pharo language client: ${formatError(stopError)}`);
+			}
+		}
+		await stopPharoProcess();
 	}
+}
+
+function formatError(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
 }
 
 function registerRepositoryContextUi(context: ExtensionContext) {
@@ -278,7 +324,17 @@ async function commandPharoImagesDownload(): Promise<void> {
 	await commands.executeCommand('vscode.openFolder', workspaceUri, true);
 }
 
-export function deactivate() {
+export async function deactivate(): Promise<void> {
+	isDeactivating = true;
+	serverStarted = false;
+	if (client) {
+		try {
+			await client.stop();
+		} catch (error) {
+			outputChannel?.appendLine(`Error stopping the Pharo language client: ${formatError(error)}`);
+		}
+	}
+	await stopPharoProcess();
 }
 
 /*
@@ -614,9 +670,8 @@ function pharoImageFilePath(pharoDirectory: Uri, imageName: string): string {
 
 export async function commandPharoInstallLastVersion() {
 
-	if (dls !== undefined) {
-		dls.kill(9);
-	}
+	serverStarted = false;
+	await stopPharoProcess();
 
 	// Download pharo VM
 	let vmVersion: string = workspace.getConfiguration('pharo quick install').get('server VM version') as string;
@@ -747,35 +802,156 @@ async function createServerWithSocket(pharoPath: string, pathToImage: string, co
 	if (workspace.getConfiguration('pharo').get('headless') && !workspace.getConfiguration('pharo').get('debugMode')) {
 		options.unshift('--headless');
 	}
-	dls = child_process.spawn(pharoPath.trim(), options);
+	outputChannel.appendLine(`Starting Pharo VM: ${pharoPath} ${options.join(' ')}`);
+	try {
+		dls = child_process.spawn(pharoPath, options);
+	} catch (error) {
+		throw new Error(`Unable to launch the Pharo VM: ${formatError(error)}`);
+	}
 
-	dls.on('close', (code: number, signal: NodeJS.Signals) => {
-		window.showErrorMessage(code + " - Pharo Language Server stops working. Please report an [issue](https://github.com/badetitou/vscode-pharo/issues).");
+	const process = dls;
+	process.stdout?.on('data', (data: Buffer) => outputChannel.append(`[Pharo stdout] ${data.toString()}`));
+	process.stderr?.on('data', (data: Buffer) => outputChannel.append(`[Pharo stderr] ${data.toString()}`));
+	process.on('error', (error) => {
+		outputChannel.appendLine(`Pharo VM process error: ${formatError(error)}`);
+	});
+	process.on('close', (code, signal) => {
+		outputChannel.appendLine(`Pharo VM exited (code: ${code ?? 'none'}, signal: ${signal ?? 'none'}).`);
+		if (serverStarted && !isDeactivating) {
+			serverStarted = false;
+			setStatusBarText('Server stopped');
+			window.showErrorMessage(
+				`The Pharo Language Server stopped (code: ${code ?? 'none'}, signal: ${signal ?? 'none'}). See the Pharo Language Server output for details.`,
+				'Show Output'
+			).then((selection) => {
+				if (selection === 'Show Output') {
+					outputChannel.show(true);
+				}
+			});
+		}
 	});
 
-	let socket = await Promise.resolve(getSocket(dls));
-
-	let result: StreamInfo = {
-		writer: socket,
-		reader: socket
-	};
-	return Promise.resolve(result);
+	const socket = await getSocket(process);
+	return { writer: socket, reader: socket };
 }
 
-async function getSocket(dls: child_process.ChildProcess): Promise<net.Socket> {
-	return new Promise(function (resolve) {
-		let socket: net.Socket;
-		if (dls.stdout === null) {
-			throw new Error('Pharo Language Server stdout is null');
+async function getSocket(process: child_process.ChildProcess): Promise<net.Socket> {
+	return new Promise((resolve, reject) => {
+		const stdout = process.stdout;
+		if (!stdout) {
+			reject(new Error('Pharo VM stdout is unavailable; cannot read the language server port.'));
+			return;
 		}
-		dls.stdout.on('data', (data) => {
-			console.log(`Try to connect to port ${data}`);
-			socket = net.connect({ port: parseInt(data), host: '127.0.0.1' }, () => {
-				// 'connect' listener.
-				console.log('connected to server!');
-				resolve(socket);
+
+		let output = '';
+		let socket: net.Socket | undefined;
+		let settled = false;
+		const timeout = setTimeout(() => {
+			fail(new Error(`Timed out after ${SERVER_START_TIMEOUT_MS / 1000} seconds waiting for the Pharo Language Server socket.`));
+		}, SERVER_START_TIMEOUT_MS);
+
+		const cleanup = () => {
+			clearTimeout(timeout);
+			stdout.removeListener('data', onData);
+			process.removeListener('error', onProcessError);
+			process.removeListener('close', onProcessClose);
+			socket?.removeListener('error', onSocketError);
+		};
+
+		const fail = (error: Error) => {
+			if (settled) {
+				return;
+			}
+			settled = true;
+			cleanup();
+			socket?.destroy();
+			reject(error);
+		};
+
+		const onProcessError = (error: Error) => fail(new Error(`Pharo VM failed to start: ${error.message}`));
+		const onProcessClose = (code: number | null, signal: NodeJS.Signals | null) => {
+			fail(new Error(`Pharo VM exited before the language server connected (code: ${code ?? 'none'}, signal: ${signal ?? 'none'}).`));
+		};
+		const onSocketError = (error: Error) => fail(new Error(`Unable to connect to the Pharo Language Server socket: ${error.message}`));
+
+		const onData = (data: Buffer) => {
+			const text = data.toString();
+			outputChannel.append(`[Pharo port] ${text}`);
+			output += text;
+			if (output.length > 8192) {
+				output = output.slice(-8192);
+			}
+			const portLine = output.split(/\r?\n/).map((line) => line.trim()).find((line) => /^\d{1,5}$/.test(line));
+			if (!portLine || socket) {
+				return;
+			}
+
+			const port = Number(portLine);
+			if (port < 1 || port > 65535) {
+				fail(new Error(`Pharo Language Server returned an invalid port: ${portLine}`));
+				return;
+			}
+
+			socket = net.createConnection({ port, host: '127.0.0.1' });
+			socket.once('error', onSocketError);
+			socket.once('connect', () => {
+				if (settled) {
+					socket?.destroy();
+					return;
+				}
+				settled = true;
+				cleanup();
+				outputChannel.appendLine(`Connected to Pharo Language Server on port ${port}.`);
+				resolve(socket!);
 			});
-		});
+		};
+
+		stdout.on('data', onData);
+		process.once('error', onProcessError);
+		process.once('close', onProcessClose);
+	});
+}
+
+async function stopPharoProcess(): Promise<void> {
+	const process = dls;
+	if (!process || process.exitCode !== null || process.signalCode !== null) {
+		dls = undefined;
+		return;
+	}
+
+	await new Promise<void>((resolve) => {
+		let settled = false;
+		const finish = () => {
+			if (settled) {
+				return;
+			}
+			settled = true;
+			clearTimeout(forceKillTimeout);
+			process.removeListener('close', finish);
+			dls = undefined;
+			resolve();
+		};
+		const forceKillTimeout = setTimeout(() => {
+			outputChannel?.appendLine('Pharo VM did not stop after SIGTERM; sending SIGKILL.');
+			try {
+				if (!process.kill('SIGKILL')) {
+					finish();
+				}
+			} catch (error) {
+				outputChannel?.appendLine(`Unable to force-stop Pharo VM: ${formatError(error)}`);
+				finish();
+			}
+		}, PROCESS_STOP_TIMEOUT_MS);
+
+		process.once('close', finish);
+		try {
+			if (!process.kill('SIGTERM')) {
+				finish();
+			}
+		} catch (error) {
+			outputChannel?.appendLine(`Unable to stop Pharo VM: ${formatError(error)}`);
+			finish();
+		}
 	});
 }
 
@@ -791,7 +967,7 @@ function initStatusBar(context: ExtensionContext) {
 	pharoRepositoryStatusBar.tooltip = 'Iceberg repository for the active Pharo document';
 	context.subscriptions.push(pharoRepositoryStatusBar);
 
-	commands.registerCommand('extension.showQuickPick', async () => {
+	context.subscriptions.push(commands.registerCommand('extension.showQuickPick', async () => {
 		const addImageOption = '$(folder-opened) Add Image to Workspace';
 		const openSettingsOption = '$(settings-gear) Open Settings';
 		const options = [addImageOption, openSettingsOption];
@@ -804,7 +980,7 @@ function initStatusBar(context: ExtensionContext) {
 		} else if (selection === openSettingsOption) {
 			commands.executeCommand('workbench.action.openSettings', '@ext:badetitou.pharo-language-server');
 		}
-	});
+	}));
 
 	plsStatusBar.show();
 	setStatusBarText('Starting Up');

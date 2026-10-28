@@ -45,7 +45,7 @@
 	"lmTool.iceShowDiff.input.repositoryName.description": "Repository name used in the diff editor title (optional).",
 	"lmTool.iceShowDiff.input.openEditor.description": "Open the VS Code diff editor in addition to returning the patch text (default: true).",
 
-	"configuration.pharo.pathToVM.description": "The Pharo VM used to run the Pharo image hosting the Pharo Language Server. Choose a VM compatible with the selected image.",
+	"configuration.pharo.pathToVM.description": "The Pharo VM used to run the Pharo image hosting the Pharo Language Server. Set an executable path or a command available on PATH (for example, pharo). Choose a VM compatible with the selected image.",
 	"configuration.pharo.pathToImage.description": "The Pharo image that can run the Pharo Language Server (https://github.com/badetitou/Pharo-LanguageServer).",
 	"configuration.pharo.imageWorkspace.description": "Expose pharoImage:/ as a workspace folder so extensions supporting virtual workspaces (for example AI assistants) can read classes from the running image.",
 	"configuration.pharo.headless.description": "Whether the Pharo image should run in headless mode.",
