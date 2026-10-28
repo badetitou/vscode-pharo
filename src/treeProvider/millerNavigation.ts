@@ -387,10 +387,12 @@ async function packagesForRepository(
 			'pls-ice:repositoryPackages'
 		);
 	} catch (error) {
-		if (!isMethodNotFoundError(error)) {
-			throw error;
+		if (isMethodNotFoundError(error)) {
+			throw new Error(
+				'This Pharo Language Server does not support repository-scoped navigation (pls-ice:repositoryPackages). Select “All image packages” or update the server.'
+			);
 		}
-		return expectStringArray(await client.sendRequest('pls:packages', {}), 'pls:packages');
+		throw error;
 	}
 }
 
