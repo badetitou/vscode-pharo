@@ -152,15 +152,20 @@ Or, to install the extension in an existing image :
    2. pharo.pathToImage: is the absolute path to the image
    3. pharo.imageWorkspace: expose `pharoImage:/` as a workspace folder (useful for tools that read workspace files, such as AI assistants with virtual workspace support)
 
-### Miller navigation
-
-Run **Pharo: Go to Pharo…** or **Pharo: Browse Pharo Image (Miller Navigation)** from the Command Palette to browse the active image by package, class, protocol, and method. The method list is loaded when a class is selected; selecting a method opens its Tonel source at the corresponding definition. From the class column, you can open/edit the class, run its tests, and compare it with its Iceberg original when a repository is selected. Use the repository selector to scope package discovery and generated class URIs to an Iceberg repository, or leave it on all image packages. Filter each column with its search box; use Up/Down (and Home/End) to move through entries, Right/Enter to descend, and Left to return to the previous selection. Use **Refresh** to reload package discovery after image changes; class contents are read on demand through the existing `pharoImage` file system provider. Each VS Code window continues to target its configured active image.
-
 The Pharo Test Explorer discovers packages, test classes, and test methods on demand. Run a package, class, or individual method from VS Code's native test controls; failures and execution errors are reported separately with durations and source locations when the Tonel method can be resolved. Use **Pharo Tests: Rerun Failed Pharo Tests** to repeat the latest failed/error methods, or **Pharo Tests: Refresh Pharo Tests** after changing the image. Targeted debugging is not exposed yet by the current Pharo test RPC contract.
 
 ### Iceberg change states
 
 The Iceberg Source Control view separates **Image vs Repository** resources reported by Pharo, the **Iceberg Index**, and **Unsaved VS Code Buffers**. The first two come from the server's Iceberg status contract; dirty editor buffers are tracked locally and are not represented as changes already installed in the running image. Diff actions compare the server-provided current and original resources. The extension does not infer a separate on-disk working tree or image state when the server does not report it.
+
+### Manually try the Test Explorer and Iceberg changes
+
+These features need a running Pharo image and Language Server configured with `pharo.pathToVM` and `pharo.pathToImage`. Iceberg change groups also require a valid Iceberg repository in the image.
+
+1. **Run tests:** open VS Code's **Testing** view and expand a package and test class to discover their children. Run one test method with the inline Run button, then run its class or package from the corresponding Run button. The result should appear in the Test Explorer. If a test fails or errors, its message and duration are shown; use **Pharo Tests: Rerun Failed Pharo Tests** to repeat those tests. Use **Pharo Tests: Refresh Pharo Tests** after changing tests in the image.
+2. **Inspect Iceberg changes:** open **Source Control** and inspect the repository's **Image vs Repository** and **Iceberg Index** groups. These groups show only states reported by Pharo. To check **Unsaved VS Code Buffers**, edit a repository-scoped `pharoImage:` class document and leave it unsaved; its URI must include the `iceRepository` query parameter for it to be associated with that repository. Saving sends the edit to the running image, so it leaves the unsaved-buffer group; Pharo may then report an image/repository or Iceberg-index change.
+
+Source Control groups are hidden while empty. **Image vs Repository** and **Iceberg Index** only show changes reported by Pharo; they are not populated by making an unsaved editor change.
 
 > From version v1.0.0, please use at least version v1.1.0 of the Pharo Language Server.
 

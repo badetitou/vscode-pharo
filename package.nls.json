@@ -1,8 +1,6 @@
 {
 	"extension.description": "Syntax highlighting, auto-completion, execution, and more.",
 	"commands.pharo.selectImage.title": "Select Active Pharo Image",
-	"commands.pharo.millerNavigation.title": "Browse Pharo Image (Miller Navigation)",
-	"commands.pharo.goTo.title": "Go to Pharo…",
 	"commands.pharo.tests.refresh.title": "Refresh Pharo Tests",
 	"commands.pharo.tests.rerunFailed.title": "Rerun Failed Pharo Tests",
 

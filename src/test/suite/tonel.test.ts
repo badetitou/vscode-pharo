@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import { parseTonelMethods } from '../../tonel';
 
-suite('Pharo Miller navigation Tonel index', () => {
+suite('Pharo Tonel method index', () => {
 	test('groups instance and class-side methods by protocol and records source lines', () => {
 		const source = [
 			'MyClass class {',

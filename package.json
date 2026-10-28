@@ -508,18 +508,6 @@
 		],
 		"commands": [
 			{
-				"command": "pharo.millerNavigation.open",
-				"title": "%commands.pharo.millerNavigation.title%",
-				"category": "Pharo",
-				"icon": "$(list-tree)"
-			},
-			{
-				"command": "pharo.goTo",
-				"title": "%commands.pharo.goTo.title%",
-				"category": "Pharo",
-				"icon": "$(search)"
-			},
-			{
 				"command": "pharo.tests.refresh",
 				"title": "%commands.pharo.tests.refresh.title%",
 				"category": "Pharo Tests",
@@ -676,11 +664,6 @@
 		],
 		"menus": {
 			"view/title": [
-				{
-					"command": "pharo.millerNavigation.open",
-					"when": "view == pharoImage",
-					"group": "navigation@0"
-				},
 				{
 					"command": "pharo.images.download",
 					"when": "view == images",
