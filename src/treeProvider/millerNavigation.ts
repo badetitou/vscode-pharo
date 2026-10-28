@@ -111,7 +111,8 @@ function openNavigationPanel(client: PharoNavigationClient, focusSearch: boolean
 				loading: loadingColumn === 1,
 				actions: className ? [
 					{ label: 'Open class', action: 'openClass' },
-					{ label: 'Run tests', action: 'runClassTests' }
+					{ label: 'Run tests', action: 'runClassTests' },
+					...(selectedRepositoryName ? [{ label: 'Compare with Iceberg', action: 'compareWithIceberg' }] : [])
 				] : undefined
 			});
 		}
@@ -333,6 +334,12 @@ function openNavigationPanel(client: PharoNavigationClient, focusSearch: boolean
 					await vscode.window.showTextDocument(document);
 				} else if (request.action === 'runClassTests') {
 					await vscode.commands.executeCommand('pharo.executeClassTests', className);
+				} else if (request.action === 'compareWithIceberg' && packageName && selectedRepositoryName) {
+					await vscode.commands.executeCommand(
+						'pharo.ice.openDiff',
+						selectedRepositoryName,
+						classUri(packageName, className).toString(true)
+					);
 				}
 			}
 		} catch (error) {
