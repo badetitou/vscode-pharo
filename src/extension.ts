@@ -1,4 +1,4 @@
-import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel, FileSystemError } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel, FileSystemError, ConfigurationTarget } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
@@ -194,6 +194,7 @@ function createCommands(context: ExtensionContext) {
 }
 
 function registerPharoImagesCommands(context: ExtensionContext) {
+	context.subscriptions.push(commands.registerCommand('pharo.selectImage', commandPharoSelectImage));
 	context.subscriptions.push(commands.registerCommand('pharo.images.refresh', () => {
 		pharoImagesExplorer?.refresh();
 	}));
@@ -203,6 +204,94 @@ function registerPharoImagesCommands(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('pharo.images.download', async () => {
 		await commandPharoImagesDownload();
 	}));
+}
+
+async function commandPharoSelectImage(): Promise<void> {
+	const configuration = workspace.getConfiguration('pharo');
+	const currentImagePath = configuration.get<string>('pathToImage', '');
+	const selectedImages = await window.showOpenDialog({
+		canSelectFiles: true,
+		canSelectFolders: false,
+		canSelectMany: false,
+		defaultUri: currentImagePath
+			? Uri.file(path.dirname(currentImagePath))
+			: undefined,
+		filters: { 'Pharo image': ['image'] },
+		title: 'Select the Pharo image for this workspace'
+	});
+	const selectedImage = selectedImages?.[0];
+	if (!selectedImage) {
+		return;
+	}
+
+	const nextImagePath = path.resolve(selectedImage.fsPath);
+	if (path.extname(nextImagePath).toLowerCase() !== '.image') {
+		void window.showErrorMessage(`The selected file is not a Pharo image: ${nextImagePath}`);
+		return;
+	}
+	if (currentImagePath && path.resolve(currentImagePath) === nextImagePath) {
+		void window.showInformationMessage(`This workspace already uses ${nextImagePath}.`);
+		return;
+	}
+
+	try {
+		await requirements.resolveRequirements(nextImagePath);
+	} catch (error) {
+		if (error instanceof requirements.RequirementsError) {
+			void window.showErrorMessage(error.message, error.label).then((selection) => {
+				if (selection === error.label) {
+					void commands.executeCommand(error.command, error.commandParam);
+				}
+			});
+		} else {
+			void window.showErrorMessage(`Unable to validate the selected Pharo image: ${formatError(error)}`);
+		}
+		return;
+	}
+
+	const saveAndSwitchLabel = 'Save Image and Switch';
+	const selection = await window.showWarningMessage(
+		`Switch this workspace from ${currentImagePath || 'no configured image'} to ${nextImagePath}?`,
+		{
+			modal: true,
+			detail: 'The current Pharo image is saved before VS Code reloads and starts the selected image. Wait for active evaluations and tests to finish first. Other VS Code windows and their image settings are not changed.'
+		},
+		saveAndSwitchLabel
+	);
+	if (selection !== saveAndSwitchLabel) {
+		return;
+	}
+
+	if (serverStarted && client?.isRunning()) {
+		try {
+			await client.sendRequest('command:save');
+		} catch (error) {
+			void window.showErrorMessage(`Unable to save the current Pharo image; the active image was not changed: ${formatError(error)}`);
+			return;
+		}
+	}
+
+	const target = workspace.workspaceFile || (workspace.workspaceFolders?.length ?? 0) > 0
+		? ConfigurationTarget.Workspace
+		: ConfigurationTarget.Global;
+	const previousImageValue = configuration.inspect<string>('pathToImage');
+	const previousTargetValue = target === ConfigurationTarget.Workspace
+		? previousImageValue?.workspaceValue
+		: previousImageValue?.globalValue;
+	try {
+		await configuration.update('pathToImage', nextImagePath, target);
+		await commands.executeCommand('workbench.action.reloadWindow');
+	} catch (error) {
+		try {
+			await configuration.update('pathToImage', previousTargetValue, target);
+		} catch (restoreError) {
+			void window.showErrorMessage(
+				`Unable to reload VS Code after changing the Pharo image (${formatError(error)}). The previous setting could not be restored: ${formatError(restoreError)}.`
+			);
+			return;
+		}
+		void window.showErrorMessage(`Unable to switch the Pharo image; the previous setting was restored: ${formatError(error)}`);
+	}
 }
 
 function pharoImagesRootFolderFsPath(): string {
@@ -967,15 +1056,18 @@ function initStatusBar(context: ExtensionContext) {
 
 	context.subscriptions.push(commands.registerCommand('extension.showQuickPick', async () => {
 		const addImageOption = '$(folder-opened) Add Image to Workspace';
+		const switchImageOption = '$(database) Select Active Image';
 		const openSettingsOption = '$(settings-gear) Open Settings';
 		const diagnosticsOption = '$(stethoscope) Pharo Language Server Diagnostics';
-		const options = [diagnosticsOption, addImageOption, openSettingsOption];
+		const options = [diagnosticsOption, switchImageOption, addImageOption, openSettingsOption];
 		const selection = await window.showQuickPick(options, {
 			canPickMany: false,
 			title: 'Select option'
 		});
 		if (selection === diagnosticsOption) {
 			await commands.executeCommand('pharo.diagnose');
+		} else if (selection === switchImageOption) {
+			await commands.executeCommand('pharo.selectImage');
 		} else if (selection === addImageOption) {
 			commands.executeCommand('pharo.addImageToWorkspace');
 		} else if (selection === openSettingsOption) {
@@ -990,12 +1082,16 @@ function initStatusBar(context: ExtensionContext) {
 
 function setStatusBarText(text: string) {
 	plsStatusBar.text = "$(pls-icon)" + text;
-	plsStatusBar.tooltip = `Pharo Language Server: ${text}`;
+	const imagePath = workspace.getConfiguration('pharo').get<string>('pathToImage', '');
+	plsStatusBar.tooltip = imagePath
+		? `Pharo Language Server: ${text}\nImage: ${imagePath}`
+		: `Pharo Language Server: ${text}`;
 }
 
 function resetStatusBarText() {
 	serverLifecycleStatus = 'Connected';
-	setStatusBarText('Connected');
+	const imagePath = workspace.getConfiguration('pharo').get<string>('pathToImage', '');
+	setStatusBarText(imagePath ? `Connected: ${path.basename(imagePath)}` : 'Connected');
 }
 
 function updateRepositoryStatusBar() {

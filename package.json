@@ -531,6 +531,12 @@
 				"icon": "$(cloud-download)"
 			},
 			{
+				"command": "pharo.selectImage",
+				"title": "%commands.pharo.selectImage.title%",
+				"category": "Pharo",
+				"icon": "$(database)"
+			},
+			{
 				"command": "pharo.extensionVersion",
 				"title": "Show Pharo Language Server Version",
 				"category": "Pharo"

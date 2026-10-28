@@ -19,10 +19,10 @@ export class RequirementsError extends Error {
 	}
 }
 
-export async function resolveRequirements(): Promise<RequirementsData> {
+export async function resolveRequirements(imagePathOverride?: string): Promise<RequirementsData> {
 	const configuration = vscode.workspace.getConfiguration('pharo');
 	const configuredVM = configuration.get<string>('pathToVM', '').trim();
-	const configuredImage = configuration.get<string>('pathToImage', '').trim();
+	const configuredImage = (imagePathOverride ?? configuration.get<string>('pathToImage', '')).trim();
 
 	const pathToVM = await resolveVMPath(configuredVM);
 	if (!pathToVM) {
