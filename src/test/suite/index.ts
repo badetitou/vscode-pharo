@@ -14,6 +14,7 @@ export function run(): Promise<void> {
 	mocha.addFile(path.resolve(__dirname, './rpcContracts.test.js'));
 	mocha.addFile(path.resolve(__dirname, './imageInstall.test.js'));
 	mocha.addFile(path.resolve(__dirname, './moosebookExecution.test.js'));
+	mocha.addFile(path.resolve(__dirname, './jsonc.test.js'));
 
 	return new Promise((resolve, reject) => {
 		try {
