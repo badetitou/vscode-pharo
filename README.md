@@ -152,6 +152,10 @@ Or, to install the extension in an existing image :
    2. pharo.pathToImage: is the absolute path to the image
    3. pharo.imageWorkspace: expose `pharoImage:/` as a workspace folder (useful for tools that read workspace files, such as AI assistants with virtual workspace support)
 
+### Miller navigation
+
+Run **Pharo: Browse Pharo Image (Miller Navigation)** from the Command Palette to browse the active image by package, class, protocol, and method. The method list is loaded when a class is selected; selecting a method opens its Tonel source at the corresponding definition. From the class column, you can also open the class or run its tests. Use **Refresh** to reload package discovery after image changes; class contents are read on demand through the existing `pharoImage` file system provider.
+
 > From version v1.0.0, please use at least version v1.1.0 of the Pharo Language Server.
 
 ### Using VMs from the Pharo Launcher

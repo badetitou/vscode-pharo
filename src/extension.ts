@@ -28,6 +28,7 @@ import { buildPharoUri, ICE_REPOSITORY_QUERY_KEY, repositoryNameFromPharoUri } f
 import { expectString, expectStringArray } from './rpcContracts';
 import { registerServerDiagnosticsCommand } from './serverDiagnostics';
 import { installImageDirectory, ImageInstallResult } from './imageInstall';
+import { registerPharoMillerNavigation } from './treeProvider/millerNavigation';
 
 
 export let client: LanguageClient;
@@ -62,6 +63,9 @@ export async function activate(context: ExtensionContext) {
 	// AI entrypoints: @pharo participant + tool-calls (pharo.*)
 	registerPharoLanguageModelTools(context);
 	registerPharoChatParticipant(context);
+	context.subscriptions.push(registerPharoMillerNavigation(
+		() => typeof client === 'undefined' ? undefined : client
+	));
 	initStatusBar(extensionContext);
 	registerRepositoryContextUi(context);
 	// Create new command

@@ -1,0 +1,482 @@
+import * as crypto from 'crypto';
+import * as path from 'path';
+import * as vscode from 'vscode';
+import { expectStringArray } from '../rpcContracts';
+import { buildPharoUri } from './pharoUri';
+
+const COMMAND_ID = 'pharo.millerNavigation.open';
+const CLASS_FILE_SUFFIX = '.class.st';
+
+export interface TonelMethod {
+	id: string;
+	selector: string;
+	protocol: string;
+	side: 'instance' | 'class';
+	startLine: number;
+}
+
+export interface MillerEntry {
+	label: string;
+	value: string;
+	description?: string;
+}
+
+export interface MillerAction {
+	label: string;
+	action: string;
+}
+
+export interface MillerColumn {
+	title: string;
+	entries: MillerEntry[];
+	selectedValue?: string;
+	loading?: boolean;
+	actions?: MillerAction[];
+}
+
+export function parseTonelMethods(source: string): TonelMethod[] {
+	const methods: TonelMethod[] = [];
+	let protocol = 'as yet unclassified';
+	const lines = source.split(/\r?\n/);
+
+	for (let startLine = 0; startLine < lines.length; startLine++) {
+		const line = lines[startLine];
+		const category = line.match(/^\{\s*#category\s*:\s*#(?:'((?:[^']|'')*)'|([^\s}]+))/);
+		if (category) {
+			protocol = (category[1]?.replace(/''/g, "'") ?? category[2] ?? 'as yet unclassified').trim();
+			continue;
+		}
+
+		const header = line.match(/^\s*[\w$]+(?:\s+class)?\s*>>\s*(.*?)\s*\[\s*$/u);
+		if (!header) {
+			continue;
+		}
+
+		const selector = selectorFromHeader(header[1]);
+		if (!selector) {
+			continue;
+		}
+		const side = /\sclass\s*>>/.test(line) ? 'class' : 'instance';
+		methods.push({
+			id: `${side}:${selector}`,
+			selector,
+			protocol,
+			side,
+			startLine
+		});
+	}
+
+	return methods;
+}
+
+function selectorFromHeader(header: string): string {
+	const trimmed = header.trim();
+	const keywordParts = trimmed.match(/[A-Za-z_]\w*:/g);
+	if (keywordParts?.length) {
+		return keywordParts.join('');
+	}
+
+	const binarySelector = trimmed.match(/^[!%&*+,\-/<=>?@\\~|]+/);
+	if (binarySelector) {
+		return binarySelector[0];
+	}
+
+	return trimmed.split(/\s/, 1)[0] ?? '';
+}
+
+interface PharoNavigationClient {
+	isRunning(): boolean;
+	sendRequest<T = unknown>(method: string, params?: unknown): Promise<T>;
+}
+
+export function registerPharoMillerNavigation(
+	getClient: () => PharoNavigationClient | undefined
+): vscode.Disposable {
+	let panel: vscode.WebviewPanel | undefined;
+	const command = vscode.commands.registerCommand(COMMAND_ID, async () => {
+		const client = getClient();
+		if (!client?.isRunning()) {
+			void vscode.window.showErrorMessage('The Pharo Language Server is not running.');
+			return;
+		}
+
+		if (panel) {
+			panel.reveal(vscode.ViewColumn.Beside);
+			return;
+		}
+		panel = openNavigationPanel(client);
+		panel.onDidDispose(() => { panel = undefined; });
+	});
+	return vscode.Disposable.from(
+		command,
+		new vscode.Disposable(() => panel?.dispose())
+	);
+}
+
+function openNavigationPanel(client: PharoNavigationClient): vscode.WebviewPanel {
+	const imagePath = vscode.workspace.getConfiguration('pharo').get<string>('pathToImage');
+	const imageName = imagePath ? path.basename(imagePath, path.extname(imagePath)) : 'Pharo Image';
+	const panel = vscode.window.createWebviewPanel(
+		'pharoMillerNavigation',
+		`Pharo: ${imageName}`,
+		vscode.ViewColumn.Beside,
+		{ enableScripts: true, retainContextWhenHidden: true }
+	);
+	panel.webview.html = getWebviewHtml(panel.webview);
+
+	let packages: string[] = [];
+	let classes: string[] = [];
+	let methods: TonelMethod[] = [];
+	let packageName: string | undefined;
+	let className: string | undefined;
+	let protocol: string | undefined;
+	let generation = 0;
+	let webviewReady = false;
+	let packagesLoading = false;
+	let pendingError: string | undefined;
+
+	const packageEntries = (): MillerEntry[] => packages.map((name) => ({ label: name, value: name }));
+	const classEntries = (): MillerEntry[] => classes.map((name) => ({ label: name, value: name }));
+	const protocolEntries = (): MillerEntry[] => [...new Set(methods.map((method) => method.protocol))]
+		.sort((left, right) => left.localeCompare(right))
+		.map((name) => ({ label: name, value: name }));
+
+	const render = (loadingColumn?: number) => {
+		if (!webviewReady) {
+			return;
+		}
+		const columns: MillerColumn[] = [{ title: 'Packages', entries: packageEntries(), selectedValue: packageName }];
+		if (packageName !== undefined) {
+			columns.push({
+				title: 'Classes',
+				entries: classEntries(),
+				selectedValue: className,
+				loading: loadingColumn === 1,
+				actions: className ? [
+					{ label: 'Open class', action: 'openClass' },
+					{ label: 'Run tests', action: 'runClassTests' }
+				] : undefined
+			});
+		}
+		if (className !== undefined) {
+			columns.push({
+				title: 'Protocols',
+				entries: protocolEntries(),
+				selectedValue: protocol,
+				loading: loadingColumn === 2
+			});
+		}
+		if (protocol !== undefined) {
+			columns.push({
+				title: 'Methods',
+				entries: methods
+					.filter((method) => method.protocol === protocol)
+					.map((method) => ({
+						label: method.selector,
+						value: method.id,
+						description: `${method.side} side`
+					})),
+				loading: loadingColumn === 3
+			});
+		}
+
+		void panel.webview.postMessage({
+			type: 'update',
+			columns,
+			breadcrumb: [packageName, className, protocol].filter((part): part is string => part !== undefined)
+		});
+	};
+
+	const showError = (error: unknown) => {
+		const message = error instanceof Error ? error.message : String(error);
+		if (!webviewReady) {
+			pendingError = message;
+			return;
+		}
+		void panel.webview.postMessage({ type: 'error', message });
+	};
+
+	const refreshNavigation = async () => {
+		const requestGeneration = ++generation;
+		packagesLoading = true;
+		packages = [];
+		classes = [];
+		methods = [];
+		packageName = undefined;
+		className = undefined;
+		protocol = undefined;
+		render(0);
+		try {
+			const result = await client.sendRequest<unknown>('pls:packages', {});
+			if (requestGeneration !== generation) {
+				return;
+			}
+			packagesLoading = false;
+			packages = expectStringArray(result, 'pls:packages').sort((left, right) => left.localeCompare(right));
+			render();
+		} catch (error) {
+			if (requestGeneration === generation) {
+				packagesLoading = false;
+				render();
+				showError(error);
+			}
+		}
+	};
+
+	panel.webview.onDidReceiveMessage(async (message: unknown) => {
+		if (!message || typeof message !== 'object') {
+			return;
+		}
+		const request = message as { type?: unknown; column?: unknown; value?: unknown; action?: unknown };
+		if (request.type === 'ready') {
+			webviewReady = true;
+			render(packagesLoading ? 0 : undefined);
+			if (pendingError) {
+				void panel.webview.postMessage({ type: 'error', message: pendingError });
+				pendingError = undefined;
+			}
+			return;
+		}
+		if (request.type === 'refresh') {
+			await refreshNavigation();
+			return;
+		}
+		let requestGeneration: number | undefined;
+		try {
+			if (request.type === 'select' && Number.isInteger(request.column) && typeof request.value === 'string') {
+				const isValidSelection =
+					(request.column === 0 && packages.includes(request.value)) ||
+					(request.column === 1 && packageName !== undefined && classes.includes(request.value)) ||
+					(request.column === 2 && className !== undefined && methods.some((method) => method.protocol === request.value)) ||
+					(request.column === 3 && protocol !== undefined && methods.some((method) => method.id === request.value && method.protocol === protocol));
+				if (!isValidSelection) {
+					return;
+				}
+				requestGeneration = ++generation;
+				if (request.column === 0 && packages.includes(request.value)) {
+					packageName = request.value;
+					className = undefined;
+					protocol = undefined;
+					classes = [];
+					methods = [];
+					render(1);
+					const result = await client.sendRequest<unknown>('pls:classes', { package: packageName });
+					if (requestGeneration !== generation) {
+						return;
+					}
+					classes = expectStringArray(result, 'pls:classes')
+						.map((name) => name.split('/').pop() ?? name)
+						.sort((left, right) => left.localeCompare(right));
+					render();
+					return;
+				}
+
+				if (request.column === 1 && packageName && classes.includes(request.value)) {
+					className = request.value;
+					protocol = undefined;
+					methods = [];
+					render(2);
+					const uri = classUri(packageName, className);
+					const document = await vscode.workspace.openTextDocument(uri);
+					if (requestGeneration !== generation) {
+						return;
+					}
+					methods = parseTonelMethods(document.getText());
+					render();
+					return;
+				}
+
+				if (request.column === 2 && className) {
+					const availableProtocols = new Set(methods.map((method) => method.protocol));
+					if (!availableProtocols.has(request.value)) {
+						return;
+					}
+					protocol = request.value;
+					render();
+					return;
+				}
+
+				if (request.column === 3 && protocol) {
+					const method = methods.find((candidate) => candidate.id === request.value && candidate.protocol === protocol);
+					if (!method || !packageName || !className) {
+						return;
+					}
+					const document = await vscode.workspace.openTextDocument(classUri(packageName, className));
+					if (requestGeneration !== generation) {
+						return;
+					}
+					const editor = await vscode.window.showTextDocument(document);
+					const line = Math.max(0, Math.min(method.startLine, document.lineCount - 1));
+					const position = new vscode.Position(line, 0);
+					editor.selection = new vscode.Selection(position, position);
+					editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
+					return;
+				}
+			}
+
+			if (request.type === 'action' && typeof request.action === 'string' && className) {
+				if (request.action === 'openClass' && packageName) {
+					const document = await vscode.workspace.openTextDocument(classUri(packageName, className));
+					await vscode.window.showTextDocument(document);
+				} else if (request.action === 'runClassTests') {
+					await vscode.commands.executeCommand('pharo.executeClassTests', className);
+				}
+			}
+		} catch (error) {
+			if (requestGeneration === undefined || requestGeneration === generation) {
+				render();
+				showError(error);
+			}
+		}
+	});
+
+	function classUri(selectedPackage: string, selectedClass: string): vscode.Uri {
+		return buildPharoUri(`/${selectedPackage}/${selectedClass}${CLASS_FILE_SUFFIX}`);
+	}
+
+	void refreshNavigation();
+	return panel;
+}
+
+function getWebviewHtml(webview: vscode.Webview): string {
+	const nonce = crypto.randomBytes(16).toString('base64');
+	const cspSource = webview.cspSource;
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pharo navigation</title>
+	<style nonce="${nonce}">
+		:root { color-scheme: light dark; }
+		body { padding: 0; color: var(--vscode-foreground); background: var(--vscode-editor-background); font-family: var(--vscode-font-family); }
+		#toolbar { display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-bottom: 1px solid var(--vscode-panel-border); }
+		#breadcrumb { color: var(--vscode-descriptionForeground); }
+		#refresh { width: auto; padding: 4px 8px; }
+		#error { display: none; padding: 8px 12px; color: var(--vscode-errorForeground); }
+		#columns { display: flex; height: calc(100vh - 45px); overflow-x: auto; }
+		.column { display: flex; flex: 0 0 250px; flex-direction: column; border-right: 1px solid var(--vscode-panel-border); }
+		.column h2 { margin: 0; padding: 10px 12px; font-size: 13px; font-weight: 600; }
+		.actions { display: flex; gap: 5px; padding: 0 8px 8px; }
+		.actions:empty { display: none; }
+		input { margin: 0 8px 8px; padding: 5px; color: var(--vscode-input-foreground); background: var(--vscode-input-background); border: 1px solid var(--vscode-input-border, transparent); }
+		.entries { overflow-y: auto; }
+		button { width: 100%; padding: 6px 10px; text-align: left; color: var(--vscode-foreground); background: transparent; border: 0; cursor: pointer; }
+		button:hover { background: var(--vscode-list-hoverBackground); }
+		button.selected { color: var(--vscode-list-activeSelectionForeground); background: var(--vscode-list-activeSelectionBackground); }
+		.actions button { width: auto; border: 1px solid var(--vscode-button-border, transparent); }
+		.description { display: block; color: var(--vscode-descriptionForeground); font-size: 11px; }
+		.empty { padding: 8px 12px; color: var(--vscode-descriptionForeground); }
+	</style>
+</head>
+<body>
+	<div id="toolbar">
+		<div id="breadcrumb" aria-live="polite">Loading Pharo packages…</div>
+		<button id="refresh" type="button" title="Reload packages from the active image">Refresh</button>
+	</div>
+	<div id="error" role="alert"></div>
+	<main id="columns" aria-label="Pharo image navigation"></main>
+	<script nonce="${nonce}">
+		const vscode = acquireVsCodeApi();
+		const columnsRoot = document.getElementById('columns');
+		const breadcrumb = document.getElementById('breadcrumb');
+		const errorBox = document.getElementById('error');
+		document.getElementById('refresh').addEventListener('click', () => vscode.postMessage({ type: 'refresh' }));
+
+		function render(data) {
+			errorBox.style.display = 'none';
+			breadcrumb.textContent = data.breadcrumb.length ? data.breadcrumb.join('  ›  ') : 'Select a package to begin';
+			columnsRoot.replaceChildren();
+			data.columns.forEach((column, index) => {
+				const section = document.createElement('section');
+				section.className = 'column';
+				const heading = document.createElement('h2');
+				heading.textContent = column.title;
+				section.appendChild(heading);
+				const actions = document.createElement('div');
+				actions.className = 'actions';
+				(column.actions || []).forEach((action) => {
+					const button = document.createElement('button');
+					button.type = 'button';
+					button.textContent = action.label;
+					button.addEventListener('click', () => vscode.postMessage({ type: 'action', action: action.action }));
+					actions.appendChild(button);
+				});
+				section.appendChild(actions);
+
+				const filter = document.createElement('input');
+				filter.type = 'search';
+				filter.placeholder = 'Filter ' + column.title.toLowerCase();
+				filter.setAttribute('aria-label', filter.placeholder);
+				section.appendChild(filter);
+
+				const entries = document.createElement('div');
+				entries.className = 'entries';
+				entries.addEventListener('keydown', (event) => {
+					if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+						return;
+					}
+					const buttons = Array.from(entries.querySelectorAll('button'));
+					const currentIndex = buttons.findIndex((button) => button === document.activeElement);
+					const nextIndex = event.key === 'ArrowDown'
+						? Math.min(currentIndex + 1, buttons.length - 1)
+						: Math.max(currentIndex - 1, 0);
+					if (buttons[nextIndex]) {
+						event.preventDefault();
+						buttons[nextIndex].focus();
+					}
+				});
+				const drawEntries = () => {
+					entries.replaceChildren();
+					const query = filter.value.toLocaleLowerCase();
+					const matchingEntries = column.entries.filter((entry) => entry.label.toLocaleLowerCase().includes(query));
+					if (column.loading) {
+						const loading = document.createElement('div');
+						loading.className = 'empty';
+						loading.textContent = 'Loading…';
+						entries.appendChild(loading);
+					} else if (matchingEntries.length === 0) {
+						const empty = document.createElement('div');
+						empty.className = 'empty';
+						empty.textContent = 'No items';
+						entries.appendChild(empty);
+					} else {
+						matchingEntries.forEach((entry) => {
+							const button = document.createElement('button');
+							button.type = 'button';
+							button.className = entry.value === column.selectedValue ? 'selected' : '';
+							button.setAttribute('aria-current', entry.value === column.selectedValue ? 'true' : 'false');
+							button.appendChild(document.createTextNode(entry.label));
+							if (entry.description) {
+								const description = document.createElement('span');
+								description.className = 'description';
+								description.textContent = entry.description;
+								button.appendChild(description);
+							}
+							button.addEventListener('click', () => vscode.postMessage({ type: 'select', column: index, value: entry.value }));
+							entries.appendChild(button);
+						});
+					}
+				};
+				filter.addEventListener('input', drawEntries);
+				section.appendChild(entries);
+				drawEntries();
+				columnsRoot.appendChild(section);
+			});
+		}
+
+		window.addEventListener('message', (event) => {
+			const message = event.data;
+			if (message.type === 'update') {
+				render(message);
+			} else if (message.type === 'error') {
+				errorBox.textContent = message.message;
+				errorBox.style.display = 'block';
+			}
+		});
+		vscode.postMessage({ type: 'ready' });
+	</script>
+</body>
+</html>`;
+}

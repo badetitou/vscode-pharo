@@ -508,6 +508,12 @@
 		],
 		"commands": [
 			{
+				"command": "pharo.millerNavigation.open",
+				"title": "%commands.pharo.millerNavigation.title%",
+				"category": "Pharo",
+				"icon": "$(list-tree)"
+			},
+			{
 				"command": "pharo.browseImage",
 				"title": "Browse Pharo Image",
 				"enablement": "false"
@@ -652,6 +658,11 @@
 		],
 		"menus": {
 			"view/title": [
+				{
+					"command": "pharo.millerNavigation.open",
+					"when": "view == pharoImage",
+					"group": "navigation@0"
+				},
 				{
 					"command": "pharo.images.download",
 					"when": "view == images",
