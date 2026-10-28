@@ -10,16 +10,19 @@ export interface PLSVariable {
 
 export class PharoBindingProvider implements vscode.TreeDataProvider<PLSVariable> {
 
-	private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>();
-	readonly onDidChangeTreeData: vscode.Event<any> = this._onDidChangeTreeData.event;
+	private readonly _onDidChangeTreeData = new vscode.EventEmitter<PLSVariable | undefined>();
+	readonly onDidChangeTreeData: vscode.Event<PLSVariable | undefined> = this._onDidChangeTreeData.event;
+	private readonly documentOpenedListener = vscode.workspace.onDidOpenTextDocument(() => this.refresh());
 
-	constructor() {
-		vscode.workspace.onDidOpenTextDocument(e => this.refresh());
+	constructor() {}
+
+	public refresh(): void {
+		this._onDidChangeTreeData.fire(undefined);
 	}
 
-	public refresh(): any {
-		this._onDidChangeTreeData.fire(undefined);
-
+	dispose(): void {
+		this.documentOpenedListener.dispose();
+		this._onDidChangeTreeData.dispose();
 	}
 
 
@@ -64,13 +67,20 @@ export class PharoBindingProvider implements vscode.TreeDataProvider<PLSVariable
 export class PharoDocumentExplorer {
 
 	public pharoBindingProvider = new PharoBindingProvider();
+	private readonly treeView: vscode.TreeView<PLSVariable>;
 
 	constructor(context: vscode.ExtensionContext) {
-		vscode.window.createTreeView('pharoBindingView', { treeDataProvider: this.pharoBindingProvider });
+		this.treeView = vscode.window.createTreeView('pharoBindingView', { treeDataProvider: this.pharoBindingProvider });
+		context.subscriptions.push(this);
 	}
 
 	refresh() {
 		this.pharoBindingProvider.refresh();
+	}
+
+	dispose(): void {
+		this.treeView.dispose();
+		this.pharoBindingProvider.dispose();
 	}
 
 }

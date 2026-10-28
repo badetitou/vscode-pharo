@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
+import * as fs from 'fs';
+import { parseJsoncObject } from '../jsonc';
 
 type WorkspaceDescriptor =
 	| { kind: 'workspaceFile'; uri: vscode.Uri }
@@ -18,8 +20,11 @@ async function uriExists(uri: vscode.Uri): Promise<boolean> {
 	try {
 		await vscode.workspace.fs.stat(uri);
 		return true;
-	} catch {
-		return false;
+	} catch (error) {
+		if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') {
+			return false;
+		}
+		throw error;
 	}
 }
 
@@ -27,14 +32,9 @@ function normalizeFsPath(fsPath: string): string {
 	return path.normalize(path.resolve(fsPath));
 }
 
-async function tryParseWorkspaceFile(workspaceFileUri: vscode.Uri): Promise<any | undefined> {
-	try {
-		const raw = await vscode.workspace.fs.readFile(workspaceFileUri);
-		const text = Buffer.from(raw).toString('utf8');
-		return JSON.parse(text);
-	} catch {
-		return undefined;
-	}
+async function readJsoncFile(fileUri: vscode.Uri): Promise<Record<string, unknown>> {
+	const raw = await vscode.workspace.fs.readFile(fileUri);
+	return parseJsoncObject(Buffer.from(raw).toString('utf8'), fileUri.fsPath);
 }
 
 async function resolveWorkspaceForImage(imageUri: vscode.Uri): Promise<WorkspaceDescriptor | undefined> {
@@ -52,8 +52,11 @@ async function resolveWorkspaceForImage(imageUri: vscode.Uri): Promise<Workspace
 		.map(([name]) => vscode.Uri.joinPath(folderUri, name));
 
 	for (const workspaceFileUri of workspaceFiles) {
-		const json = await tryParseWorkspaceFile(workspaceFileUri);
-		const configured = json?.settings?.['pharo.pathToImage'];
+		const json = await readJsoncFile(workspaceFileUri);
+		const settings = json.settings;
+		const configured = settings && typeof settings === 'object' && !Array.isArray(settings)
+			? (settings as Record<string, unknown>)['pharo.pathToImage']
+			: undefined;
 		if (typeof configured === 'string' && normalizeFsPath(configured) === normalizedImagePath) {
 			return { kind: 'workspaceFile', uri: workspaceFileUri };
 		}
@@ -61,16 +64,10 @@ async function resolveWorkspaceForImage(imageUri: vscode.Uri): Promise<Workspace
 
 	const vscodeSettingsUri = vscode.Uri.joinPath(folderUri, '.vscode', 'settings.json');
 	if (await uriExists(vscodeSettingsUri)) {
-		try {
-			const raw = await vscode.workspace.fs.readFile(vscodeSettingsUri);
-			const text = Buffer.from(raw).toString('utf8');
-			const json = JSON.parse(text);
-			const configured = json?.['pharo.pathToImage'];
-			if (typeof configured === 'string' && normalizeFsPath(configured) === normalizedImagePath) {
-				return { kind: 'folderSettings', uri: folderUri };
-			}
-		} catch {
-			// ignore malformed settings
+		const json = await readJsoncFile(vscodeSettingsUri);
+		const configured = json['pharo.pathToImage'];
+		if (typeof configured === 'string' && normalizeFsPath(configured) === normalizedImagePath) {
+			return { kind: 'folderSettings', uri: folderUri };
 		}
 	}
 
@@ -86,19 +83,6 @@ export async function createWorkspaceForImage(imageUri: vscode.Uri): Promise<vsc
 		`pharo-${base}.code-workspace`,
 		`pharo.code-workspace`
 	];
-
-	let chosenUri: vscode.Uri | undefined;
-	for (const name of candidateNames) {
-		const uri = vscode.Uri.file(path.join(folderPath, name));
-		if (!(await uriExists(uri))) {
-			chosenUri = uri;
-			break;
-		}
-	}
-
-	if (!chosenUri) {
-		chosenUri = vscode.Uri.file(path.join(folderPath, `${base}-${Date.now()}.code-workspace`));
-	}
 
 	const currentPharoConfig = vscode.workspace.getConfiguration('pharo');
 	const pathToVM = currentPharoConfig.get<string>('pathToVM');
@@ -118,13 +102,38 @@ export async function createWorkspaceForImage(imageUri: vscode.Uri): Promise<vsc
 		folders: [{ path: '.' }],
 		settings
 	};
+	const content = JSON.stringify(workspaceJson, null, 2) + '\n';
+	for (const name of candidateNames) {
+		const uri = vscode.Uri.file(path.join(folderPath, name));
+		if (await uriExists(uri)) {
+			continue;
+		}
+		try {
+			await fs.promises.writeFile(uri.fsPath, content, { encoding: 'utf8', flag: 'wx' });
+			return uri;
+		} catch (error) {
+			if (isAlreadyExistsError(error)) {
+				continue;
+			}
+			throw error;
+		}
+	}
 
-	await vscode.workspace.fs.writeFile(
-		chosenUri,
-		Buffer.from(JSON.stringify(workspaceJson, null, 2) + '\n', 'utf8')
-	);
+	for (let suffix = Date.now(); ; suffix++) {
+		const uri = vscode.Uri.file(path.join(folderPath, `${base}-${suffix}.code-workspace`));
+		try {
+			await fs.promises.writeFile(uri.fsPath, content, { encoding: 'utf8', flag: 'wx' });
+			return uri;
+		} catch (error) {
+			if (!isAlreadyExistsError(error)) {
+				throw error;
+			}
+		}
+	}
+}
 
-	return chosenUri;
+function isAlreadyExistsError(error: unknown): error is NodeJS.ErrnoException {
+	return error instanceof Error && 'code' in error && error.code === 'EEXIST';
 }
 
 export class PharoImagesProvider implements vscode.TreeDataProvider<PharoImagesNode> {
@@ -133,6 +142,10 @@ export class PharoImagesProvider implements vscode.TreeDataProvider<PharoImagesN
 
 	refresh(): void {
 		this.didChangeTreeDataEmitter.fire();
+	}
+
+	dispose(): void {
+		this.didChangeTreeDataEmitter.dispose();
 	}
 
 	getTreeItem(element: PharoImagesNode): vscode.TreeItem | Thenable<vscode.TreeItem> {
@@ -239,13 +252,19 @@ export class PharoImagesExplorer {
 	private readonly provider: PharoImagesProvider;
 	private readonly view: vscode.TreeView<PharoImagesNode>;
 
-	constructor(_context: vscode.ExtensionContext) {
+	constructor(context: vscode.ExtensionContext) {
 		this.provider = new PharoImagesProvider();
 		this.view = vscode.window.createTreeView('images', { treeDataProvider: this.provider });
+		context.subscriptions.push(this);
 	}
 
 	refresh(): void {
 		this.provider.refresh();
+	}
+
+	dispose(): void {
+		this.view.dispose();
+		this.provider.dispose();
 	}
 
 	async play(node?: PharoImagesNode): Promise<void> {

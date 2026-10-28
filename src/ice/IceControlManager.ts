@@ -98,7 +98,10 @@ export class IceControlManager implements IDisposable {
         return result;
     }
 
-    constructor(private _client: LanguageClient) {
+    constructor(
+        private _client: LanguageClient,
+        private readonly onImageChanged: () => void = () => undefined
+    ) {
         this.outputChannel = window.createOutputChannel('Pharo Iceberg');
         this.quickDiffProvider = new IceQuickDiffProvider(this._client, (action, error, notify) =>
             this.reportError(action, error, notify)
@@ -147,6 +150,7 @@ export class IceControlManager implements IDisposable {
                     this.resolveWorkingCopyOf(repository)
                 )
             );
+            this.onImageChanged();
         } catch (error) {
             this.reportError('Unable to refresh Iceberg repositories in VS Code', error);
         }

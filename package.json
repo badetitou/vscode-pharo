@@ -531,6 +531,12 @@
 				"icon": "$(cloud-download)"
 			},
 			{
+				"command": "pharo.selectImage",
+				"title": "%commands.pharo.selectImage.title%",
+				"category": "Pharo",
+				"icon": "$(database)"
+			},
+			{
 				"command": "pharo.extensionVersion",
 				"title": "Show Pharo Language Server Version",
 				"category": "Pharo"
@@ -824,6 +830,7 @@
 	"dependencies": {
 		"@microsoft/vscode-file-downloader-api": "^1.0.1",
 		"@vscode/debugprotocol": "^1.68.0",
+		"jsonc-parser": "^3.3.1",
 		"vscode-languageclient": "^10.1.0",
 		"vscode-languageserver-protocol": "3.18.2"
 	},

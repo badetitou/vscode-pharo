@@ -102,10 +102,11 @@ The additional feature can be access using the command palette of VSCode
 1. Save the Pharo image
 2. Execute and show the result
 The **Pharo: Show Pharo Language Server Diagnostics** command inspects VM/image configuration, process and connection status, and server version.
+3. Select the active Pharo image with **Pharo: Select Active Pharo Image**. The extension validates the selected image and VM, asks before switching, saves the running image, updates the current workspace setting, and reloads VS Code. The status bar shows which image is connected; other VS Code windows are unaffected.
 
 ![Inspect gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/inspectResult.gif)
 
-3. Execute and print the result
+4. Execute and print the result
 
 ![Print gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/printResult.gif)
 

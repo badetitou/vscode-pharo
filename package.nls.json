@@ -1,5 +1,6 @@
 {
 	"extension.description": "Syntax highlighting, auto-completion, execution, and more.",
+	"commands.pharo.selectImage.title": "Select Active Pharo Image",
 
 	"chatParticipant.pharo.description": "Create/read classes, evaluate code, and run tests in your Pharo image.",
 	"chatParticipant.pharo.command.help.description": "Show available commands.",
