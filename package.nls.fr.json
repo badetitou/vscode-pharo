@@ -3,6 +3,8 @@
 	"commands.pharo.selectImage.title": "Sélectionner l’image Pharo active",
 	"commands.pharo.millerNavigation.title": "Parcourir l’image Pharo (navigation Miller)",
 	"commands.pharo.goTo.title": "Atteindre un élément Pharo…",
+	"commands.pharo.tests.refresh.title": "Actualiser les tests Pharo",
+	"commands.pharo.tests.rerunFailed.title": "Relancer les tests Pharo en échec",
 
 	"chatParticipant.pharo.description": "Créer/lire des classes, exécuter du code et lancer des tests dans votre image Pharo.",
 	"chatParticipant.pharo.command.help.description": "Afficher les commandes disponibles.",

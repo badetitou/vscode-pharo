@@ -17,6 +17,7 @@ export function run(): Promise<void> {
 	mocha.addFile(path.resolve(__dirname, './jsonc.test.js'));
 	mocha.addFile(path.resolve(__dirname, './imageFileSystem.test.js'));
 	mocha.addFile(path.resolve(__dirname, './millerNavigation.test.js'));
+	mocha.addFile(path.resolve(__dirname, './testController.test.js'));
 
 	return new Promise((resolve, reject) => {
 		try {

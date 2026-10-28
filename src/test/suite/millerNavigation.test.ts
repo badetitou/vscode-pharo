@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { parseTonelMethods } from '../../treeProvider/millerNavigation';
+import { parseTonelMethods } from '../../tonel';
 
 suite('Pharo Miller navigation Tonel index', () => {
 	test('groups instance and class-side methods by protocol and records source lines', () => {
