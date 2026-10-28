@@ -1,4 +1,4 @@
-import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel, FileSystemError } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
@@ -27,6 +27,7 @@ import { registerPharoChatParticipant } from './ai/pharoChatParticipant';
 import { buildPharoUri, ICE_REPOSITORY_QUERY_KEY, repositoryNameFromPharoUri } from './treeProvider/pharoUri';
 import { expectString, expectStringArray } from './rpcContracts';
 import { registerServerDiagnosticsCommand } from './serverDiagnostics';
+import { installImageDirectory, ImageInstallResult } from './imageInstall';
 
 
 export let client: LanguageClient;
@@ -208,38 +209,56 @@ function pharoImagesRootFolderFsPath(): string {
 	return path.join(os.homedir(), 'Documents', 'Pharo', 'images');
 }
 
-async function copyDirectoryRecursive(source: Uri, destination: Uri): Promise<void> {
-	await workspace.fs.createDirectory(destination);
-	const entries = await workspace.fs.readDirectory(source);
-	for (const [name, fileType] of entries) {
-		const src = Uri.joinPath(source, name);
-		const dst = Uri.joinPath(destination, name);
-		if (fileType === FileType.Directory) {
-			await copyDirectoryRecursive(src, dst);
-		} else {
-			await workspace.fs.copy(src, dst, { overwrite: true });
-		}
-	}
-}
-
 async function commandPharoImagesDownload(): Promise<void> {
-	const localName = (await window.showInputBox({
-		title: 'Télécharger une image Pharo Language Server',
-		placeHolder: 'Nom local (dossier + .image/.changes) (ex: MonProjet-PLS)',
-		validateInput: (value) => {
-			const trimmed = value.trim();
-			if (trimmed.length === 0) {
-				return 'Le nom est requis.';
+	const rootFolder = Uri.file(pharoImagesRootFolderFsPath());
+	let localName: string | undefined;
+	let replaceExisting = false;
+	while (!localName) {
+		const requestedName = (await window.showInputBox({
+			title: 'Télécharger une image Pharo Language Server',
+			placeHolder: 'Nom local (dossier + .image/.changes) (ex: MonProjet-PLS)',
+			validateInput: (value) => {
+				const trimmed = value.trim();
+				if (trimmed.length === 0 || trimmed === '.' || trimmed === '..' || /[<>:"|?*\x00-\x1f]/.test(trimmed) || /[. ]$/.test(trimmed)) {
+					return 'Le nom doit être un nom de dossier valide.';
+				}
+				if (/[\\/]/.test(trimmed)) {
+					return 'Le nom ne doit pas contenir de / ou \\.';
+				}
+				return undefined;
 			}
-			if (/[\\/]/.test(trimmed)) {
-				return 'Le nom ne doit pas contenir de / ou \\.';
-			}
-			return undefined;
-		}
-	}))?.trim();
+		}))?.trim();
 
-	if (!localName) {
-		return;
+		if (!requestedName) {
+			return;
+		}
+
+		const targetFolder = Uri.joinPath(rootFolder, requestedName);
+		try {
+			await workspace.fs.stat(targetFolder);
+		} catch (error) {
+			if (error instanceof FileSystemError && error.code === 'FileNotFound') {
+				localName = requestedName;
+				continue;
+			}
+			window.showErrorMessage(`Impossible de vérifier la destination ${targetFolder.fsPath}: ${formatError(error)}`);
+			return;
+		}
+
+		const replaceLabel = 'Remplacer l’installation';
+		const chooseAnotherLabel = 'Choisir un autre nom';
+		const choice = await window.showWarningMessage(
+			`Une installation existe déjà dans ${targetFolder.fsPath}. Le remplacement supprimera tout le dossier, y compris le workspace et les fichiers personnalisés.`,
+			{ modal: true, detail: 'L’installation existante sera conservée en sauvegarde temporaire jusqu’à la validation de la nouvelle image.' },
+			replaceLabel,
+			chooseAnotherLabel
+		);
+		if (choice === replaceLabel) {
+			localName = requestedName;
+			replaceExisting = true;
+		} else if (choice !== chooseAnotherLabel) {
+			return;
+		}
 	}
 
 	const quickInstallConfig = workspace.getConfiguration('pharo quick install');
@@ -255,67 +274,25 @@ async function commandPharoImagesDownload(): Promise<void> {
 		return;
 	}
 
-	const rootFolder = Uri.file(pharoImagesRootFolderFsPath());
 	const targetFolder = Uri.joinPath(rootFolder, localName);
+	let installResult: ImageInstallResult;
 	try {
-		await workspace.fs.createDirectory(rootFolder);
-		await copyDirectoryRecursive(downloadedDirectory, targetFolder);
+		installResult = await installImageDirectory({
+			sourceDirectory: downloadedDirectory.fsPath,
+			targetDirectory: targetFolder.fsPath,
+			sourceImageName,
+			localName,
+			replaceExisting
+		});
 	} catch (error) {
-		window.showErrorMessage(`Impossible de copier l'image vers ${targetFolder.fsPath}: ${(error as Error)?.message ?? String(error)}`);
+		window.showErrorMessage(`Impossible d'installer l'image dans ${targetFolder.fsPath}: ${formatError(error)}`);
 		return;
 	}
-
-	async function renameIfExists(from: Uri, to: Uri): Promise<void> {
-		try {
-			await workspace.fs.stat(from);
-		} catch {
-			return;
-		}
-		try {
-			await workspace.fs.delete(to, { recursive: false, useTrash: false });
-		} catch {
-			// ignore
-		}
-		await workspace.fs.rename(from, to);
-	}
-
-	async function findFirstWithExtension(dir: Uri, ext: string): Promise<Uri | undefined> {
-		try {
-			const entries = await workspace.fs.readDirectory(dir);
-			const found = entries.find(([name, type]) => type === FileType.File && name.toLowerCase().endsWith(ext));
-			return found ? Uri.joinPath(dir, found[0]) : undefined;
-		} catch {
-			return undefined;
-		}
-	}
-
-	// Rename downloaded .image/.changes to match the requested local name.
 	const desiredImageUri = Uri.joinPath(targetFolder, `${localName}.image`);
-	const desiredChangesUri = Uri.joinPath(targetFolder, `${localName}.changes`);
-
-	const sourceImageUriByName = Uri.joinPath(targetFolder, `${sourceImageName}.image`);
-	const sourceChangesUriByName = Uri.joinPath(targetFolder, `${sourceImageName}.changes`);
-
-	if (localName !== sourceImageName) {
-		await renameIfExists(sourceImageUriByName, desiredImageUri);
-		await renameIfExists(sourceChangesUriByName, desiredChangesUri);
-
-		// Fallback: if the upstream name differs, rename the first matching file.
-		const anyImage = await findFirstWithExtension(targetFolder, '.image');
-		if (anyImage && anyImage.fsPath !== desiredImageUri.fsPath) {
-			await renameIfExists(anyImage, desiredImageUri);
-		}
-		const anyChanges = await findFirstWithExtension(targetFolder, '.changes');
-		if (anyChanges && anyChanges.fsPath !== desiredChangesUri.fsPath) {
-			await renameIfExists(anyChanges, desiredChangesUri);
-		}
-	}
-
-	try {
-		await workspace.fs.stat(desiredImageUri);
-	} catch {
-		window.showErrorMessage(`Téléchargement incomplet: fichier image introuvable (${desiredImageUri.fsPath}).`);
-		return;
+	if (installResult.backupCleanupError) {
+		window.showWarningMessage(
+			`Image installée, mais la sauvegarde de l’installation précédente n’a pas pu être supprimée : ${installResult.backupDirectory}. ${installResult.backupCleanupError}`
+		);
 	}
 
 	const imageUri = desiredImageUri;
