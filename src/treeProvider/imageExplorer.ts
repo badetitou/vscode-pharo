@@ -10,15 +10,28 @@ export interface PharoNode {
 	repositoryName?: string;
 }
 
+const PHARO_IMAGE_ROOT_URI = vscode.Uri.parse('pharoImage:/');
 const CLASS_FILE_SUFFIX = '.class.st';
 const PACKAGES_CACHE_TTL_MS = 2000;
 const CLASSES_CACHE_TTL_MS = 2000;
 export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vscode.FileSystemProvider {
 
-	private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>();
-	readonly onDidChangeTreeData: vscode.Event<any> = this._onDidChangeTreeData.event;
+	private readonly _onDidChangeTreeData = new vscode.EventEmitter<PharoNode | undefined>();
+	readonly onDidChangeTreeData: vscode.Event<PharoNode | undefined> = this._onDidChangeTreeData.event;
 
-	constructor() { }
+	private readonly saveListener = vscode.workspace.onDidSaveTextDocument((document) => {
+		if (document.uri.scheme === 'pharoImage' && document.languageId === 'pharo') {
+			this.refresh(document.uri);
+		}
+	});
+
+	constructor(
+		sendRequest: (method: string, params: unknown) => Promise<unknown> = (method, params) => client.sendRequest(method, params),
+		clientReady: () => boolean = () => client !== undefined && client.isRunning()
+	) {
+		this.sendRequest = sendRequest;
+		this.clientReady = clientReady;
+	}
 
 	private _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
 	onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this._emitter.event;
@@ -29,6 +42,9 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 	private repositoryPackagesInFlight = new Map<string, Promise<Array<string>>>();
 	private classesCache = new Map<string, { values: string[]; loadedAt: number }>();
 	private classesInFlight = new Map<string, Promise<Array<string>>>();
+	private cacheGeneration = 0;
+	private readonly sendRequest: (method: string, params: unknown) => Promise<unknown>;
+	private readonly clientReady: () => boolean;
 
 	watch(uri: vscode.Uri, options: { recursive: boolean; excludes: string[]; }): vscode.Disposable {
 		return new vscode.Disposable(() => undefined);
@@ -44,11 +60,16 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 			if (await this.hasPackageName(segments[0], repositoryName)) {
 				return this.directoryStat();
 			}
-			// Compatibility with existing URIs such as pharoImage:/ClassName.
-			return this.fileStat();
+			throw vscode.FileSystemError.FileNotFound(uri);
 		}
 
 		if (segments.length === 2) {
+			const packageName = segments[0];
+			const className = this.toClassName(segments[1]);
+			if (!await this.hasPackageName(packageName, repositoryName)
+				|| !await this.hasClassName(packageName, className)) {
+				throw vscode.FileSystemError.FileNotFound(uri);
+			}
 			return this.fileStat();
 		}
 
@@ -64,6 +85,9 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 
 		if (segments.length === 1) {
 			const packageName = segments[0];
+			if (!await this.hasPackageName(packageName, repositoryName)) {
+				throw vscode.FileSystemError.FileNotFound(uri);
+			}
 			const classes = await this.getClasses(packageName);
 			return classes
 				.sort()
@@ -95,10 +119,20 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		}
 
 		if (segments.length === 1) {
-			const packages = await this.getPackages(repositoryName);
-			if (packages.includes(segments[0])) {
+			if (await this.hasPackageName(segments[0], repositoryName)) {
 				throw vscode.FileSystemError.FileIsADirectory(uri);
 			}
+			throw vscode.FileSystemError.FileNotFound(uri);
+		}
+		if (segments.length !== 2) {
+			throw vscode.FileSystemError.FileNotFound(uri);
+		}
+
+		const packageName = segments[0];
+		const className = this.toClassName(segments[1]);
+		if (!await this.hasPackageName(packageName, repositoryName)
+			|| !await this.hasClassName(packageName, className)) {
+			throw vscode.FileSystemError.FileNotFound(uri);
 		}
 
 		if (this.isIceOriginalUri(uri)) {
@@ -106,7 +140,6 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 			.then((result: string) => Buffer.from(result));
 		}
 
-		const className = this.toClassName(segments[segments.length - 1]);
 		return this.sendRequestSerialized<string>('pls:classContent', { class: className }).then((result: string) => Buffer.from(result));
 	}
 
@@ -147,7 +180,19 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		throw vscode.FileSystemError.NoPermissions(source);
 	}
 
-	public refresh(): any {
+	public refresh(changedUri: vscode.Uri = PHARO_IMAGE_ROOT_URI): void {
+		this.cacheGeneration++;
+		const changedFiles: vscode.FileChangeEvent[] = [
+			{ type: vscode.FileChangeType.Changed, uri: PHARO_IMAGE_ROOT_URI },
+			{ type: vscode.FileChangeType.Changed, uri: changedUri }
+		];
+		const packageSegments = this.getPathSegments(changedUri);
+		if (packageSegments.length > 0) {
+			changedFiles.push({
+				type: vscode.FileChangeType.Changed,
+				uri: this.packageUri(packageSegments[0], this.repositoryNameFrom(changedUri))
+			});
+		}
 		this.packagesCache = undefined;
 		this.packagesInFlight = undefined;
 		this.repositoryPackagesCache.clear();
@@ -155,6 +200,13 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		this.classesCache.clear();
 		this.classesInFlight.clear();
 		this._onDidChangeTreeData.fire(undefined);
+		this._emitter.fire(changedFiles);
+	}
+
+	dispose(): void {
+		this.saveListener.dispose();
+		this._onDidChangeTreeData.dispose();
+		this._emitter.dispose();
 	}
 
 
@@ -208,14 +260,20 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 			return this.packagesInFlight;
 		}
 
-		this.packagesInFlight = this.sendRequestSerialized<unknown>('pls:packages', {}).then((result) => {
+		const generation = this.cacheGeneration;
+		const request = this.sendRequestSerialized<unknown>('pls:packages', {}).then((result) => {
 			const packages = expectStringArray(result, 'pls:packages');
-			this.packagesCache = { values: packages, loadedAt: Date.now() };
+			if (generation === this.cacheGeneration) {
+				this.packagesCache = { values: packages, loadedAt: Date.now() };
+			}
 			return packages;
 		}).finally(() => {
-			this.packagesInFlight = undefined;
+			if (this.packagesInFlight === request) {
+				this.packagesInFlight = undefined;
+			}
 		});
-		return this.packagesInFlight;
+		this.packagesInFlight = request;
+		return request;
 	}
 
 	private getPackagesForRepository(repositoryName: string): Promise<Array<string>> {
@@ -230,9 +288,12 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 			return inFlight;
 		}
 
+		const generation = this.cacheGeneration;
 		const request = this.sendRequestSerialized<unknown>('pls-ice:repositoryPackages', { aRepositoryName: repositoryName }).then((result) => {
 			const packages = expectStringArray(result, 'pls-ice:repositoryPackages');
-			this.repositoryPackagesCache.set(repositoryName, { values: packages, loadedAt: Date.now() });
+			if (generation === this.cacheGeneration) {
+				this.repositoryPackagesCache.set(repositoryName, { values: packages, loadedAt: Date.now() });
+			}
 			return packages;
 		}).catch((error: unknown) => {
 			if (!isMethodNotFoundError(error)) {
@@ -240,7 +301,9 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 			}
 			return this.getPackages();
 		}).finally(() => {
-			this.repositoryPackagesInFlight.delete(repositoryName);
+			if (this.repositoryPackagesInFlight.get(repositoryName) === request) {
+				this.repositoryPackagesInFlight.delete(repositoryName);
+			}
 		});
 		this.repositoryPackagesInFlight.set(repositoryName, request);
 		return request;
@@ -262,12 +325,17 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 			return inFlight;
 		}
 
+		const generation = this.cacheGeneration;
 		const request = this.sendRequestSerialized<unknown>('pls:classes', { package: packageName }).then((result) => {
 			const classes = expectStringArray(result, 'pls:classes');
-			this.classesCache.set(packageName, { values: classes, loadedAt: Date.now() });
+			if (generation === this.cacheGeneration) {
+				this.classesCache.set(packageName, { values: classes, loadedAt: Date.now() });
+			}
 			return classes;
 		}).finally(() => {
-			this.classesInFlight.delete(packageName);
+			if (this.classesInFlight.get(packageName) === request) {
+				this.classesInFlight.delete(packageName);
+			}
 		});
 		this.classesInFlight.set(packageName, request);
 		return request;
@@ -304,7 +372,7 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 	}
 
 	private isClientReady(): boolean {
-		return client !== undefined && client.isRunning();
+		return this.clientReady();
 	}
 
 	private isIceOriginalUri(uri: vscode.Uri): boolean {
@@ -337,13 +405,18 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 			return Promise.reject(vscode.FileSystemError.Unavailable('Pharo language server is not running.'));
 		}
 
-		const run = this.requestQueue.then(() => client.sendRequest(method, params) as Promise<T>);
+		const run = this.requestQueue.then(() => this.sendRequest(method, params) as Promise<T>);
 		this.requestQueue = run.then(() => undefined, () => undefined);
 		return run;
 	}
 
 	private packageUri(packageName: string, repositoryName?: string): vscode.Uri {
 		return this.pharoUri(`/${packageName}`, repositoryName);
+	}
+
+	private async hasClassName(packageName: string, className: string): Promise<boolean> {
+		const classes = await this.getClasses(packageName);
+		return classes.some((value) => this.toClassName(value.split('/').pop() ?? '') === className);
 	}
 
 	private classUri(packageName: string, className: string, repositoryName?: string): vscode.Uri {
@@ -367,16 +440,29 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 
 export class PharoImageExplorer {
 	private readonly pharoDataProvider: PharoDataProvider;
+	private readonly treeView: vscode.TreeView<PharoNode>;
+	private readonly fileSystemRegistration: vscode.Disposable;
 
 	constructor(context: vscode.ExtensionContext) {
 		this.pharoDataProvider = new PharoDataProvider();
-		vscode.window.createTreeView('pharoImage', { treeDataProvider: this.pharoDataProvider });
+		this.treeView = vscode.window.createTreeView('pharoImage', { treeDataProvider: this.pharoDataProvider });
+		this.fileSystemRegistration = vscode.workspace.registerFileSystemProvider(
+			'pharoImage',
+			this.pharoDataProvider,
+			{ isCaseSensitive: true }
+		);
+		context.subscriptions.push(this);
 		// context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider('pharoImage', pharoDataProvider));
-		context.subscriptions.push(vscode.workspace.registerFileSystemProvider('pharoImage', this.pharoDataProvider, { isCaseSensitive: true }));
 	}
 
 	public refresh(): void {
 		this.pharoDataProvider.refresh();
+	}
+
+	dispose(): void {
+		this.fileSystemRegistration.dispose();
+		this.treeView.dispose();
+		this.pharoDataProvider.dispose();
 	}
 
 }

@@ -132,7 +132,7 @@ export async function activate(context: ExtensionContext) {
 		context.subscriptions.push(new MoosebookController());
 
 		// Create Ice
-		iceControlManager = new IceControlManager(client);
+		iceControlManager = new IceControlManager(client, () => pharoImageExplorer?.refresh());
 		context.subscriptions.push(iceControlManager);
 
 		// Create Tests

@@ -144,6 +144,10 @@ export class PharoImagesProvider implements vscode.TreeDataProvider<PharoImagesN
 		this.didChangeTreeDataEmitter.fire();
 	}
 
+	dispose(): void {
+		this.didChangeTreeDataEmitter.dispose();
+	}
+
 	getTreeItem(element: PharoImagesNode): vscode.TreeItem | Thenable<vscode.TreeItem> {
 		if (element.kind === 'folder') {
 			const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.Collapsed);
@@ -248,13 +252,19 @@ export class PharoImagesExplorer {
 	private readonly provider: PharoImagesProvider;
 	private readonly view: vscode.TreeView<PharoImagesNode>;
 
-	constructor(_context: vscode.ExtensionContext) {
+	constructor(context: vscode.ExtensionContext) {
 		this.provider = new PharoImagesProvider();
 		this.view = vscode.window.createTreeView('images', { treeDataProvider: this.provider });
+		context.subscriptions.push(this);
 	}
 
 	refresh(): void {
 		this.provider.refresh();
+	}
+
+	dispose(): void {
+		this.view.dispose();
+		this.provider.dispose();
 	}
 
 	async play(node?: PharoImagesNode): Promise<void> {
