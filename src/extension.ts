@@ -25,7 +25,8 @@ import { PharoImagesExplorer, PharoImagesNode, createWorkspaceForImage } from '.
 import { registerPharoLanguageModelTools } from './ai/pharoLmTools';
 import { registerPharoChatParticipant } from './ai/pharoChatParticipant';
 import { buildPharoUri, ICE_REPOSITORY_QUERY_KEY, repositoryNameFromPharoUri } from './treeProvider/pharoUri';
-import { expectStringArray } from './rpcContracts';
+import { expectString, expectStringArray } from './rpcContracts';
+import { registerServerDiagnosticsCommand } from './serverDiagnostics';
 
 
 export let client: LanguageClient;
@@ -41,6 +42,7 @@ let pharoRepositoryStatusBar: StatusBarItem;
 let outputChannel: OutputChannel;
 let serverStarted = false;
 let isDeactivating = false;
+let serverLifecycleStatus = 'Starting up';
 const SERVER_START_TIMEOUT_MS = 30_000;
 const PROCESS_STOP_TIMEOUT_MS = 5_000;
 const PHARO_IMAGE_WORKSPACE_SCHEME = 'pharoImage';
@@ -55,6 +57,7 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(outputChannel);
 	isDeactivating = false;
 	serverStarted = false;
+	serverLifecycleStatus = 'Starting up';
 	// AI entrypoints: @pharo participant + tool-calls (pharo.*)
 	registerPharoLanguageModelTools(context);
 	registerPharoChatParticipant(context);
@@ -62,6 +65,13 @@ export async function activate(context: ExtensionContext) {
 	registerRepositoryContextUi(context);
 	// Create new command
 	createCommands(context);
+	context.subscriptions.push(registerServerDiagnosticsCommand({
+		getClient: () => typeof client === 'undefined' ? undefined : client,
+		getProcess: () => dls,
+		getLifecycleStatus: () => serverLifecycleStatus,
+		getExtensionVersion: () => extensionContext.extension.packageJSON.version,
+		outputChannel
+	}));
 	pharoImagesExplorer = new PharoImagesExplorer(context);
 	registerPharoImagesCommands(context);
 	pharoImageExplorer = new PharoImageExplorer(context);
@@ -97,6 +107,7 @@ export async function activate(context: ExtensionContext) {
 			});
 		}
 		setStatusBarText('Configuration error');
+		serverLifecycleStatus = 'Configuration error';
 		return;
 	}
 
@@ -107,6 +118,7 @@ export async function activate(context: ExtensionContext) {
 		// Start the client. This will also launch the server
 		await client.start();
 		serverStarted = true;
+		serverLifecycleStatus = 'Connected';
 		context.subscriptions.push(client);
 
 		pharoImageExplorer.refresh();
@@ -128,6 +140,7 @@ export async function activate(context: ExtensionContext) {
 		resetStatusBarText();
 	} catch (err) {
 		serverStarted = false;
+		serverLifecycleStatus = 'Startup failed';
 		outputChannel.appendLine(`Failed to start the Pharo Language Server: ${formatError(err)}`);
 		if (err instanceof Error && err.stack) {
 			outputChannel.appendLine(err.stack);
@@ -343,10 +356,12 @@ export async function deactivate(): Promise<void> {
  */
 
 function commandPharoExtensionVersion() {
-	client.sendRequest("command:version").then((result) => {
-		console.log(result);
-		window.showInformationMessage(result as string);
-	});
+	void client.sendRequest("command:version")
+		.then((result) => window.showInformationMessage(String(result)))
+		.catch((error) => {
+			outputChannel.appendLine(`Unable to read Pharo Language Server version: ${formatError(error)}`);
+			void window.showErrorMessage(`Unable to read Pharo Language Server version: ${formatError(error)}`);
+		});
 }
 
 function commandPharoDoIt() {
@@ -613,11 +628,13 @@ function commandPharoCreateProject() {
 		new Uint8Array(Buffer.from("{\n    #format : #tonel\n}")));
 }
 function commandPharoOpenLog() {
-	client.sendRequest('pls-developer:openLog').then(() => { }).catch((error) => window.showErrorMessage(error));
+	void client.sendRequest('pls-developer:openLog')
+		.catch((error) => window.showErrorMessage(formatError(error)));
 }
 
 function commandPharoClearLog() {
-	client.sendRequest('pls-developer:clearLog').then(() => { }).catch((error) => window.showErrorMessage(error));
+	void client.sendRequest('pls-developer:clearLog')
+		.catch((error) => window.showErrorMessage(formatError(error)));
 }
 
 async function commandPharoAddImageToWorkspace() {
@@ -814,12 +831,15 @@ async function createServerWithSocket(pharoPath: string, pathToImage: string, co
 	process.stdout?.on('data', (data: Buffer) => outputChannel.append(`[Pharo stdout] ${data.toString()}`));
 	process.stderr?.on('data', (data: Buffer) => outputChannel.append(`[Pharo stderr] ${data.toString()}`));
 	process.on('error', (error) => {
+		serverLifecycleStatus = 'VM process error';
+		setStatusBarText('VM process error');
 		outputChannel.appendLine(`Pharo VM process error: ${formatError(error)}`);
 	});
 	process.on('close', (code, signal) => {
 		outputChannel.appendLine(`Pharo VM exited (code: ${code ?? 'none'}, signal: ${signal ?? 'none'}).`);
 		if (serverStarted && !isDeactivating) {
 			serverStarted = false;
+			serverLifecycleStatus = 'Stopped';
 			setStatusBarText('Server stopped');
 			window.showErrorMessage(
 				`The Pharo Language Server stopped (code: ${code ?? 'none'}, signal: ${signal ?? 'none'}). See the Pharo Language Server output for details.`,
@@ -960,7 +980,7 @@ async function stopPharoProcess(): Promise<void> {
 function initStatusBar(context: ExtensionContext) {
 	plsStatusBar = window.createStatusBarItem(StatusBarAlignment.Right, 100);
 	context.subscriptions.push(plsStatusBar);
-	plsStatusBar.tooltip = 'Pharo Language Server';
+	plsStatusBar.tooltip = 'Pharo Language Server: starting';
 	plsStatusBar.command = 'extension.showQuickPick';
 
 	pharoRepositoryStatusBar = window.createStatusBarItem(StatusBarAlignment.Right, 99);
@@ -971,12 +991,15 @@ function initStatusBar(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('extension.showQuickPick', async () => {
 		const addImageOption = '$(folder-opened) Add Image to Workspace';
 		const openSettingsOption = '$(settings-gear) Open Settings';
-		const options = [addImageOption, openSettingsOption];
+		const diagnosticsOption = '$(stethoscope) Pharo Language Server Diagnostics';
+		const options = [diagnosticsOption, addImageOption, openSettingsOption];
 		const selection = await window.showQuickPick(options, {
 			canPickMany: false,
 			title: 'Select option'
 		});
-		if (selection === addImageOption) {
+		if (selection === diagnosticsOption) {
+			await commands.executeCommand('pharo.diagnose');
+		} else if (selection === addImageOption) {
 			commands.executeCommand('pharo.addImageToWorkspace');
 		} else if (selection === openSettingsOption) {
 			commands.executeCommand('workbench.action.openSettings', '@ext:badetitou.pharo-language-server');
@@ -990,10 +1013,12 @@ function initStatusBar(context: ExtensionContext) {
 
 function setStatusBarText(text: string) {
 	plsStatusBar.text = "$(pls-icon)" + text;
+	plsStatusBar.tooltip = `Pharo Language Server: ${text}`;
 }
 
 function resetStatusBarText() {
-	plsStatusBar.text = "$(pls-icon)";
+	serverLifecycleStatus = 'Connected';
+	setStatusBarText('Connected');
 }
 
 function updateRepositoryStatusBar() {

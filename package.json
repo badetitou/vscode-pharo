@@ -536,6 +536,11 @@
 				"category": "Pharo"
 			},
 			{
+				"command": "pharo.diagnose",
+				"title": "%commands.pharo.diagnose.title%",
+				"category": "Pharo Developer"
+			},
+			{
 				"command": "pharo.save",
 				"title": "Save the Pharo image",
 				"category": "Pharo"

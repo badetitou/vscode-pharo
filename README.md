@@ -101,6 +101,7 @@ The additional feature can be access using the command palette of VSCode
 
 1. Save the Pharo image
 2. Execute and show the result
+The **Pharo: Show Pharo Language Server Diagnostics** command inspects VM/image configuration, process and connection status, and server version.
 
 ![Inspect gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/inspectResult.gif)
 
