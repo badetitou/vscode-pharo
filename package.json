@@ -508,6 +508,18 @@
 		],
 		"commands": [
 			{
+				"command": "pharo.tests.refresh",
+				"title": "%commands.pharo.tests.refresh.title%",
+				"category": "Pharo Tests",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "pharo.tests.rerunFailed",
+				"title": "%commands.pharo.tests.rerunFailed.title%",
+				"category": "Pharo Tests",
+				"icon": "$(debug-rerun)"
+			},
+			{
 				"command": "pharo.browseImage",
 				"title": "Browse Pharo Image",
 				"enablement": "false"
