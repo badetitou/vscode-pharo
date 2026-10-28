@@ -18,6 +18,7 @@ import {
 import { LanguageClient } from 'vscode-languageclient/node';
 import { IDisposable } from '../util';
 import { expectString, expectStringArray, isMethodNotFoundError } from '../rpcContracts';
+import { repositoryNameFromPharoUri } from '../treeProvider/pharoUri';
 
 interface IceRepositoryResource {
     uri: string;
@@ -37,10 +38,16 @@ interface IceRepositoryState {
     stagedChanges: IceRepositoryResource[];
 }
 
+interface PharoBufferDocument {
+    uri: Uri;
+    isDirty: boolean;
+}
+
 export class IceRepository {
     public sourceControl?: SourceControl;
     public stagedGroup?: SourceControlResourceGroup;
     public changesGroup?: SourceControlResourceGroup;
+    public unsavedBuffersGroup?: SourceControlResourceGroup;
 
     constructor(public name: string, public valid: boolean) { }
 }
@@ -65,12 +72,35 @@ class IceQuickDiffProvider implements QuickDiffProvider {
     }
 }
 
+export function getUnsavedPharoBuffers(
+    documents: readonly PharoBufferDocument[],
+    repositoryName: string
+): SourceControlResourceState[] {
+    return documents
+        .filter((document) =>
+            document.isDirty
+            && document.uri.scheme === IceControlManager.IMAGE_WORKSPACE_SCHEME
+            && repositoryNameFromPharoUri(document.uri) === repositoryName
+            && new URLSearchParams(document.uri.query).get('iceOriginal') !== '1'
+        )
+        .map((document) => ({
+            resourceUri: document.uri,
+            command: {
+                command: 'vscode.open',
+                title: 'Open Unsaved Buffer',
+                arguments: [document.uri]
+            },
+            decorations: { tooltip: 'Unsaved VS Code buffer — not yet saved to the active Pharo image' },
+            contextValue: 'pharo-ice-unsaved-buffer'
+        }));
+}
+
 export class IceControlManager implements IDisposable {
 
     private static readonly SOURCE_CONTROL_ID = 'pharo-iceberg';
     private static readonly REPOSITORY_QUERY_KEY = 'iceRepository';
     private static readonly IMAGE_WORKSPACE_CONFIGURATION = 'imageWorkspace';
-    private static readonly IMAGE_WORKSPACE_SCHEME = 'pharoImage';
+    static readonly IMAGE_WORKSPACE_SCHEME = 'pharoImage';
     private static readonly IMAGE_WORKSPACE_REPOSITORY_PREFIX = 'Pharo ';
     private disposables: Disposable[] = [];
     private repositories = new Map<string, IceRepository>();
@@ -87,12 +117,21 @@ export class IceControlManager implements IDisposable {
     }
 
     /** Returns the current in-memory SCM state — zero LSP calls. */
-    public getChangesSnapshot(): Map<string, { changes: SourceControlResourceState[]; stagedChanges: SourceControlResourceState[] }> {
-        const result = new Map<string, { changes: SourceControlResourceState[]; stagedChanges: SourceControlResourceState[] }>();
+    public getChangesSnapshot(): Map<string, {
+        changes: SourceControlResourceState[];
+        stagedChanges: SourceControlResourceState[];
+        unsavedBuffers: SourceControlResourceState[];
+    }> {
+        const result = new Map<string, {
+            changes: SourceControlResourceState[];
+            stagedChanges: SourceControlResourceState[];
+            unsavedBuffers: SourceControlResourceState[];
+        }>();
         this.repositories.forEach((repo, name) => {
             result.set(name, {
                 changes: repo.changesGroup?.resourceStates ?? [],
-                stagedChanges: repo.stagedGroup?.resourceStates ?? []
+                stagedChanges: repo.stagedGroup?.resourceStates ?? [],
+                unsavedBuffers: repo.unsavedBuffersGroup?.resourceStates ?? []
             });
         });
         return result;
@@ -118,7 +157,9 @@ export class IceControlManager implements IDisposable {
             commands.registerCommand('pharo.ice.push', (repositoryName?: unknown) =>
                 this.push(repositoryName)
             ),
-            workspace.onDidSaveTextDocument((document) => this.onDidSaveDocument(document))
+            workspace.onDidSaveTextDocument((document) => this.onDidSaveDocument(document)),
+            workspace.onDidChangeTextDocument(() => this.updateUnsavedBufferStates()),
+            workspace.onDidCloseTextDocument(() => this.updateUnsavedBufferStates())
         );
         void this.refresh();
     }
@@ -150,6 +191,7 @@ export class IceControlManager implements IDisposable {
                     this.resolveWorkingCopyOf(repository)
                 )
             );
+            this.updateUnsavedBufferStates();
             this.onImageChanged();
         } catch (error) {
             this.reportError('Unable to refresh Iceberg repositories in VS Code', error);
@@ -218,10 +260,12 @@ export class IceControlManager implements IDisposable {
             };
             sourceControl.inputBox.placeholder = `Commit message for ${repository.name}`;
             iceRepository.sourceControl = sourceControl;
-            iceRepository.stagedGroup = sourceControl.createResourceGroup('iceIndex', 'Staged Changes');
+            iceRepository.stagedGroup = sourceControl.createResourceGroup('iceIndex', 'Iceberg Index');
             iceRepository.stagedGroup.hideWhenEmpty = true;
-            iceRepository.changesGroup = sourceControl.createResourceGroup('iceWorking', 'Changes');
+            iceRepository.changesGroup = sourceControl.createResourceGroup('iceWorking', 'Image vs Repository');
             iceRepository.changesGroup.hideWhenEmpty = true;
+            iceRepository.unsavedBuffersGroup = sourceControl.createResourceGroup('editorBuffers', 'Unsaved VS Code Buffers');
+            iceRepository.unsavedBuffersGroup.hideWhenEmpty = true;
             sourceControl.count = 0;
             this.repositories.set(repository.name, iceRepository);
         });
@@ -238,17 +282,34 @@ export class IceControlManager implements IDisposable {
             const changedStates = this.toSourceControlResourceStates(ice.name, repositoryState.changes);
             ice.stagedGroup.resourceStates = stagedStates;
             ice.changesGroup.resourceStates = changedStates;
-            ice.sourceControl.count = stagedStates.length + changedStates.length;
+            ice.sourceControl.count = stagedStates.length + changedStates.length
+                + (ice.unsavedBuffersGroup?.resourceStates.length ?? 0);
         } catch (error) {
             this.reportError(`Unable to refresh Iceberg status for ${ice.name}`, error);
         }
     }
 
     private onDidSaveDocument(document: TextDocument): void {
-        if (document.languageId !== 'pharo' && document.uri.scheme !== 'pharoImage') {
+        this.updateUnsavedBufferStates();
+        if (document.languageId !== 'pharo' && document.uri.scheme !== IceControlManager.IMAGE_WORKSPACE_SCHEME) {
             return;
         }
         void this.refresh();
+    }
+
+    private updateUnsavedBufferStates(): void {
+        const documents = workspace.textDocuments;
+        this.repositories.forEach((repository) => {
+            const unsavedStates = getUnsavedPharoBuffers(documents, repository.name);
+            if (repository.unsavedBuffersGroup) {
+                repository.unsavedBuffersGroup.resourceStates = unsavedStates;
+            }
+            if (repository.sourceControl) {
+                repository.sourceControl.count = (repository.stagedGroup?.resourceStates.length ?? 0)
+                    + (repository.changesGroup?.resourceStates.length ?? 0)
+                    + unsavedStates.length;
+            }
+        });
     }
 
     private async resolveRepositoryStatusOf(repositoryName: string): Promise<IceRepositoryState> {
@@ -407,17 +468,17 @@ export class IceControlManager implements IDisposable {
         }
 
         try {
-            const originalUriString = await this._client.sendRequest(
+            const originalResource = await this._client.sendRequest<unknown>(
                 'pls-ice:originalResource',
                 { uri: resourceUri.toString(true) }
-            ) as string | undefined;
+            );
 
-            if (!originalUriString) {
+            if (originalResource === undefined || originalResource === null || originalResource === '') {
                 await commands.executeCommand('vscode.open', resourceUri);
                 return;
             }
 
-            const originalUri = Uri.parse(originalUriString, true);
+            const originalUri = Uri.parse(expectString(originalResource, 'pls-ice:originalResource'), true);
             await commands.executeCommand(
                 'vscode.diff',
                 originalUri,
