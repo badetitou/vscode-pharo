@@ -382,6 +382,7 @@ function getWebviewHtml(webview: vscode.Webview): string {
 		const columnsRoot = document.getElementById('columns');
 		const breadcrumb = document.getElementById('breadcrumb');
 		const errorBox = document.getElementById('error');
+		let pendingColumnFocus;
 		document.getElementById('refresh').addEventListener('click', () => vscode.postMessage({ type: 'refresh' }));
 
 		function render(data) {
@@ -391,6 +392,7 @@ function getWebviewHtml(webview: vscode.Webview): string {
 			data.columns.forEach((column, index) => {
 				const section = document.createElement('section');
 				section.className = 'column';
+				section.dataset.column = String(index);
 				const heading = document.createElement('h2');
 				heading.textContent = column.title;
 				section.appendChild(heading);
@@ -409,19 +411,51 @@ function getWebviewHtml(webview: vscode.Webview): string {
 				filter.type = 'search';
 				filter.placeholder = 'Filter ' + column.title.toLowerCase();
 				filter.setAttribute('aria-label', filter.placeholder);
+				filter.addEventListener('keydown', (event) => {
+					if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+						return;
+					}
+					const buttons = Array.from(section.querySelectorAll('.entries button'));
+					const target = event.key === 'ArrowDown' ? buttons[0] : buttons[buttons.length - 1];
+					if (target) {
+						event.preventDefault();
+						target.focus();
+					}
+				});
 				section.appendChild(filter);
 
 				const entries = document.createElement('div');
 				entries.className = 'entries';
 				entries.addEventListener('keydown', (event) => {
-					if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
-						return;
-					}
 					const buttons = Array.from(entries.querySelectorAll('button'));
 					const currentIndex = buttons.findIndex((button) => button === document.activeElement);
-					const nextIndex = event.key === 'ArrowDown'
-						? Math.min(currentIndex + 1, buttons.length - 1)
-						: Math.max(currentIndex - 1, 0);
+					if (event.key === 'ArrowLeft') {
+						if (index > 0) {
+							event.preventDefault();
+							const previousSection = columnsRoot.querySelector('[data-column="' + (index - 1) + '"]');
+							const previousTarget = previousSection?.querySelector('button.selected') || previousSection?.querySelector('input[type="search"]');
+							previousTarget?.focus();
+						}
+						return;
+					}
+					if (event.key === 'ArrowRight' && currentIndex >= 0) {
+						event.preventDefault();
+						if (index < data.columns.length - 1) {
+							pendingColumnFocus = index + 1;
+						}
+						buttons[currentIndex].click();
+						return;
+					}
+					if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+						return;
+					}
+					const nextIndex = event.key === 'Home'
+						? 0
+						: event.key === 'End'
+							? buttons.length - 1
+							: event.key === 'ArrowDown'
+								? Math.min(currentIndex + 1, buttons.length - 1)
+								: Math.max(currentIndex - 1, 0);
 					if (buttons[nextIndex]) {
 						event.preventDefault();
 						buttons[nextIndex].focus();
@@ -464,6 +498,19 @@ function getWebviewHtml(webview: vscode.Webview): string {
 				drawEntries();
 				columnsRoot.appendChild(section);
 			});
+			if (pendingColumnFocus !== undefined && data.columns[pendingColumnFocus]) {
+				const targetColumn = data.columns[pendingColumnFocus];
+				const targetSection = columnsRoot.querySelector('[data-column="' + pendingColumnFocus + '"]');
+				if (targetSection && !targetColumn.loading) {
+					const target = targetSection.querySelector('button.selected')
+						|| targetSection.querySelector('.entries button')
+						|| targetSection.querySelector('input[type="search"]');
+					target?.focus();
+					pendingColumnFocus = undefined;
+				} else if (targetColumn.loading) {
+					targetSection?.querySelector('input[type="search"]')?.focus();
+				}
+			}
 		}
 
 		window.addEventListener('message', (event) => {
