@@ -158,6 +158,10 @@ Run **Pharo: Go to Pharo…** or **Pharo: Browse Pharo Image (Miller Navigation)
 
 The Pharo Test Explorer discovers packages, test classes, and test methods on demand. Run a package, class, or individual method from VS Code's native test controls; failures and execution errors are reported separately with durations and source locations when the Tonel method can be resolved. Use **Pharo Tests: Rerun Failed Pharo Tests** to repeat the latest failed/error methods, or **Pharo Tests: Refresh Pharo Tests** after changing the image. Targeted debugging is not exposed yet by the current Pharo test RPC contract.
 
+### Iceberg change states
+
+The Iceberg Source Control view separates **Image vs Repository** resources reported by Pharo, the **Iceberg Index**, and **Unsaved VS Code Buffers**. The first two come from the server's Iceberg status contract; dirty editor buffers are tracked locally and are not represented as changes already installed in the running image. Diff actions compare the server-provided current and original resources. The extension does not infer a separate on-disk working tree or image state when the server does not report it.
+
 > From version v1.0.0, please use at least version v1.1.0 of the Pharo Language Server.
 
 ### Using VMs from the Pharo Launcher

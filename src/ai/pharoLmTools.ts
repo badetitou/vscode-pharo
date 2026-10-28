@@ -281,12 +281,13 @@ export function registerPharoLanguageModelTools(context: vscode.ExtensionContext
 				const { repositoryName } = (input ?? {}) as { repositoryName?: string };
 				const snapshot = iceControlManager?.getChangesSnapshot() ?? new Map();
 
-				const result: Record<string, { changes: string[]; stagedChanges: string[] }> = {};
+				const result: Record<string, { changes: string[]; stagedChanges: string[]; unsavedBuffers: string[] }> = {};
 				snapshot.forEach((state, name) => {
 					if (repositoryName && name !== repositoryName) { return; }
 					result[name] = {
 						changes: state.changes.map(r => r.resourceUri.toString(true)),
-						stagedChanges: state.stagedChanges.map(r => r.resourceUri.toString(true))
+						stagedChanges: state.stagedChanges.map(r => r.resourceUri.toString(true)),
+						unsavedBuffers: state.unsavedBuffers.map(r => r.resourceUri.toString(true))
 					};
 				});
 				return jsonResult(result);
@@ -311,24 +312,14 @@ export function registerPharoLanguageModelTools(context: vscode.ExtensionContext
 				const resourceUri = vscode.Uri.parse(uri, true);
 
 				// Build the original URI without asking the server.
-				const existingQuery = resourceUri.query ? `${resourceUri.query}&iceOriginal=1` : 'iceOriginal=1';
-				const originalUri = resourceUri.with({ query: existingQuery });
+				const originalQuery = new URLSearchParams(resourceUri.query);
+				originalQuery.set('iceOriginal', '1');
+				const originalUri = resourceUri.with({ query: originalQuery.toString() });
 
 				// Read both sides through the existing FileSystemProvider.
 				// Each readFile triggers one LSP call (pls-ice:originalContent / pls:classContent).
-				let originalContent = '';
-				try {
-					originalContent = Buffer.from(await vscode.workspace.fs.readFile(originalUri)).toString('utf8');
-				} catch {
-					// new/untracked file: no original
-				}
-
-				let modifiedContent = '';
-				try {
-					modifiedContent = Buffer.from(await vscode.workspace.fs.readFile(resourceUri)).toString('utf8');
-				} catch {
-					// deleted file
-				}
+				const originalContent = await readOptionalFile(originalUri);
+				const modifiedContent = await readOptionalFile(resourceUri);
 
 				if (openEditor) {
 					const label = `${resourceUri.path.split('/').pop() ?? uri} (${repositoryName ?? 'Iceberg'})`;
@@ -344,4 +335,15 @@ export function registerPharoLanguageModelTools(context: vscode.ExtensionContext
 			}
 		})
 	);
+}
+
+async function readOptionalFile(uri: vscode.Uri): Promise<string> {
+	try {
+		return Buffer.from(await vscode.workspace.fs.readFile(uri)).toString('utf8');
+	} catch (error) {
+		if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') {
+			return '';
+		}
+		throw error;
+	}
 }

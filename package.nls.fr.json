@@ -40,8 +40,8 @@
 	"lmTool.runTestMethod.modelDescription": "Exécute une méthode de test (classe + sélecteur) dans l'image Pharo.",
 	"lmTool.runTestMethod.userDescription": "Exécuter une méthode de test dans l'image Pharo active.",
 
-	"lmTool.iceListChanges.modelDescription": "Liste les ressources modifiées ou en staged suivies par Iceberg. Lit l'état SCM en mémoire — aucun appel LSP supplémentaire. Retourne du JSON avec changes et stagedChanges (URI) par dépôt. Utilisez ces URI dans pharo-ice-show-diff.",
-	"lmTool.iceListChanges.userDescription": "Lister les modifications Iceberg dans l'image Pharo active.",
+	"lmTool.iceListChanges.modelDescription": "Liste les changements image/dépôt rapportés par le serveur, l'index Iceberg et les buffers VS Code non sauvegardés. Lit l'état en mémoire — aucun appel LSP supplémentaire. Retourne changes, stagedChanges et unsavedBuffers (URI) par dépôt. Les buffers non sauvegardés ne sont pas encore enregistrés dans l'image active.",
+	"lmTool.iceListChanges.userDescription": "Lister les changements image/dépôt, index Iceberg et buffers non sauvegardés par dépôt.",
 	"lmTool.iceListChanges.input.repositoryName.description": "Nom du dépôt Iceberg à inspecter. Si omis, tous les dépôts valides sont listés.",
 
 	"lmTool.iceShowDiff.modelDescription": "Retourne le diff unifié d'une ressource suivie par Iceberg et ouvre optionnellement l'éditeur de diff. Le contenu original est lu via le FileSystem provider pharoImage existant — pas d'appel LSP supplémentaire. Appelez d'abord pharo-ice-list-changes pour obtenir une URI.",
