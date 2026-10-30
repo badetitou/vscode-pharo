@@ -1,4 +1,4 @@
-import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel, FileSystemError, ConfigurationTarget, TextDocument } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel, FileSystemError, ConfigurationTarget, TextDocument, lm } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
@@ -24,6 +24,7 @@ import { initTestController } from './testController/testController';
 import { PharoImagesExplorer, PharoImagesNode, createWorkspaceForImage } from './treeProvider/pharoImages';
 import { registerPharoLanguageModelTools } from './ai/pharoLmTools';
 import { registerPharoChatParticipant } from './ai/pharoChatParticipant';
+import { MCP_PROVIDER_ID, PharoMcpServers, mcpEndpointFrom, mcpInitializationOptions, registerConfigureAgentCommand, updateAgentConfigurations } from './ai/pharoMcp';
 import { buildPharoUri, ICE_REPOSITORY_QUERY_KEY, repositoryNameFromPharoUri } from './treeProvider/pharoUri';
 import { expectString, expectStringArray } from './rpcContracts';
 import { registerServerDiagnosticsCommand } from './serverDiagnostics';
@@ -54,6 +55,8 @@ let pharoImagesExplorer: PharoImagesExplorer;
 let entityFileSystem: PharoEntityFileSystem;
 let editorSession: EditorSession;
 let classPanel: ClassPanel;
+/** The MCP server of the image of this window, declared to VS Code for the agents. */
+let pharoMcpServers: PharoMcpServers | undefined;
 
 let plsStatusBar: StatusBarItem;
 let pharoRepositoryStatusBar: StatusBarItem;
@@ -80,6 +83,12 @@ export async function activate(context: ExtensionContext) {
 	// AI entrypoints: @pharo participant + tool-calls (pharo.*)
 	registerPharoLanguageModelTools(context);
 	registerPharoChatParticipant(context);
+	pharoMcpServers = new PharoMcpServers();
+	context.subscriptions.push(
+		pharoMcpServers,
+		lm.registerMcpServerDefinitionProvider(MCP_PROVIDER_ID, pharoMcpServers),
+		registerConfigureAgentCommand({ getEndpoint: () => pharoMcpServers?.endpoint, outputChannel })
+	);
 	initStatusBar(extensionContext);
 	registerRepositoryContextUi(context);
 	// Create new command
@@ -161,6 +170,8 @@ export async function activate(context: ExtensionContext) {
 			outputChannel.appendLine('The Pharo Language Server does not provide the environment model (pls-env); update the server to use it.');
 		}
 
+		announceMcpServer(resolvedRequirements.pathToImage, client.initializeResult?.capabilities.experimental);
+
 		pharoImageExplorer.refresh();
 		void classPanel.refresh().then(() => window.activeTextEditor && classPanel.follow(window.activeTextEditor.document.uri));
 		documentExplorer = new PharoDocumentExplorer(context);
@@ -217,6 +228,25 @@ export async function activate(context: ExtensionContext) {
 			}
 		}
 		await stopPharoProcess();
+	}
+}
+
+/** Declare the MCP server of the image to VS Code, and move the CLI agents of the workspace to its port. */
+function announceMcpServer(pathToImage: string, experimental: unknown): void {
+	const endpoint = mcpEndpointFrom(experimental);
+	pharoMcpServers?.setEndpoint(endpoint, path.basename(pathToImage, '.image'));
+	// The Language Model Tools that the MCP server replaces are only offered without it
+	void commands.executeCommand('setContext', 'pharo.mcp.available', endpoint !== undefined);
+	if (!endpoint) {
+		if (workspace.getConfiguration('pharo').get<boolean>('mcp.enabled', true)) {
+			outputChannel.appendLine('The Pharo Language Server does not provide an MCP server; update the server to give the agents access to the image.');
+		}
+		return;
+	}
+	outputChannel.appendLine(`MCP server of the image: ${endpoint.url}`);
+	const folders = (workspace.workspaceFolders ?? []).filter((folder) => folder.uri.scheme === 'file').map((folder) => folder.uri.fsPath);
+	for (const file of updateAgentConfigurations(folders, endpoint.url, (message) => outputChannel.appendLine(message))) {
+		outputChannel.appendLine(`Moved the Pharo MCP server of ${file} to ${endpoint.url}`);
 	}
 }
 
@@ -901,6 +931,7 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 			{ scheme: ENTITY_SCHEME, language: 'pharo' },
 			{ notebook: 'moosebook', language: 'pharo' }
 		],
+		initializationOptions: mcpInitializationOptions(workspace.getConfiguration('pharo').get<boolean>('mcp.enabled', true)),
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
@@ -992,6 +1023,8 @@ async function createServerWithSocket(pharoPath: string, pathToImage: string, co
 	});
 	process.on('close', (code, signal) => {
 		outputChannel.appendLine(`Pharo VM exited (code: ${code ?? 'none'}, signal: ${signal ?? 'none'}).`);
+		pharoMcpServers?.setEndpoint(undefined);
+		void commands.executeCommand('setContext', 'pharo.mcp.available', false);
 		if (serverStarted && !isDeactivating) {
 			serverStarted = false;
 			serverLifecycleStatus = 'Stopped';

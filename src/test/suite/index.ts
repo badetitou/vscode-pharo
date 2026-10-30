@@ -10,6 +10,7 @@ export function run(): Promise<void> {
 
 	// Add test files explicitly to avoid extra dependencies like glob.
 	mocha.addFile(path.resolve(__dirname, './pharoChatParticipant.test.js'));
+	mocha.addFile(path.resolve(__dirname, './pharoMcp.test.js'));
 	mocha.addFile(path.resolve(__dirname, './pharoUri.test.js'));
 	mocha.addFile(path.resolve(__dirname, './rpcContracts.test.js'));
 	mocha.addFile(path.resolve(__dirname, './imageInstall.test.js'));
