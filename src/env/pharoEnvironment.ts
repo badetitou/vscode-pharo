@@ -5,6 +5,7 @@ import {
 	EnvCompileResult,
 	EnvDidChangeParams,
 	EnvEntity,
+	EnvKind,
 	EnvNode,
 	EnvSearchKind,
 	EnvSearchResult,
@@ -151,6 +152,15 @@ export class PharoEnvironment implements vscode.Disposable {
 		const parent = this.parents.get(id);
 		if (parent) {
 			this.childrenCache.delete(parent);
+		}
+	}
+
+	/** Drop the cached entities of these kinds, such as the projects and packages whose Iceberg state may have changed. */
+	invalidateEntitiesOf(kinds: readonly EnvKind[]): void {
+		for (const id of [...this.entityCache.keys()]) {
+			if (kinds.some((kind) => id.startsWith(`${kind}:`))) {
+				this.entityCache.delete(id);
+			}
 		}
 	}
 

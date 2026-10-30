@@ -40,6 +40,8 @@ export interface EnvEntity extends EnvNode {
 	repository: string | null;
 	superclass?: string | null;
 	version?: string;
+	/** For a project or a package: its Iceberg repository holds changes of it not committed yet. */
+	modified?: boolean;
 	/** For a side: the names of the slots it defines itself. */
 	slots?: string[];
 	/** For a side: the class variables of its class, on the instance side only. */
@@ -188,6 +190,9 @@ export function expectEnvEntity(value: unknown, method: string): EnvEntity {
 	}
 	if (entity.version !== undefined) {
 		result.version = expectField(entity, 'version', 'string', method);
+	}
+	if (entity.modified !== undefined) {
+		result.modified = expectField(entity, 'modified', 'boolean', method);
 	}
 	for (const field of ['slots', 'classVariables', 'traits', 'overridden'] as const) {
 		if (entity[field] !== undefined) {

@@ -115,11 +115,14 @@ Parameter: `id`. Answers the node of `id`, with additional fields:
 - `repository`: name of the Iceberg repository that holds this package, or `null`;
 - `superclass`: for a class, id of its superclass, or `null`;
 - `version`: for a class or a method, its version (see below);
+- `modified`: for a project or a package, whether its Iceberg repository holds changes of it not committed yet (for a project, changes of one of its packages);
 - for a side:
   - `slots`: the names of the slots the side defines itself (instance variables on the instance side, class-side instance variables on the class side);
   - `classVariables`: on the instance side, the names of the class variables of the class, sorted; empty on the class side;
   - `traits`: the ids of the traits the class uses, `class:TFoo`, the same on both sides;
   - `overridden`: the selectors of the side that a subclass redefines, sorted.
+
+The repository of a project is the one that holds its baseline package (`BaselineOf<name>`); the volatile project has none.
 
 ## Search
 
@@ -256,6 +259,17 @@ On each summary:
 - Iceberg refreshes the state of its repositories.
 
 Refreshing a view only reads the image, so it produces no new notification.
+
+## The Projects view
+
+The **Projects** view of the Pharo side bar (`pharoProjects`, `src/env/projectsView.ts`) shows the tree `project → package → tag → class`, from `pls-env:projects` and `pls-env:children`. It replaces the former *Image Browser*, which listed every package of the image; the `pharoImage:` file system behind it remains, for the image workspace folder (`pharo.imageWorkspace`) and the Iceberg diffs.
+
+- **Which projects.** By default, the view shows the pinned projects first, then the projects whose baseline an Iceberg repository holds, then the volatile project. The user can pin, unpin, hide and show projects, or show every project. These choices are kept per workspace and per image.
+- **Iceberg.** A project or package held by a repository shows the repository name, preceded by `●` when it is `modified`. Its context menu offers to commit the repository.
+- **Filter.** A filter of 3 characters or more keeps the projects and packages whose name holds it, among every project that is not hidden.
+- **Actions.** New package (named after its project, and added to its Iceberg repository; its baseline still has to declare it), new class in a package or a tag, new method, open the definition of a class or of the baseline of a project, run the tests of a package or of every package of a project.
+- **Live update.** On each `EnvChangeSummary`, the view reloads the Iceberg state of projects and packages, and redraws from the cache that `PharoEnvironment` already invalidated.
+- **Reveal.** While the view is visible, it selects the class of the active editor (`pharo:` or `pharoImage:`), when it shows the project of that class.
 
 ## Method documents
 

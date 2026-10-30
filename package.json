@@ -459,8 +459,8 @@
 					"icon": "media/pharo-bar.svg"
 				},
 				{
-					"id": "pharoImage",
-					"name": "Image Browser",
+					"id": "pharoProjects",
+					"name": "%views.projects.name%",
 					"icon": "media/pharo-bar.svg"
 				},
 				{
@@ -502,6 +502,11 @@
 				"view": "pharoClassPanel",
 				"contents": "%viewsWelcome.pharoClassPanel.contents%",
 				"when": "!pharo.classPanel.hasClass"
+			},
+			{
+				"view": "pharoProjects",
+				"contents": "%views.projects.welcome%",
+				"when": "!pharo.env"
 			}
 		],
 		"viewsContainers": {
@@ -550,6 +555,102 @@
 				"title": "%commands.pharo.env.newMethod.title%",
 				"category": "Pharo",
 				"icon": "$(add)"
+			},
+			{
+				"command": "pharo.projects.refresh",
+				"title": "%commands.pharo.projects.refresh.title%",
+				"category": "Pharo",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "pharo.projects.filter",
+				"title": "%commands.pharo.projects.filter.title%",
+				"category": "Pharo",
+				"icon": "$(filter)"
+			},
+			{
+				"command": "pharo.projects.clearFilter",
+				"title": "%commands.pharo.projects.clearFilter.title%",
+				"category": "Pharo",
+				"icon": "$(clear-all)"
+			},
+			{
+				"command": "pharo.projects.showAll",
+				"title": "%commands.pharo.projects.showAll.title%",
+				"category": "Pharo",
+				"icon": "$(eye)"
+			},
+			{
+				"command": "pharo.projects.showDefault",
+				"title": "%commands.pharo.projects.showDefault.title%",
+				"category": "Pharo",
+				"icon": "$(eye-closed)"
+			},
+			{
+				"command": "pharo.projects.reveal",
+				"title": "%commands.pharo.projects.reveal.title%",
+				"category": "Pharo",
+				"icon": "$(target)"
+			},
+			{
+				"command": "pharo.projects.pin",
+				"title": "%commands.pharo.projects.pin.title%",
+				"category": "Pharo",
+				"icon": "$(pin)"
+			},
+			{
+				"command": "pharo.projects.unpin",
+				"title": "%commands.pharo.projects.unpin.title%",
+				"category": "Pharo",
+				"icon": "$(pinned)"
+			},
+			{
+				"command": "pharo.projects.hide",
+				"title": "%commands.pharo.projects.hide.title%",
+				"category": "Pharo",
+				"icon": "$(eye-closed)"
+			},
+			{
+				"command": "pharo.projects.unhide",
+				"title": "%commands.pharo.projects.unhide.title%",
+				"category": "Pharo",
+				"icon": "$(eye)"
+			},
+			{
+				"command": "pharo.projects.newPackage",
+				"title": "%commands.pharo.projects.newPackage.title%",
+				"category": "Pharo",
+				"icon": "$(new-folder)"
+			},
+			{
+				"command": "pharo.projects.newClass",
+				"title": "%commands.pharo.projects.newClass.title%",
+				"category": "Pharo",
+				"icon": "$(symbol-class)"
+			},
+			{
+				"command": "pharo.projects.runTests",
+				"title": "%commands.pharo.projects.runTests.title%",
+				"category": "Pharo",
+				"icon": "$(play)"
+			},
+			{
+				"command": "pharo.projects.openDefinition",
+				"title": "%commands.pharo.projects.openDefinition.title%",
+				"category": "Pharo",
+				"icon": "$(go-to-file)"
+			},
+			{
+				"command": "pharo.projects.newMethod",
+				"title": "%commands.pharo.projects.newMethod.title%",
+				"category": "Pharo",
+				"icon": "$(add)"
+			},
+			{
+				"command": "pharo.projects.commit",
+				"title": "%commands.pharo.projects.commit.title%",
+				"category": "Pharo",
+				"icon": "$(check)"
 			},
 			{
 				"command": "pharo.classPanel.showInstanceSide",
@@ -816,6 +917,36 @@
 					"command": "pharo.classPanel.refresh",
 					"when": "view == pharoClassPanel",
 					"group": "navigation@6"
+				},
+				{
+					"command": "pharo.projects.filter",
+					"when": "view == pharoProjects",
+					"group": "navigation@0"
+				},
+				{
+					"command": "pharo.projects.clearFilter",
+					"when": "view == pharoProjects && pharo.projects.filtered",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.projects.showAll",
+					"when": "view == pharoProjects && !pharo.projects.showAll",
+					"group": "navigation@2"
+				},
+				{
+					"command": "pharo.projects.showDefault",
+					"when": "view == pharoProjects && pharo.projects.showAll",
+					"group": "navigation@2"
+				},
+				{
+					"command": "pharo.projects.reveal",
+					"when": "view == pharoProjects",
+					"group": "navigation@3"
+				},
+				{
+					"command": "pharo.projects.refresh",
+					"when": "view == pharoProjects",
+					"group": "navigation@4"
 				}
 			],
 			"view/item/context": [
@@ -858,6 +989,66 @@
 					"command": "pharo.classPanel.removeMethod",
 					"when": "view == pharoClassPanel && pharo.envEdit && viewItem =~ /^pharoClassPanel\\.method/",
 					"group": "2_remove@0"
+				},
+				{
+					"command": "pharo.projects.pin",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.project\\b.*\\bunpinned\\b/",
+					"group": "inline@1"
+				},
+				{
+					"command": "pharo.projects.unpin",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.project\\b.*\\bpinned\\b/",
+					"group": "inline@1"
+				},
+				{
+					"command": "pharo.projects.pin",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.project\\b.*\\bunpinned\\b/",
+					"group": "1_visibility@1"
+				},
+				{
+					"command": "pharo.projects.unpin",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.project\\b.*\\bpinned\\b/",
+					"group": "1_visibility@1"
+				},
+				{
+					"command": "pharo.projects.hide",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.project\\b.*\\bshown\\b/",
+					"group": "1_visibility@2"
+				},
+				{
+					"command": "pharo.projects.unhide",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.project\\b.*\\bhidden\\b/",
+					"group": "1_visibility@2"
+				},
+				{
+					"command": "pharo.projects.newPackage",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.project\\b/",
+					"group": "2_create@1"
+				},
+				{
+					"command": "pharo.projects.newClass",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.(package|tag)\\b/ && pharo.envEdit",
+					"group": "2_create@2"
+				},
+				{
+					"command": "pharo.projects.newMethod",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.class\\b/ && pharo.envEdit",
+					"group": "2_create@3"
+				},
+				{
+					"command": "pharo.projects.openDefinition",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.(project|class)\\b/ && pharo.envEdit",
+					"group": "3_navigate@1"
+				},
+				{
+					"command": "pharo.projects.runTests",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.(project|package)\\b/",
+					"group": "4_test@1"
+				},
+				{
+					"command": "pharo.projects.commit",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.(project|package)\\b.*\\biceberg\\b/",
+					"group": "5_iceberg@1"
 				}
 			],
 			"editor/context": [
@@ -921,6 +1112,46 @@
 				{
 					"command": "pharo.classPanel.newMethod",
 					"when": "pharo.envEdit && pharo.classPanel.hasClass"
+				},
+				{
+					"command": "pharo.projects.pin",
+					"when": "false"
+				},
+				{
+					"command": "pharo.projects.unpin",
+					"when": "false"
+				},
+				{
+					"command": "pharo.projects.hide",
+					"when": "false"
+				},
+				{
+					"command": "pharo.projects.unhide",
+					"when": "false"
+				},
+				{
+					"command": "pharo.projects.newPackage",
+					"when": "false"
+				},
+				{
+					"command": "pharo.projects.newClass",
+					"when": "false"
+				},
+				{
+					"command": "pharo.projects.runTests",
+					"when": "false"
+				},
+				{
+					"command": "pharo.projects.openDefinition",
+					"when": "false"
+				},
+				{
+					"command": "pharo.projects.newMethod",
+					"when": "false"
+				},
+				{
+					"command": "pharo.projects.commit",
+					"when": "false"
 				}
 			],
 			"explorer/context": [

@@ -495,14 +495,16 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 	}
 }
 
+/**
+ * The `pharoImage:` file system: one folder per package, one `.class.st` file per class. The Projects view replaced its
+ * tree view; it still serves the image workspace folder (`pharo.imageWorkspace`) and the Iceberg diffs.
+ */
 export class PharoImageExplorer {
 	private readonly pharoDataProvider: PharoDataProvider;
-	private readonly treeView: vscode.TreeView<PharoNode>;
 	private readonly fileSystemRegistration: vscode.Disposable;
 
 	constructor(context: vscode.ExtensionContext) {
 		this.pharoDataProvider = new PharoDataProvider();
-		this.treeView = vscode.window.createTreeView('pharoImage', { treeDataProvider: this.pharoDataProvider });
 		this.fileSystemRegistration = vscode.workspace.registerFileSystemProvider(
 			'pharoImage',
 			this.pharoDataProvider,
@@ -522,7 +524,6 @@ export class PharoImageExplorer {
 
 	dispose(): void {
 		this.fileSystemRegistration.dispose();
-		this.treeView.dispose();
 		this.pharoDataProvider.dispose();
 	}
 

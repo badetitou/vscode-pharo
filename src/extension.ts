@@ -30,6 +30,7 @@ import { registerServerDiagnosticsCommand } from './serverDiagnostics';
 import { installImageDirectory, ImageInstallResult } from './imageInstall';
 import { PharoEnvironment, createPharoEnvironment } from './env/pharoEnvironment';
 import { EnvChangeBus, EnvChangeSummary } from './env/environmentChanges';
+import { ProjectsView } from './env/projectsView';
 import { registerEntityEditors } from './env/entityCommands';
 import { registerSpotter } from './env/spotter';
 import { PharoEntityFileSystem } from './env/entityFileSystem';
@@ -62,6 +63,7 @@ const PROCESS_STOP_TIMEOUT_MS = 5_000;
 const PHARO_IMAGE_WORKSPACE_SCHEME = 'pharoImage';
 const PHARO_IMAGE_WORKSPACE_NAME = 'Pharo Image';
 let pharoImageExplorer: PharoImageExplorer;
+let projectsView: ProjectsView;
 
 export async function activate(context: ExtensionContext) {
 
@@ -89,6 +91,8 @@ export async function activate(context: ExtensionContext) {
 	pharoImagesExplorer = new PharoImagesExplorer(context);
 	registerPharoImagesCommands(context);
 	pharoImageExplorer = new PharoImageExplorer(context);
+	projectsView = new ProjectsView(context, (method, params) => client.sendRequest(method, params));
+	context.subscriptions.push(projectsView);
 	entityFileSystem = registerEntityEditors(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
 	classPanel = registerClassPanel(context, () => pharoEnvironment, entityFileSystem);
 	registerSpotter(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
@@ -162,7 +166,10 @@ export async function activate(context: ExtensionContext) {
 		context.subscriptions.push(new MoosebookController());
 
 		// Create Ice
-		iceControlManager = new IceControlManager(client, () => pharoImageExplorer?.refresh());
+		iceControlManager = new IceControlManager(client, () => {
+			pharoImageExplorer?.refresh();
+			projectsView.refresh();
+		});
 		context.subscriptions.push(iceControlManager);
 
 		// Follow the changes of the image, whoever makes them
@@ -170,6 +177,7 @@ export async function activate(context: ExtensionContext) {
 		if (pharoChanges) {
 			context.subscriptions.push(pharoChanges, pharoChanges.onDidChange(onImageChanged));
 		}
+		projectsView.setEnvironment(pharoEnvironment, pharoChanges?.onDidChange);
 
 		// Create Tests
 		context.subscriptions.push(initTestController(client, pharoChanges?.onDidChange));
