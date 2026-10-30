@@ -468,6 +468,13 @@
 					"name": "Variables",
 					"icon": "media/pharo-bar.svg"
 				}
+			],
+			"pharoClass": [
+				{
+					"id": "pharoClassPanel",
+					"name": "%views.pharoClassPanel.name%",
+					"icon": "media/pharo-bar.svg"
+				}
 			]
 		},
 		"icons": {
@@ -490,6 +497,11 @@
 			{
 				"view": "pharoBindingView",
 				"contents": "Start by executing a selected piece of code with 'Ctrl + Alt + D'"
+			},
+			{
+				"view": "pharoClassPanel",
+				"contents": "%viewsWelcome.pharoClassPanel.contents%",
+				"when": "!pharo.classPanel.hasClass"
 			}
 		],
 		"viewsContainers": {
@@ -498,6 +510,13 @@
 					"icon": "media/pharo-bar.svg",
 					"id": "pharoView",
 					"title": "Pharo"
+				}
+			],
+			"secondarySidebar": [
+				{
+					"id": "pharoClass",
+					"title": "%viewsContainers.pharoClass.title%",
+					"icon": "media/pharo-bar.svg"
 				}
 			]
 		},
@@ -531,6 +550,70 @@
 				"title": "%commands.pharo.env.newMethod.title%",
 				"category": "Pharo",
 				"icon": "$(add)"
+			},
+			{
+				"command": "pharo.classPanel.showInstanceSide",
+				"title": "%commands.pharo.classPanel.showInstanceSide.title%",
+				"category": "Pharo",
+				"icon": "$(symbol-class)"
+			},
+			{
+				"command": "pharo.classPanel.showClassSide",
+				"title": "%commands.pharo.classPanel.showClassSide.title%",
+				"category": "Pharo",
+				"icon": "$(symbol-namespace)"
+			},
+			{
+				"command": "pharo.classPanel.showTraits",
+				"title": "%commands.pharo.classPanel.showTraits.title%",
+				"category": "Pharo",
+				"icon": "$(symbol-interface)"
+			},
+			{
+				"command": "pharo.classPanel.filter",
+				"title": "%commands.pharo.classPanel.filter.title%",
+				"category": "Pharo",
+				"icon": "$(filter)"
+			},
+			{
+				"command": "pharo.classPanel.clearFilter",
+				"title": "%commands.pharo.classPanel.clearFilter.title%",
+				"category": "Pharo",
+				"icon": "$(clear-all)"
+			},
+			{
+				"command": "pharo.classPanel.refresh",
+				"title": "%commands.pharo.classPanel.refresh.title%",
+				"category": "Pharo",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "pharo.classPanel.newMethod",
+				"title": "%commands.pharo.classPanel.newMethod.title%",
+				"category": "Pharo",
+				"icon": "$(add)"
+			},
+			{
+				"command": "pharo.classPanel.generateAccessors",
+				"title": "%commands.pharo.classPanel.generateAccessors.title%",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.classPanel.moveToProtocol",
+				"title": "%commands.pharo.classPanel.moveToProtocol.title%",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.classPanel.removeMethod",
+				"title": "%commands.pharo.classPanel.removeMethod.title%",
+				"category": "Pharo",
+				"icon": "$(trash)"
+			},
+			{
+				"command": "pharo.classPanel.runTest",
+				"title": "%commands.pharo.classPanel.runTest.title%",
+				"category": "Pharo",
+				"icon": "$(play)"
 			},
 			{
 				"command": "pharo.tests.refresh",
@@ -698,6 +781,41 @@
 					"command": "pharo.images.refresh",
 					"when": "view == images",
 					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.classPanel.showInstanceSide",
+					"when": "view == pharoClassPanel && pharo.classPanel.hasClass && pharo.classPanel.mode != instance",
+					"group": "navigation@0"
+				},
+				{
+					"command": "pharo.classPanel.showClassSide",
+					"when": "view == pharoClassPanel && pharo.classPanel.hasClass && pharo.classPanel.mode != class",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.classPanel.showTraits",
+					"when": "view == pharoClassPanel && pharo.classPanel.hasTraits && pharo.classPanel.mode != traits",
+					"group": "navigation@2"
+				},
+				{
+					"command": "pharo.classPanel.newMethod",
+					"when": "view == pharoClassPanel && pharo.envEdit && pharo.classPanel.hasClass && pharo.classPanel.mode != traits",
+					"group": "navigation@3"
+				},
+				{
+					"command": "pharo.classPanel.filter",
+					"when": "view == pharoClassPanel && pharo.classPanel.hasClass",
+					"group": "navigation@4"
+				},
+				{
+					"command": "pharo.classPanel.clearFilter",
+					"when": "view == pharoClassPanel && pharo.classPanel.filtered",
+					"group": "navigation@5"
+				},
+				{
+					"command": "pharo.classPanel.refresh",
+					"when": "view == pharoClassPanel",
+					"group": "navigation@6"
 				}
 			],
 			"view/item/context": [
@@ -705,6 +823,41 @@
 					"command": "pharo.images.play",
 					"when": "view == images && viewItem == pharoImages.image",
 					"group": "inline"
+				},
+				{
+					"command": "pharo.classPanel.newMethod",
+					"when": "view == pharoClassPanel && pharo.envEdit && viewItem =~ /^pharoClassPanel\\.(protocol|allProtocols|protocols)$/",
+					"group": "inline"
+				},
+				{
+					"command": "pharo.classPanel.newMethod",
+					"when": "view == pharoClassPanel && pharo.envEdit && viewItem =~ /^pharoClassPanel\\.(protocol|allProtocols|protocols)$/",
+					"group": "1_edit@0"
+				},
+				{
+					"command": "pharo.classPanel.generateAccessors",
+					"when": "view == pharoClassPanel && pharo.envEdit && viewItem == pharoClassPanel.slot",
+					"group": "1_edit@0"
+				},
+				{
+					"command": "pharo.classPanel.runTest",
+					"when": "view == pharoClassPanel && viewItem == pharoClassPanel.method.test",
+					"group": "inline"
+				},
+				{
+					"command": "pharo.classPanel.runTest",
+					"when": "view == pharoClassPanel && viewItem == pharoClassPanel.method.test",
+					"group": "0_run@0"
+				},
+				{
+					"command": "pharo.classPanel.moveToProtocol",
+					"when": "view == pharoClassPanel && pharo.envEdit && viewItem =~ /^pharoClassPanel\\.method/",
+					"group": "1_edit@1"
+				},
+				{
+					"command": "pharo.classPanel.removeMethod",
+					"when": "view == pharoClassPanel && pharo.envEdit && viewItem =~ /^pharoClassPanel\\.method/",
+					"group": "2_remove@0"
 				}
 			],
 			"editor/context": [
@@ -748,6 +901,26 @@
 				{
 					"command": "pharo.env.newMethod",
 					"when": "pharo.envEdit"
+				},
+				{
+					"command": "pharo.classPanel.generateAccessors",
+					"when": "false"
+				},
+				{
+					"command": "pharo.classPanel.moveToProtocol",
+					"when": "false"
+				},
+				{
+					"command": "pharo.classPanel.removeMethod",
+					"when": "false"
+				},
+				{
+					"command": "pharo.classPanel.runTest",
+					"when": "false"
+				},
+				{
+					"command": "pharo.classPanel.newMethod",
+					"when": "pharo.envEdit && pharo.classPanel.hasClass"
 				}
 			],
 			"explorer/context": [
