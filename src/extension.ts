@@ -28,9 +28,12 @@ import { buildPharoUri, ICE_REPOSITORY_QUERY_KEY, repositoryNameFromPharoUri } f
 import { expectString, expectStringArray } from './rpcContracts';
 import { registerServerDiagnosticsCommand } from './serverDiagnostics';
 import { installImageDirectory, ImageInstallResult } from './imageInstall';
+import { PharoEnvironment, createPharoEnvironment } from './env/pharoEnvironment';
 
 
 export let client: LanguageClient;
+/** Environment model of the active image, or undefined while the server is not started or predates pls-env. */
+export let pharoEnvironment: PharoEnvironment | undefined;
 export let documentExplorer: PharoDocumentExplorer;
 let dls: child_process.ChildProcess | undefined;
 export let extensionContext: ExtensionContext;
@@ -121,6 +124,17 @@ export async function activate(context: ExtensionContext) {
 		serverStarted = true;
 		serverLifecycleStatus = 'Connected';
 		context.subscriptions.push(client);
+
+		pharoEnvironment = createPharoEnvironment(
+			resolvedRequirements.pathToImage,
+			client.initializeResult?.capabilities.experimental,
+			client
+		);
+		if (pharoEnvironment) {
+			context.subscriptions.push(pharoEnvironment);
+		} else {
+			outputChannel.appendLine('The Pharo Language Server does not provide the environment model (pls-env); update the server to use it.');
+		}
 
 		pharoImageExplorer.refresh();
 		documentExplorer = new PharoDocumentExplorer(context);
