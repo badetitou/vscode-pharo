@@ -212,8 +212,18 @@ An editor of one method uses the URI:
 pharo:/<image>/<package>/<class>/<instance|class>/<selector>.st
 ```
 
-Each segment is percent-encoded, for example `pharo:/PLS/Kernel/Number/instance/%2F%2F.st`. From this URI, the server knows the class and side of the method. Completion, diagnostics, hover, formatting and document symbols then treat the text as a method of that class: completion proposes `self`, `super`, the instance variables and the arguments.
+Each segment is percent-encoded. In the selector, the extension first escapes `%` as `%25` and `/` as `%2F`, which encode again on the wire: `//` is `pharo:/PLS/Kernel/Number/instance/%252F%252F.st`. The editor of a method not compiled yet uses the selector segment `(new method)`. From this URI, the server knows the class and side of the method; it ignores the selector segment. Completion, diagnostics, hover, formatting and document symbols then treat the text as a method of that class: completion proposes `self`, `super`, the instance variables and the arguments.
 
-A class definition editor uses `pharo:/<image>/<package>/<class>.class.st`, which the server reads as a Tonel document.
+A class definition editor uses `pharo:/<image>/<package>/<class>.class.st`, which the server reads as a Tonel document. The package segment is informative: the server finds the class by name.
 
-The extension does not open these editors yet (#64). Saving one is meant to compile it with `pls-env:compile`, passing as `expectedVersion` the version read when the editor was opened.
+### In the extension
+
+`PharoEntityFileSystem` (`src/env/entityFileSystem.ts`) serves the `pharo:` scheme. The commands **Pharo: Open Class or Method…** (`pharo.env.openEntity`, for example `Array>>collect:`) and **Pharo: New Method…** (`pharo.env.newMethod`) open these editors, also from the context menu of a class in the `pharoImage:` explorer.
+
+- **Reading** answers `pls-env:read` and records the version.
+- **Saving** compiles with `pls-env:compile`, passing the latest version seen as `expectedVersion`. The client does not send `textDocument/didSave` for these documents, so that the server does not load a `.class.st` a second time.
+- **Compilation errors** fail the save: the editor keeps its text, and the diagnostics of `pls-env:compile` show on it until the next edit.
+- **A renamed selector** compiles a new method, as in Pharo: its editor opens, and the edited editor goes back to the source of the image. Saving a new method compiles it on its side, in the protocol chosen when it was created.
+- **Conflicts.** Each entity gets a modification time that moves forward when its version changes. On `pls-env/didChange`, the extension tells VS Code which open editors changed: VS Code reloads those without local changes. Saving one with local changes makes VS Code offer to compare, overwrite or revert. When the image changes between that check and the compilation, the server answers a conflict: the save fails, and saving again offers the same choice.
+- **Removed entities.** A removed method or class shows as deleted. Saving its editor compiles the method again on its side.
+- **Tab titles.** The extension sets `workbench.editor.customLabels.patterns` so that a method tab reads `Array>>collect:` or `Array class>>new:`.
