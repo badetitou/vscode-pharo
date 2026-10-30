@@ -78,13 +78,36 @@ export function initTestController(
 		}
 	});
 
+	// Run the tests of packages named by another view, such as the Projects view.
+	const runPackagesCommand = vscode.commands.registerCommand('pharo.tests.runPackages', async (packageNames: string[] = []) => {
+		if (testController.items.size === 0) {
+			await discoverAllTests(testClient, testController);
+		}
+		const items: vscode.TestItem[] = [];
+		testController.items.forEach((item) => {
+			if (packageNames.includes(testItemName(item))) {
+				items.push(item);
+			}
+		});
+		if (items.length === 0) {
+			void vscode.window.showInformationMessage(`There are no Pharo tests in ${packageNames.join(', ') || 'these packages'}.`);
+			return;
+		}
+		const cancellation = new vscode.CancellationTokenSource();
+		try {
+			await runTestHandler(testClient, new vscode.TestRunRequest(items), cancellation.token, testController, failedTests);
+		} finally {
+			cancellation.dispose();
+		}
+	});
+
 	const changesSubscription = changes((summary) => {
 		refreshTestsAfterChanges(testClient, testController, summary).catch((error: unknown) => {
 			console.error('Unable to refresh the Pharo tests after a change of the image:', error);
 		});
 	});
 
-	return vscode.Disposable.from(testController, refreshCommand, rerunFailedCommand, changesSubscription);
+	return vscode.Disposable.from(testController, refreshCommand, rerunFailedCommand, runPackagesCommand, changesSubscription);
 }
 
 /**

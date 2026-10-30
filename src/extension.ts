@@ -30,10 +30,13 @@ import { registerServerDiagnosticsCommand } from './serverDiagnostics';
 import { installImageDirectory, ImageInstallResult } from './imageInstall';
 import { PharoEnvironment, createPharoEnvironment } from './env/pharoEnvironment';
 import { EnvChangeBus, EnvChangeSummary } from './env/environmentChanges';
+import { ProjectsView } from './env/projectsView';
 import { registerEntityEditors } from './env/entityCommands';
 import { EditorSession, registerEditorSession } from './env/editorSession';
+import { registerSpotter } from './env/spotter';
 import { PharoEntityFileSystem } from './env/entityFileSystem';
 import { ENTITY_SCHEME } from './env/entityUri';
+import { ClassPanel, registerClassPanel } from './env/classPanel';
 
 
 export let client: LanguageClient;
@@ -49,6 +52,7 @@ export let iceControlManager: IceControlManager;
 let pharoImagesExplorer: PharoImagesExplorer;
 let entityFileSystem: PharoEntityFileSystem;
 let editorSession: EditorSession;
+let classPanel: ClassPanel;
 
 let plsStatusBar: StatusBarItem;
 let pharoRepositoryStatusBar: StatusBarItem;
@@ -61,6 +65,7 @@ const PROCESS_STOP_TIMEOUT_MS = 5_000;
 const PHARO_IMAGE_WORKSPACE_SCHEME = 'pharoImage';
 const PHARO_IMAGE_WORKSPACE_NAME = 'Pharo Image';
 let pharoImageExplorer: PharoImageExplorer;
+let projectsView: ProjectsView;
 
 export async function activate(context: ExtensionContext) {
 
@@ -88,8 +93,12 @@ export async function activate(context: ExtensionContext) {
 	pharoImagesExplorer = new PharoImagesExplorer(context);
 	registerPharoImagesCommands(context);
 	pharoImageExplorer = new PharoImageExplorer(context);
+	projectsView = new ProjectsView(context, (method, params) => client.sendRequest(method, params));
+	context.subscriptions.push(projectsView);
 	entityFileSystem = registerEntityEditors(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
 	editorSession = registerEditorSession(context);
+	classPanel = registerClassPanel(context, () => pharoEnvironment, entityFileSystem);
+	registerSpotter(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
 	syncPharoImageWorkspaceFolder();
 	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration('pharo.imageWorkspace')) {
@@ -142,6 +151,7 @@ export async function activate(context: ExtensionContext) {
 			client
 		);
 		void commands.executeCommand('setContext', 'pharo.envEdit', pharoEnvironment?.capabilities.edit === true);
+		void commands.executeCommand('setContext', 'pharo.envSearch', pharoEnvironment?.capabilities.edit === true && pharoEnvironment.capabilities.search);
 		if (pharoEnvironment) {
 			context.subscriptions.push(pharoEnvironment);
 			if (pharoEnvironment.capabilities.edit) {
@@ -153,6 +163,7 @@ export async function activate(context: ExtensionContext) {
 		}
 
 		pharoImageExplorer.refresh();
+		void classPanel.refresh().then(() => window.activeTextEditor && classPanel.follow(window.activeTextEditor.document.uri));
 		documentExplorer = new PharoDocumentExplorer(context);
 
 		// Create debugguer
@@ -162,7 +173,10 @@ export async function activate(context: ExtensionContext) {
 		context.subscriptions.push(new MoosebookController());
 
 		// Create Ice
-		iceControlManager = new IceControlManager(client, () => pharoImageExplorer?.refresh());
+		iceControlManager = new IceControlManager(client, () => {
+			pharoImageExplorer?.refresh();
+			projectsView.refresh();
+		});
 		context.subscriptions.push(iceControlManager);
 
 		// Follow the changes of the image, whoever makes them
@@ -170,6 +184,7 @@ export async function activate(context: ExtensionContext) {
 		if (pharoChanges) {
 			context.subscriptions.push(pharoChanges, pharoChanges.onDidChange(onImageChanged));
 		}
+		projectsView.setEnvironment(pharoEnvironment, pharoChanges?.onDidChange);
 
 		// Create Tests
 		context.subscriptions.push(initTestController(client, pharoChanges?.onDidChange));
@@ -207,6 +222,7 @@ function onImageChanged(summary: EnvChangeSummary): void {
 	const conflicts = pharoImageExplorer.applyEnvironmentChanges(summary);
 	entityFileSystem.applyChanges(summary.changes, summary.reset);
 	editorSession.stack.applyChanges(summary.changes);
+	classPanel.applyChanges(summary);
 	void iceControlManager?.refresh();
 	if (conflicts.length > 0) {
 		void warnOfConflicts(conflicts);

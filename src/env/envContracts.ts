@@ -16,6 +16,7 @@ export interface EnvCapabilities {
 	version: number;
 	didChange: boolean;
 	edit: boolean;
+	search: boolean;
 }
 
 export interface EnvNode {
@@ -25,6 +26,8 @@ export interface EnvNode {
 	parent: string | null;
 	hasChildren: boolean;
 	flags: Record<string, boolean>;
+	/** For a method that comes from a trait, the id of that trait. */
+	trait?: string;
 }
 
 export interface EnvChildrenPage {
@@ -37,6 +40,32 @@ export interface EnvEntity extends EnvNode {
 	repository: string | null;
 	superclass?: string | null;
 	version?: string;
+	/** For a project or a package: its Iceberg repository holds changes of it not committed yet. */
+	modified?: boolean;
+	/** For a side: the names of the slots it defines itself. */
+	slots?: string[];
+	/** For a side: the class variables of its class, on the instance side only. */
+	classVariables?: string[];
+	/** For a side: the ids of the traits its class uses. */
+	traits?: string[];
+	/** For a side: its selectors that a subclass redefines. */
+	overridden?: string[];
+}
+
+/** The kinds of entities that pls-env:search finds. */
+export const ENV_SEARCH_KINDS = ['class', 'method', 'package', 'project'] as const;
+export type EnvSearchKind = typeof ENV_SEARCH_KINDS[number];
+
+export interface EnvSearchItem extends EnvNode {
+	/** How to show the entity: `Array>>collect:` for SequenceableCollection>>collect: found from Array. */
+	label: string;
+	package: string | null;
+}
+
+export interface EnvSearchResult {
+	items: EnvSearchItem[];
+	/** False when some kind had more matches than the limit. */
+	complete: boolean;
 }
 
 export interface EnvSource {
@@ -45,6 +74,11 @@ export interface EnvSource {
 	version: string;
 	protocol?: string;
 	side?: string;
+}
+
+export interface EnvClassification {
+	id: string;
+	protocol: string;
 }
 
 export interface EnvDiagnostic {
@@ -100,7 +134,7 @@ export function envCapabilitiesFrom(experimental: unknown): EnvCapabilities | un
 	if (typeof env.version !== 'number') {
 		return undefined;
 	}
-	return { version: env.version, didChange: env.didChange === true, edit: env.edit === true };
+	return { version: env.version, didChange: env.didChange === true, edit: env.edit === true, search: env.search === true };
 }
 
 export function expectEnvNode(value: unknown, method: string): EnvNode {
@@ -112,7 +146,7 @@ export function expectEnvNode(value: unknown, method: string): EnvNode {
 	if (!(ENV_KINDS as readonly string[]).includes(kind) || parseEnvId(id).kind !== kind) {
 		throw invalid(method, `unknown entity kind ${JSON.stringify(kind)}`);
 	}
-	return {
+	const node: EnvNode = {
 		id,
 		kind: kind as EnvKind,
 		name: expectField(value, 'name', 'string', method),
@@ -120,6 +154,10 @@ export function expectEnvNode(value: unknown, method: string): EnvNode {
 		hasChildren: expectField(value, 'hasChildren', 'boolean', method),
 		flags: expectFlags(value.flags, method)
 	};
+	if (value.trait !== undefined) {
+		node.trait = expectField(value, 'trait', 'string', method);
+	}
+	return node;
 }
 
 export function expectEnvNodes(value: unknown, method: string): EnvNode[] {
@@ -153,7 +191,33 @@ export function expectEnvEntity(value: unknown, method: string): EnvEntity {
 	if (entity.version !== undefined) {
 		result.version = expectField(entity, 'version', 'string', method);
 	}
+	if (entity.modified !== undefined) {
+		result.modified = expectField(entity, 'modified', 'boolean', method);
+	}
+	for (const field of ['slots', 'classVariables', 'traits', 'overridden'] as const) {
+		if (entity[field] !== undefined) {
+			result[field] = expectStrings(entity[field], `${method}.${field}`);
+		}
+	}
 	return result;
+}
+
+export function expectEnvSearchResult(value: unknown, method: string): EnvSearchResult {
+	if (!isObject(value) || !Array.isArray(value.items)) {
+		throw invalid(method, 'expected a list of search results');
+	}
+	return {
+		items: value.items.map((item) => {
+			const node = expectEnvNode(item, `${method}.items`);
+			const fields = item as Record<string, unknown>;
+			return {
+				...node,
+				label: expectField(fields, 'label', 'string', `${method}.items`),
+				package: expectNullableString(fields.package, `${method}.items.package`)
+			};
+		}),
+		complete: expectField(value, 'complete', 'boolean', method)
+	};
 }
 
 export function expectEnvSource(value: unknown, method: string): EnvSource {
@@ -172,6 +236,13 @@ export function expectEnvSource(value: unknown, method: string): EnvSource {
 		result.side = expectField(value, 'side', 'string', method);
 	}
 	return result;
+}
+
+export function expectEnvClassification(value: unknown, method: string): EnvClassification {
+	if (!isObject(value)) {
+		throw invalid(method, 'expected a classification');
+	}
+	return { id: expectField(value, 'id', 'string', method), protocol: expectField(value, 'protocol', 'string', method) };
 }
 
 export function expectEnvCompileResult(value: unknown, method: string): EnvCompileResult {
@@ -261,6 +332,13 @@ function expectField(value: Record<string, unknown>, field: string, type: 'strin
 		throw invalid(`${method}.${field}`, `expected a ${type}`);
 	}
 	return value[field];
+}
+
+function expectStrings(value: unknown, method: string): string[] {
+	if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
+		throw invalid(method, 'expected an array of strings');
+	}
+	return value;
 }
 
 function expectNullableString(value: unknown, method: string): string | null {

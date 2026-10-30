@@ -54,21 +54,36 @@ async function newMethod(environment: PharoEnvironment, fileSystem: PharoEntityF
 	if (!reference?.trim()) {
 		return;
 	}
-	const classLocation = await locationOf(environment, reference.trim().replace(/>>.*$/, ''));
-	const side: EntitySide = /\sclass$/.test(reference.trim().replace(/>>.*$/, '')) ? 'class' : 'instance';
+	const classReference = reference.trim().replace(/>>.*$/, '');
+	const side: EntitySide = /\sclass$/.test(classReference) ? 'class' : 'instance';
+	await openNewMethod(environment, fileSystem, classReference.replace(/\s+class$/, ''), side);
+}
+
+/** Open the editor of a new method on a side of a class, in protocol, or in a protocol the user chooses. */
+export async function openNewMethod(
+	environment: PharoEnvironment,
+	fileSystem: PharoEntityFileSystem,
+	className: string,
+	side: EntitySide,
+	protocol?: string
+): Promise<void> {
+	const classLocation = await locationOf(environment, className);
 	const sideId = `side:${classLocation.className}${side === 'class' ? ' class' : ''}`;
-	const protocols = (await environment.children(sideId)).map((node) => node.name).filter((name) => !name.startsWith('*'));
-	const protocol = await pickProtocol(protocols);
-	if (protocol === undefined) {
+	const chosen = protocol ?? await pickProtocol(
+		(await environment.children(sideId)).map((node) => node.name).filter((name) => !name.startsWith('*')),
+		'Protocol of the New Method'
+	);
+	if (chosen === undefined) {
 		return;
 	}
-	const uri = fileSystem.newMethodUri({ ...classLocation, side }, protocol);
+	const uri = fileSystem.newMethodUri({ ...classLocation, side }, chosen);
 	await vscode.window.showTextDocument(uri, { preview: false });
 }
 
-async function pickProtocol(protocols: string[]): Promise<string | undefined> {
+/** Let the user choose one of protocols, or type a new one. */
+export async function pickProtocol(protocols: string[], title: string): Promise<string | undefined> {
 	const picker = vscode.window.createQuickPick();
-	picker.title = 'Protocol of the New Method';
+	picker.title = title;
 	picker.placeholder = 'Choose a protocol, or type a new one';
 	const known = [...new Set([...protocols, 'as yet unclassified'])].sort();
 	const items = (value: string) => [
@@ -132,7 +147,7 @@ async function closeTabsOf(uri: vscode.Uri): Promise<void> {
 	await vscode.window.tabGroups.close(tabs);
 }
 
-function requireEnvironment(environment: () => PharoEnvironment | undefined): PharoEnvironment {
+export function requireEnvironment(environment: () => PharoEnvironment | undefined): PharoEnvironment {
 	const current = environment();
 	if (!current) {
 		throw new Error('The Pharo Language Server is not running, or does not provide the environment model (pls-env).');
@@ -140,7 +155,7 @@ function requireEnvironment(environment: () => PharoEnvironment | undefined): Ph
 	return current;
 }
 
-async function reportErrors(action: () => Promise<void>): Promise<void> {
+export async function reportErrors(action: () => Promise<void>): Promise<void> {
 	try {
 		await action();
 	} catch (error) {

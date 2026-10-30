@@ -23,6 +23,9 @@ export function run(): Promise<void> {
 	mocha.addFile(path.resolve(__dirname, './environmentChanges.test.js'));
 	mocha.addFile(path.resolve(__dirname, './entityEditors.test.js'));
 	mocha.addFile(path.resolve(__dirname, './editorStack.test.js'));
+	mocha.addFile(path.resolve(__dirname, './classPanel.test.js'));
+	mocha.addFile(path.resolve(__dirname, './spotter.test.js'));
+	mocha.addFile(path.resolve(__dirname, './projectsView.test.js'));
 
 	return new Promise((resolve, reject) => {
 		try {

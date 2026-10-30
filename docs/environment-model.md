@@ -18,14 +18,15 @@ This document is the contract between both sides. Version: **1**.
 The server announces the model in the `initialize` result:
 
 ```json
-{ "capabilities": { "experimental": { "pls-env": { "version": 1, "didChange": true, "edit": true } } } }
+{ "capabilities": { "experimental": { "pls-env": { "version": 1, "didChange": true, "edit": true, "search": true } } } }
 ```
 
 | Field | Meaning |
 | --- | --- |
 | `version` | Version of this protocol. |
 | `didChange` | The server sends `pls-env/didChange` notifications. |
-| `edit` | The server answers `pls-env:read`, `pls-env:compile` and `pls-env:remove`. |
+| `edit` | The server answers `pls-env:read`, `pls-env:compile`, `pls-env:classify` and `pls-env:remove`. |
+| `search` | The server answers `pls-env:search`. It then also announces `workspaceSymbolProvider`. |
 
 Without `pls-env`, the server predates the model: the extension creates no `PharoEnvironment` and keeps using the older `pls:*` requests.
 
@@ -75,6 +76,8 @@ Navigation requests answer nodes:
 | `protocol` | `extension` |
 | `method` | `abstract`, `extension`, `override`, `test`, `deprecated`, `fromTrait` |
 
+A method node whose `fromTrait` flag is set also has a `trait` field: the id of the trait it comes from, such as `class:TCountable`, on both sides.
+
 ## Navigation
 
 ### `pls-env:projects`
@@ -111,7 +114,56 @@ Parameter: `id`. Answers the node of `id`, with additional fields:
 - `package`: id of the package that holds the entity (for an extension protocol, the package of its methods), or `null` for a project;
 - `repository`: name of the Iceberg repository that holds this package, or `null`;
 - `superclass`: for a class, id of its superclass, or `null`;
-- `version`: for a class or a method, its version (see below).
+- `version`: for a class or a method, its version (see below);
+- `modified`: for a project or a package, whether its Iceberg repository holds changes of it not committed yet (for a project, changes of one of its packages);
+- for a side:
+  - `slots`: the names of the slots the side defines itself (instance variables on the instance side, class-side instance variables on the class side);
+  - `classVariables`: on the instance side, the names of the class variables of the class, sorted; empty on the class side;
+  - `traits`: the ids of the traits the class uses, `class:TFoo`, the same on both sides;
+  - `overridden`: the selectors of the side that a subclass redefines, sorted.
+
+The repository of a project is the one that holds its baseline package (`BaselineOf<name>`); the volatile project has none.
+
+## Search
+
+### `pls-env:search`
+
+Parameters: `query`, and optionally `kinds` (an array of `class`, `method`, `package` and `project`, default: all four) and `limit` (default `50`).
+
+The query is one of:
+
+- a term, such as `col`: the classes, methods, packages and projects whose name holds it;
+- a class and a term, such as `Array col`, `Array>>col`, `Array class new:` or `Array class>>#new:`: the methods of the classes whose name holds the class, whose selector holds the term. An empty term keeps every method of these classes.
+
+Names match ignoring case. A name equal to the term comes first, then a name that begins with it, then a name that holds it; then shorter names first. A class whose name is exactly the class of the query also offers the methods it inherits, each after its own methods that match as well: `Array col` finds `SequenceableCollection>>collect:` as `Array>>collect:`.
+
+Answers at most `limit` entities of each kind, classes first, then methods, packages and projects:
+
+```json
+{
+  "items": [
+    { "id": "method:SequenceableCollection>>collect:", "kind": "method", "name": "collect:", "parent": "protocol:SequenceableCollection>>enumerating",
+      "hasChildren": false, "flags": { "override": true }, "label": "Array>>collect:", "package": "package:Collections-Sequenceable" }
+  ],
+  "complete": false
+}
+```
+
+Each item is a node with two more fields: `label`, how to show the entity, and `package`, as in `pls-env:entity`. `complete` is `false` when some kind had more matches than `limit`. The server runs each request in its own process: `$/cancelRequest` stops a search that the client no longer needs.
+
+### `workspace/symbol`
+
+Answers the classes and methods that `pls-env:search` finds for the query, at most 100 of each, as LSP `SymbolInformation`. An empty query answers nothing. The `name` of a method is its label (`Array>>collect:`), its `containerName` is its package, preceded by the class that defines it when it is inherited (`SequenceableCollection (Collections-Sequenceable)`). The `location` is the start of the entity editor (see "Method documents"), named after the image file without `.image`:
+
+```
+pharo:/Pharo/Collections-Sequenceable/SequenceableCollection/instance/collect%3A.st
+```
+
+### In the extension
+
+`Ctrl+T`, and `#` in Quick Open, list these symbols and open them in entity editors.
+
+The command **Pharo: Spotter…** (`pharo.env.spotter`, `Ctrl+Alt+O`) searches the image as you type, together with the open Pharo editors and the Pharo commands. Each keystroke cancels the previous search. A prefix keeps one kind of entities: `#` classes, `>>` methods, `@` packages, `!` projects. The active class or method shows in a preview editor; choosing it opens its entity editor, choosing a project or a package lists its packages or its classes.
 
 ## Edition
 
@@ -145,6 +197,10 @@ Each diagnostic has a `message`, a `severity` (`1` error, `2` warning) and an LS
 ```json
 { "message": "Variable or expression expected", "severity": 1, "range": { "start": { "line": 1, "character": 10 }, "end": { "line": 1, "character": 10 } } }
 ```
+
+### `pls-env:classify`
+
+Parameters: `id` of a method and `protocol`. Moves the method to `protocol` without compiling it again: its version does not change. Answers `{ id, protocol }`, the protocol the method is now in. The image notifies the change as `moved`.
 
 ### `pls-env:remove`
 
@@ -204,6 +260,17 @@ On each summary:
 
 Refreshing a view only reads the image, so it produces no new notification.
 
+## The Projects view
+
+The **Projects** view of the Pharo side bar (`pharoProjects`, `src/env/projectsView.ts`) shows the tree `project → package → tag → class`, from `pls-env:projects` and `pls-env:children`. It replaces the former *Image Browser*, which listed every package of the image; the `pharoImage:` file system behind it remains, for the image workspace folder (`pharo.imageWorkspace`) and the Iceberg diffs.
+
+- **Which projects.** By default, the view shows the pinned projects first, then the projects whose baseline an Iceberg repository holds, then the volatile project. The user can pin, unpin, hide and show projects, or show every project. These choices are kept per workspace and per image.
+- **Iceberg.** A project or package held by a repository shows the repository name, preceded by `●` when it is `modified`. Its context menu offers to commit the repository.
+- **Filter.** A filter of 3 characters or more keeps the projects and packages whose name holds it, among every project that is not hidden.
+- **Actions.** New package (named after its project, and added to its Iceberg repository; its baseline still has to declare it), new class in a package or a tag, new method, open the definition of a class or of the baseline of a project, run the tests of a package or of every package of a project.
+- **Live update.** On each `EnvChangeSummary`, the view reloads the Iceberg state of projects and packages, and redraws from the cache that `PharoEnvironment` already invalidated.
+- **Reveal.** While the view is visible, it selects the class of the active editor (`pharo:` or `pharoImage:`), when it shows the project of that class.
+
 ## Method documents
 
 An editor of one method uses the URI:
@@ -227,3 +294,14 @@ A class definition editor uses `pharo:/<image>/<package>/<class>.class.st`, whic
 - **Conflicts.** Each entity gets a modification time that moves forward when its version changes. On `pls-env/didChange`, the extension tells VS Code which open editors changed: VS Code reloads those without local changes. Saving one with local changes makes VS Code offer to compare, overwrite or revert. When the image changes between that check and the compilation, the server answers a conflict: the save fails, and saving again offers the same choice.
 - **Removed entities.** A removed method or class shows as deleted. Saving its editor compiles the method again on its side.
 - **Tab titles.** The extension sets `workbench.editor.customLabels.patterns` so that a method tab reads `Array>>collect:` or `Array class>>new:`.
+
+## Class panel
+
+The **Class** view (`pharoClassPanel`) lives in the Secondary Side Bar. `ClassPanel` (`src/env/classPanel.ts`) shows the class of the active editor: a `pharo:` entity editor, a `pharoImage:` class, or a Tonel file (`.class.st`, `.trait.st`, `.extension.st`).
+
+- **Sides.** The title buttons switch between the instance side, the class side and the traits of the class. Opening a method editor shows its side and selects it in its protocol.
+- **Sections.** On a side, the panel shows its slots and class variables (`pls-env:entity` of the side), then its protocols, each with its number of methods, after `(All)`, which lists all the methods of the side. In traits mode, it shows each trait the class uses with its protocols and methods, its class side apart.
+- **Markers.** A method shows `↑` when it overrides a method of a superclass, `↓` when a subclass redefines it, then `abstract`, `extension`, `from <trait>` and `deprecated`. A test shows a beaker, an extension method a purple icon.
+- **Filter.** **Filter Slots and Methods…** keeps the slots and methods whose name holds a text, and hides the protocols left empty.
+- **Actions.** New method in a protocol, accessors for a slot (in `accessing`, skipping those that exist), move a method to another protocol (`pls-env:classify`), remove a method, and run a test.
+- **Changes.** On each `EnvChangeSummary` that names the class or one of its traits, or on a reset, the panel loads the class again.

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add a **Projects** view built on the Metacello baselines (project → package → tag → class), with pinning, a filter, Iceberg state, contextual actions and live update. It replaces the Image Browser view.
+
 ## v2.3.0
 
 - Better support of images in workspace folders.

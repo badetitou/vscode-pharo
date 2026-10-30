@@ -1,24 +1,38 @@
 import * as vscode from 'vscode';
 import {
 	EnvCapabilities,
+	EnvClassification,
 	EnvCompileResult,
 	EnvDidChangeParams,
 	EnvEntity,
+	EnvKind,
 	EnvNode,
+	EnvSearchKind,
+	EnvSearchResult,
 	EnvSource,
 	envCapabilitiesFrom,
 	expectEnvChildrenPage,
+	expectEnvClassification,
 	expectEnvCompileResult,
 	expectEnvDidChangeParams,
 	expectEnvEntity,
 	expectEnvNodes,
-	expectEnvSource
+	expectEnvSearchResult,
+	expectEnvSource,
+	parseEnvId
 } from './envContracts';
 
 /** What the environment needs from the language client, so that tests can replay recorded responses. */
 export interface EnvTransport {
-	sendRequest(method: string, params?: unknown): Promise<unknown>;
+	sendRequest(method: string, params?: unknown, token?: vscode.CancellationToken): Promise<unknown>;
 	onNotification(method: string, handler: (params: unknown) => void): vscode.Disposable;
+}
+
+export interface EnvSearchOptions {
+	/** Defaults to every kind. */
+	kinds?: EnvSearchKind[];
+	/** Most results of each kind; the server defaults to 50. */
+	limit?: number;
 }
 
 export interface EnvCompileOptions {
@@ -82,6 +96,17 @@ export class PharoEnvironment implements vscode.Disposable {
 		});
 	}
 
+	/**
+	 * Find the classes, methods, packages and projects that match query, such as `Array col` or `Array class>>new:`.
+	 * Never cached: the image changes under the search. Cancelling token cancels the request on the server.
+	 */
+	async search(query: string, options: EnvSearchOptions = {}, token?: vscode.CancellationToken): Promise<EnvSearchResult> {
+		return expectEnvSearchResult(
+			await this.transport.sendRequest('pls-env:search', { query, kinds: options.kinds, limit: options.limit }, token),
+			'pls-env:search'
+		);
+	}
+
 	/** Read the source of a class or method. It is never cached, so that an editor always opens the source of the image. */
 	async read(id: string): Promise<EnvSource> {
 		return expectEnvSource(await this.transport.sendRequest('pls-env:read', { id }), 'pls-env:read');
@@ -105,6 +130,17 @@ export class PharoEnvironment implements vscode.Disposable {
 		return result;
 	}
 
+	/** Move a method to another protocol without compiling it again. */
+	async classify(id: string, protocol: string): Promise<EnvClassification> {
+		const result = expectEnvClassification(await this.transport.sendRequest('pls-env:classify', { id, protocol }), 'pls-env:classify');
+		const path = parseEnvId(id).path;
+		const sidePath = path.slice(0, path.indexOf('>>'));
+		this.forget(id);
+		this.childrenCache.delete(`side:${sidePath}`);
+		this.childrenCache.delete(`protocol:${sidePath}>>${result.protocol}`);
+		return result;
+	}
+
 	async remove(id: string, expectedVersion?: string): Promise<void> {
 		await this.transport.sendRequest('pls-env:remove', { id, expectedVersion });
 		this.forget(id);
@@ -116,6 +152,15 @@ export class PharoEnvironment implements vscode.Disposable {
 		const parent = this.parents.get(id);
 		if (parent) {
 			this.childrenCache.delete(parent);
+		}
+	}
+
+	/** Drop the cached entities of these kinds, such as the projects and packages whose Iceberg state may have changed. */
+	invalidateEntitiesOf(kinds: readonly EnvKind[]): void {
+		for (const id of [...this.entityCache.keys()]) {
+			if (kinds.some((kind) => id.startsWith(`${kind}:`))) {
+				this.entityCache.delete(id);
+			}
 		}
 	}
 
