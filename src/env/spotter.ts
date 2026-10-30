@@ -227,10 +227,13 @@ function openEditors(query: string): SpotterItem[] {
 	}));
 }
 
+/** A title of package.json, that VS Code turns into its value and original text once it localizes the manifest. */
+type ContributedTitle = string | { value: string; original: string };
+
 interface ContributedCommand {
 	command: string;
-	title: string;
-	category?: string;
+	title: ContributedTitle;
+	category?: ContributedTitle;
 	enablement?: string;
 }
 
@@ -242,10 +245,10 @@ function pharoCommands(context: vscode.ExtensionContext): SpotterItem[] {
 	const hidden = new Set(palette.filter((entry) => entry.when === 'false').map((entry) => entry.command));
 	const titles = localizedTitles(context.extensionPath);
 	return commands
-		.filter((command) => command.category?.startsWith('Pharo') && command.command !== 'pharo.env.spotter'
+		.filter((command) => titles(command.category).startsWith('Pharo') && command.command !== 'pharo.env.spotter'
 			&& command.enablement !== 'false' && !hidden.has(command.command))
 		.map((command) => ({
-			label: `$(terminal) ${command.category}: ${titles(command.title)}`,
+			label: `$(terminal) ${titles(command.category)}: ${titles(command.title)}`,
 			description: 'Command',
 			command: command.command,
 			alwaysShow: true
@@ -253,7 +256,7 @@ function pharoCommands(context: vscode.ExtensionContext): SpotterItem[] {
 }
 
 /** Answer a function that replaces a `%key%` title of package.json by its text in the language of VS Code. */
-function localizedTitles(extensionPath: string): (title: string) => string {
+function localizedTitles(extensionPath: string): (title: ContributedTitle | undefined) => string {
 	const read = (file: string): Record<string, string> => {
 		try {
 			return JSON.parse(fs.readFileSync(path.join(extensionPath, file), 'utf8'));
@@ -262,7 +265,10 @@ function localizedTitles(extensionPath: string): (title: string) => string {
 		}
 	};
 	const messages = { ...read('package.nls.json'), ...read(`package.nls.${vscode.env.language}.json`) };
-	return (title) => title.replace(/^%(.+)%$/, (whole, key: string) => messages[key] ?? whole);
+	return (title) => {
+		const text = typeof title === 'string' ? title : title?.value ?? '';
+		return text.replace(/^%(.+)%$/, (whole, key: string) => messages[key] ?? whole);
+	};
 }
 
 /** Shows the editor of the active entity while the Spotter is open, and closes the editors it opened unless one is kept. */
