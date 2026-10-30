@@ -33,6 +33,7 @@ import { EnvChangeBus, EnvChangeSummary } from './env/environmentChanges';
 import { ProjectsView } from './env/projectsView';
 import { registerEntityEditors } from './env/entityCommands';
 import { registerSpotter } from './env/spotter';
+import { registerNavigationCommands } from './env/navigationCommands';
 import { PharoEntityFileSystem } from './env/entityFileSystem';
 import { ENTITY_SCHEME } from './env/entityUri';
 import { ClassPanel, registerClassPanel } from './env/classPanel';
@@ -96,6 +97,7 @@ export async function activate(context: ExtensionContext) {
 	entityFileSystem = registerEntityEditors(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
 	classPanel = registerClassPanel(context, () => pharoEnvironment, entityFileSystem);
 	registerSpotter(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
+	registerNavigationCommands(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined, () => classPanel.provider.className);
 	syncPharoImageWorkspaceFolder();
 	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration('pharo.imageWorkspace')) {

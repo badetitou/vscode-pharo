@@ -38,6 +38,11 @@
 	"commands.pharo.projects.commit.title": "Commiter le dépôt…",
 	"views.projects.name": "Projets",
 	"views.projects.welcome": "La vue Projets affiche les projets Metacello de l’image en cours d’exécution. Elle nécessite un Pharo Language Server qui fournit le modèle d’environnement (pls-env).",
+	"commands.pharo.nav.senders.title": "Senders",
+	"commands.pharo.nav.implementors.title": "Implementors",
+	"commands.pharo.nav.references.title": "Références",
+	"commands.pharo.nav.callHierarchy.title": "Afficher la hiérarchie d’appels",
+	"commands.pharo.nav.typeHierarchy.title": "Afficher la hiérarchie de types",
 
 	"chatParticipant.pharo.description": "Créer/lire des classes, exécuter du code et lancer des tests dans votre image Pharo.",
 	"chatParticipant.pharo.command.help.description": "Afficher les commandes disponibles.",

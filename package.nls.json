@@ -38,6 +38,11 @@
 	"commands.pharo.projects.commit.title": "Commit Repository…",
 	"views.projects.name": "Projects",
 	"views.projects.welcome": "The Projects view shows the Metacello projects of the running image. It needs a Pharo Language Server that provides the environment model (pls-env).",
+	"commands.pharo.nav.senders.title": "Senders",
+	"commands.pharo.nav.implementors.title": "Implementors",
+	"commands.pharo.nav.references.title": "References",
+	"commands.pharo.nav.callHierarchy.title": "Show Call Hierarchy",
+	"commands.pharo.nav.typeHierarchy.title": "Show Type Hierarchy",
 
 	"chatParticipant.pharo.description": "Create/read classes, evaluate code, and run tests in your Pharo image.",
 	"chatParticipant.pharo.command.help.description": "Show available commands.",

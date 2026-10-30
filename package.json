@@ -869,6 +869,33 @@
 				"command": "pharo.clearLog",
 				"title": "Clear Log",
 				"category": "Pharo Developer"
+			},
+			{
+				"command": "pharo.nav.senders",
+				"title": "%commands.pharo.nav.senders.title%",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.nav.implementors",
+				"title": "%commands.pharo.nav.implementors.title%",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.nav.references",
+				"title": "%commands.pharo.nav.references.title%",
+				"category": "Pharo",
+				"icon": "$(references)"
+			},
+			{
+				"command": "pharo.nav.callHierarchy",
+				"title": "%commands.pharo.nav.callHierarchy.title%",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.nav.typeHierarchy",
+				"title": "%commands.pharo.nav.typeHierarchy.title%",
+				"category": "Pharo",
+				"icon": "$(type-hierarchy)"
 			}
 		],
 		"menus": {
@@ -947,6 +974,16 @@
 					"command": "pharo.projects.refresh",
 					"when": "view == pharoProjects",
 					"group": "navigation@4"
+				},
+				{
+					"command": "pharo.nav.typeHierarchy",
+					"when": "view == pharoClassPanel && pharo.envEdit && pharo.classPanel.hasClass",
+					"group": "navigation@7"
+				},
+				{
+					"command": "pharo.nav.references",
+					"when": "view == pharoClassPanel && pharo.envEdit && pharo.classPanel.hasClass",
+					"group": "9_references@0"
 				}
 			],
 			"view/item/context": [
@@ -1049,6 +1086,41 @@
 					"command": "pharo.projects.commit",
 					"when": "view == pharoProjects && viewItem =~ /^pharo\\.(project|package)\\b.*\\biceberg\\b/",
 					"group": "5_iceberg@1"
+				},
+				{
+					"command": "pharo.nav.senders",
+					"when": "view == pharoClassPanel && pharo.envEdit && viewItem =~ /^pharoClassPanel\\.method/",
+					"group": "3_navigate@0"
+				},
+				{
+					"command": "pharo.nav.implementors",
+					"when": "view == pharoClassPanel && pharo.envEdit && viewItem =~ /^pharoClassPanel\\.method/",
+					"group": "3_navigate@1"
+				},
+				{
+					"command": "pharo.nav.callHierarchy",
+					"when": "view == pharoClassPanel && pharo.envEdit && viewItem =~ /^pharoClassPanel\\.method/",
+					"group": "3_navigate@2"
+				},
+				{
+					"command": "pharo.nav.references",
+					"when": "view == pharoClassPanel && pharo.envEdit && viewItem =~ /^pharoClassPanel\\.(slot|classVariable|trait)$/",
+					"group": "3_navigate@0"
+				},
+				{
+					"command": "pharo.nav.typeHierarchy",
+					"when": "view == pharoClassPanel && pharo.envEdit && viewItem == pharoClassPanel.trait",
+					"group": "3_navigate@1"
+				},
+				{
+					"command": "pharo.nav.references",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.class\\b/ && pharo.envEdit",
+					"group": "3_navigate@2"
+				},
+				{
+					"command": "pharo.nav.typeHierarchy",
+					"when": "view == pharoProjects && viewItem =~ /^pharo\\.class\\b/ && pharo.envEdit",
+					"group": "3_navigate@3"
 				}
 			],
 			"editor/context": [
@@ -1151,6 +1223,26 @@
 				},
 				{
 					"command": "pharo.projects.commit",
+					"when": "false"
+				},
+				{
+					"command": "pharo.nav.senders",
+					"when": "false"
+				},
+				{
+					"command": "pharo.nav.implementors",
+					"when": "false"
+				},
+				{
+					"command": "pharo.nav.references",
+					"when": "false"
+				},
+				{
+					"command": "pharo.nav.callHierarchy",
+					"when": "false"
+				},
+				{
+					"command": "pharo.nav.typeHierarchy",
 					"when": "false"
 				}
 			],
