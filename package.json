@@ -459,6 +459,12 @@
 					"icon": "media/pharo-bar.svg"
 				},
 				{
+					"id": "pharoEditorStack",
+					"name": "%views.editorStack.name%",
+					"icon": "media/pharo-bar.svg",
+					"when": "pharo.envEdit"
+				},
+				{
 					"id": "pharoImage",
 					"name": "Image Browser",
 					"icon": "media/pharo-bar.svg"
@@ -490,6 +496,10 @@
 			{
 				"view": "pharoBindingView",
 				"contents": "Start by executing a selected piece of code with 'Ctrl + Alt + D'"
+			},
+			{
+				"view": "pharoEditorStack",
+				"contents": "%viewsWelcome.editorStack.contents%"
 			}
 		],
 		"viewsContainers": {
@@ -525,6 +535,50 @@
 				"title": "%commands.pharo.env.newMethod.title%",
 				"category": "Pharo",
 				"icon": "$(add)"
+			},
+			{
+				"command": "pharo.editors.back",
+				"title": "%commands.pharo.editors.back.title%",
+				"category": "Pharo",
+				"icon": "$(arrow-left)",
+				"enablement": "pharo.editors.canGoBack"
+			},
+			{
+				"command": "pharo.editors.forward",
+				"title": "%commands.pharo.editors.forward.title%",
+				"category": "Pharo",
+				"icon": "$(arrow-right)",
+				"enablement": "pharo.editors.canGoForward"
+			},
+			{
+				"command": "pharo.editors.open",
+				"title": "%commands.pharo.editors.open.title%",
+				"category": "Pharo",
+				"icon": "$(go-to-file)"
+			},
+			{
+				"command": "pharo.editors.close",
+				"title": "%commands.pharo.editors.close.title%",
+				"category": "Pharo",
+				"icon": "$(close)"
+			},
+			{
+				"command": "pharo.editors.remove",
+				"title": "%commands.pharo.editors.remove.title%",
+				"category": "Pharo",
+				"icon": "$(trash)"
+			},
+			{
+				"command": "pharo.editors.clear",
+				"title": "%commands.pharo.editors.clear.title%",
+				"category": "Pharo",
+				"icon": "$(clear-all)"
+			},
+			{
+				"command": "pharo.editors.sort",
+				"title": "%commands.pharo.editors.sort.title%",
+				"category": "Pharo",
+				"icon": "$(list-ordered)"
 			},
 			{
 				"command": "pharo.tests.refresh",
@@ -692,6 +746,26 @@
 					"command": "pharo.images.refresh",
 					"when": "view == images",
 					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.editors.back",
+					"when": "view == pharoEditorStack",
+					"group": "navigation@0"
+				},
+				{
+					"command": "pharo.editors.forward",
+					"when": "view == pharoEditorStack",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.editors.sort",
+					"when": "view == pharoEditorStack",
+					"group": "navigation@2"
+				},
+				{
+					"command": "pharo.editors.clear",
+					"when": "view == pharoEditorStack",
+					"group": "navigation@3"
 				}
 			],
 			"view/item/context": [
@@ -699,6 +773,31 @@
 					"command": "pharo.images.play",
 					"when": "view == images && viewItem == pharoImages.image",
 					"group": "inline"
+				},
+				{
+					"command": "pharo.editors.close",
+					"when": "view == pharoEditorStack && viewItem == pharoEditorStack.open",
+					"group": "inline"
+				},
+				{
+					"command": "pharo.editors.remove",
+					"when": "view == pharoEditorStack && viewItem == pharoEditorStack.closed",
+					"group": "inline"
+				},
+				{
+					"command": "pharo.editors.open",
+					"when": "view == pharoEditorStack",
+					"group": "1_open@0"
+				},
+				{
+					"command": "pharo.editors.close",
+					"when": "view == pharoEditorStack && viewItem == pharoEditorStack.open",
+					"group": "1_open@1"
+				},
+				{
+					"command": "pharo.editors.remove",
+					"when": "view == pharoEditorStack",
+					"group": "2_remove@0"
 				}
 			],
 			"editor/context": [
@@ -725,6 +824,16 @@
 					"group": "navigation@1"
 				},
 				{
+					"command": "pharo.editors.back",
+					"when": "pharo.envEdit && resourceScheme == pharo",
+					"group": "navigation@-2"
+				},
+				{
+					"command": "pharo.editors.forward",
+					"when": "pharo.envEdit && resourceScheme == pharo",
+					"group": "navigation@-1"
+				},
+				{
 					"command": "extension.pharo-debug.debugEditorContents",
 					"when": "resourceLangId == pharo",
 					"group": "Pharo@2"
@@ -738,6 +847,34 @@
 				{
 					"command": "pharo.env.newMethod",
 					"when": "pharo.envEdit"
+				},
+				{
+					"command": "pharo.editors.back",
+					"when": "pharo.envEdit"
+				},
+				{
+					"command": "pharo.editors.forward",
+					"when": "pharo.envEdit"
+				},
+				{
+					"command": "pharo.editors.sort",
+					"when": "pharo.envEdit"
+				},
+				{
+					"command": "pharo.editors.clear",
+					"when": "pharo.envEdit"
+				},
+				{
+					"command": "pharo.editors.open",
+					"when": "false"
+				},
+				{
+					"command": "pharo.editors.close",
+					"when": "false"
+				},
+				{
+					"command": "pharo.editors.remove",
+					"when": "false"
 				}
 			],
 			"explorer/context": [

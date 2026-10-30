@@ -91,7 +91,7 @@ async function pickProtocol(protocols: string[]): Promise<string | undefined> {
 }
 
 /** Answer the location of a reference: an id (`class:Array`, `method:Array>>collect:`), or `Array`, `Array>>#collect:`, `Array class>>new:`. */
-export async function locationOf(environment: PharoEnvironment, reference: string): Promise<EntityLocation> {
+export async function locationOf(environment: Pick<PharoEnvironment, 'image' | 'entity'>, reference: string): Promise<EntityLocation> {
 	const text = reference.replace(/^(class|method|side):/, '');
 	const match = /^(\S+?)(\s+class)?(?:\s*>>\s*#?(.+))?$/.exec(text);
 	if (!match) {

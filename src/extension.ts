@@ -31,6 +31,7 @@ import { installImageDirectory, ImageInstallResult } from './imageInstall';
 import { PharoEnvironment, createPharoEnvironment } from './env/pharoEnvironment';
 import { EnvChangeBus, EnvChangeSummary } from './env/environmentChanges';
 import { registerEntityEditors } from './env/entityCommands';
+import { EditorSession, registerEditorSession } from './env/editorSession';
 import { PharoEntityFileSystem } from './env/entityFileSystem';
 import { ENTITY_SCHEME } from './env/entityUri';
 
@@ -47,6 +48,7 @@ export let iceControlManager: IceControlManager;
 
 let pharoImagesExplorer: PharoImagesExplorer;
 let entityFileSystem: PharoEntityFileSystem;
+let editorSession: EditorSession;
 
 let plsStatusBar: StatusBarItem;
 let pharoRepositoryStatusBar: StatusBarItem;
@@ -87,6 +89,7 @@ export async function activate(context: ExtensionContext) {
 	registerPharoImagesCommands(context);
 	pharoImageExplorer = new PharoImageExplorer(context);
 	entityFileSystem = registerEntityEditors(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
+	editorSession = registerEditorSession(context);
 	syncPharoImageWorkspaceFolder();
 	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration('pharo.imageWorkspace')) {
@@ -141,6 +144,10 @@ export async function activate(context: ExtensionContext) {
 		void commands.executeCommand('setContext', 'pharo.envEdit', pharoEnvironment?.capabilities.edit === true);
 		if (pharoEnvironment) {
 			context.subscriptions.push(pharoEnvironment);
+			if (pharoEnvironment.capabilities.edit) {
+				void editorSession.start(pharoEnvironment).catch((error) =>
+					outputChannel.appendLine(`Unable to restore the Pharo editor session: ${formatError(error)}`));
+			}
 		} else {
 			outputChannel.appendLine('The Pharo Language Server does not provide the environment model (pls-env); update the server to use it.');
 		}
@@ -199,6 +206,7 @@ export async function activate(context: ExtensionContext) {
 function onImageChanged(summary: EnvChangeSummary): void {
 	const conflicts = pharoImageExplorer.applyEnvironmentChanges(summary);
 	entityFileSystem.applyChanges(summary.changes, summary.reset);
+	editorSession.stack.applyChanges(summary.changes);
 	void iceControlManager?.refresh();
 	if (conflicts.length > 0) {
 		void warnOfConflicts(conflicts);
