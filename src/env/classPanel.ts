@@ -4,6 +4,7 @@ import { EnvEntity, EnvNode, isEnvUnknownEntityError } from './envContracts';
 import { EnvChangeSummary, classNameOfEnvId } from './environmentChanges';
 import { openNewMethod, pickProtocol, reportErrors, requireEnvironment } from './entityCommands';
 import { PharoEntityFileSystem } from './entityFileSystem';
+import { SessionView } from './editorSession';
 import { EntitySide, parseEntityUri } from './entityUri';
 import { PharoEnvironment } from './pharoEnvironment';
 
@@ -458,10 +459,23 @@ function currentSideId(provider: ClassPanelProvider): string | undefined {
 	return provider.mode === 'class' ? `side:${provider.className} class` : `side:${provider.className}`;
 }
 
-export class ClassPanel implements vscode.Disposable {
+/** What the session of the image saves of the class panel. */
+export interface ClassPanelSessionState {
+	className?: string;
+	mode: ClassPanelMode;
+	filter: string;
+	/** Id of the selected method. */
+	method?: string;
+}
+
+export class ClassPanel implements vscode.Disposable, SessionView {
+	readonly sessionKey = 'classPanel';
 	readonly provider: ClassPanelProvider;
 	readonly treeView: vscode.TreeView<ClassPanelItem>;
 	private readonly subscriptions: vscode.Disposable[] = [];
+	private readonly sessionStateEmitter = new vscode.EventEmitter<void>();
+
+	readonly onDidChangeSessionState: vscode.Event<void> = this.sessionStateEmitter.event;
 
 	constructor(private readonly environment: () => PharoEnvironment | undefined) {
 		this.provider = new ClassPanelProvider(environment);
@@ -469,7 +483,12 @@ export class ClassPanel implements vscode.Disposable {
 		this.subscriptions.push(
 			this.provider,
 			this.treeView,
-			this.provider.onDidChangeTreeData(() => this.updateTitle()),
+			this.provider.onDidChangeTreeData(() => {
+				this.updateTitle();
+				this.sessionStateEmitter.fire();
+			}),
+			this.treeView.onDidChangeSelection(() => this.sessionStateEmitter.fire()),
+			this.sessionStateEmitter,
 			// A hidden panel follows the active editor once it shows, so that switching editors loads nothing meanwhile.
 			vscode.window.onDidChangeActiveTextEditor((editor) => {
 				if (editor && this.treeView.visible) {
@@ -506,6 +525,47 @@ export class ClassPanel implements vscode.Disposable {
 
 	async show(className: string | undefined, mode: ClassPanelMode = this.provider.mode): Promise<void> {
 		await this.provider.show(className, mode);
+	}
+
+	sessionState(): ClassPanelSessionState {
+		const selected = this.treeView.selection[0];
+		const { className, mode, filter } = this.provider;
+		return { className, mode, filter, method: selected?.kind === 'method' ? selected.node.id : undefined };
+	}
+
+	/**
+	 * Restore the filter, then the class, its side and its selected method, unless the active editor shows a class:
+	 * the panel follows that editor. A class removed from the image is skipped.
+	 */
+	async restoreSessionState(state: unknown): Promise<void> {
+		const saved = state as Partial<ClassPanelSessionState> | undefined;
+		const environment = this.environment();
+		if (!saved || !environment) {
+			return;
+		}
+		if (typeof saved.filter === 'string' && saved.filter !== this.provider.filter) {
+			await this.provider.setFilter(saved.filter);
+		}
+		const editor = vscode.window.activeTextEditor;
+		if (typeof saved.className !== 'string' || (editor && classOfEditor(editor.document.uri))) {
+			return;
+		}
+		try {
+			await environment.entity(`class:${saved.className}`);
+		} catch (error) {
+			if (isEnvUnknownEntityError(error)) {
+				return;
+			}
+			throw error;
+		}
+		const mode = saved.mode === 'class' || saved.mode === 'traits' ? saved.mode : 'instance';
+		await this.provider.show(saved.className, mode);
+		if (typeof saved.method === 'string' && this.treeView.visible) {
+			const item = await this.provider.methodItem(saved.method);
+			if (item) {
+				await this.treeView.reveal(item, { select: true, focus: false });
+			}
+		}
 	}
 
 	applyChanges(summary: EnvChangeSummary): void {

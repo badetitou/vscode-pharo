@@ -103,6 +103,8 @@ The additional feature can be access using the command palette of VSCode
 2. Execute and show the result
 The **Pharo: Show Pharo Language Server Diagnostics** command inspects VM/image configuration, process and connection status, and server version.
 3. Select the active Pharo image with **Pharo: Select Active Pharo Image**. The extension validates the selected image and VM, asks before switching, saves the running image, updates the current workspace setting, and reloads VS Code. The status bar shows which image is connected; other VS Code windows are unaffected.
+Each image keeps its own session: the class and method editors open, the **Editor Stack** view, the filter and selection of the **Projects** view, and the class, side, filter and selected method of the **Class** panel. After a reload of VS Code or a change of the active image, the editors of the image are reopened with the source of the image, and the classes and methods removed from the image since are skipped. The Projects view and the Class panel still follow the active editor when it shows a class.
+The **Editor Stack** view lists the classes and methods visited, open or closed, sorted by visit, name or package; unlike *Open Editors*, it keeps closed entities to reopen them in one click. **Pharo: Previous Class or Method** and **Pharo: Next Class or Method** (also in the title bar of the editors) go back and forward in the history of the visited entities.
 
 ![Inspect gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/inspectResult.gif)
 

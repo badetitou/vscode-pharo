@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { EnvEntity, EnvNode } from './envContracts';
 import { EnvChangeSummary, classNameOfEnvId, packageNameOfEnvId } from './environmentChanges';
 import { imageNameOf, parseEntityUri } from './entityUri';
+import { SessionView } from './editorSession';
 import { PharoEnvironment } from './pharoEnvironment';
 
 // The Projects view: project → package → tag → class, over the environment model (docs/environment-model.md).
@@ -17,6 +18,13 @@ export interface ProjectsViewState {
 	pinned: string[];
 	hidden: string[];
 	showAll: boolean;
+}
+
+/** What the session of the image saves of the view, besides the projects pinned and hidden. */
+export interface ProjectsSessionState {
+	filter: string;
+	/** Id of the selected node. */
+	selection?: string;
 }
 
 /** What the view needs from the language client to create packages and classes. */
@@ -240,12 +248,18 @@ export class ProjectsTreeProvider implements vscode.TreeDataProvider<EnvNode> {
 }
 
 /** The Projects view, its commands, and the synchronization with the active editor. */
-export class ProjectsView implements vscode.Disposable {
+export class ProjectsView implements vscode.Disposable, SessionView {
+	readonly sessionKey = 'projects';
 	private readonly provider: ProjectsTreeProvider;
 	private readonly treeView: vscode.TreeView<EnvNode>;
 	private readonly disposables: vscode.Disposable[] = [];
+	private readonly sessionStateEmitter = new vscode.EventEmitter<void>();
 	private environment: PharoEnvironment | undefined;
 	private changesSubscription: vscode.Disposable | undefined;
+	/** Node of a restored session to select once the view shows: revealing a node shows a hidden view. */
+	private pendingSelection: string | undefined;
+
+	readonly onDidChangeSessionState: vscode.Event<void> = this.sessionStateEmitter.event;
 
 	constructor(private readonly context: vscode.ExtensionContext, private readonly request: ProjectsRequest) {
 		this.provider = new ProjectsTreeProvider(() => this.state);
@@ -272,7 +286,9 @@ export class ProjectsView implements vscode.Disposable {
 			command('commit', (node) => this.commit(node)),
 			command('reveal', () => this.revealActiveEditor(true)),
 			vscode.window.onDidChangeActiveTextEditor(() => void this.revealActiveEditor(false)),
-			this.treeView.onDidChangeVisibility(({ visible }) => visible ? void this.revealActiveEditor(false) : undefined)
+			this.treeView.onDidChangeVisibility(({ visible }) => visible ? void this.revealOnShow() : undefined),
+			this.treeView.onDidChangeSelection(() => this.sessionStateEmitter.fire()),
+			this.sessionStateEmitter
 		);
 		this.updateContext();
 	}
@@ -284,6 +300,22 @@ export class ProjectsView implements vscode.Disposable {
 		this.changesSubscription = changes?.((summary) => this.provider.applyChanges(summary));
 		this.provider.setEnvironment(environment);
 		this.updateContext();
+	}
+
+	sessionState(): ProjectsSessionState {
+		return { filter: this.provider.filter, selection: this.treeView.selection[0]?.id ?? this.pendingSelection };
+	}
+
+	/** Restore the filter, and the selection unless the view follows a class editor. */
+	async restoreSessionState(state: unknown): Promise<void> {
+		const saved = state as Partial<ProjectsSessionState> | undefined;
+		if (typeof saved?.filter === 'string') {
+			this.setFilter(saved.filter);
+		}
+		this.pendingSelection = typeof saved?.selection === 'string' ? saved.selection : undefined;
+		if (this.treeView.visible) {
+			await this.revealOnShow();
+		}
 	}
 
 	refresh(): void {
@@ -343,6 +375,7 @@ export class ProjectsView implements vscode.Disposable {
 
 	private setFilter(filter: string): void {
 		this.provider.setFilter(isActiveFilter(filter) ? filter : '');
+		this.sessionStateEmitter.fire();
 		this.updateContext();
 	}
 
@@ -432,6 +465,21 @@ export class ProjectsView implements vscode.Disposable {
 		if (repository) {
 			await vscode.commands.executeCommand('pharo.ice.commit', repository);
 			this.refresh();
+		}
+	}
+
+	/** Select the node of a restored session, unless the active editor shows a class: the view selects that class. */
+	private async revealOnShow(): Promise<void> {
+		const id = this.pendingSelection;
+		const uri = vscode.window.activeTextEditor?.document.uri;
+		this.pendingSelection = undefined;
+		if (!id || !this.environment || (uri && classNameOfEditor(uri))) {
+			return this.revealActiveEditor(false);
+		}
+		try {
+			await this.treeView.reveal(await this.environment.entity(id), { select: true, focus: false, expand: false });
+		} catch {
+			// The node was removed from the image, or the view no longer shows its project.
 		}
 	}
 
