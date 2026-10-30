@@ -38,7 +38,7 @@ const entities: Record<string, Partial<EnvEntity>> = {
 
 function fakeEnvironment(): PharoEnvironment {
 	const all = [...projects, ...Object.values(children).flat()];
-	return new PharoEnvironment('/images/Shop.image', { version: 1, didChange: false, edit: true }, {
+	return new PharoEnvironment('/images/Shop.image', { version: 1, didChange: false, edit: true, search: false }, {
 		async sendRequest(method: string, params?: any): Promise<unknown> {
 			switch (method) {
 				case 'pls-env:projects':

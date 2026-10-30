@@ -32,8 +32,10 @@ import { PharoEnvironment, createPharoEnvironment } from './env/pharoEnvironment
 import { EnvChangeBus, EnvChangeSummary } from './env/environmentChanges';
 import { ProjectsView } from './env/projectsView';
 import { registerEntityEditors } from './env/entityCommands';
+import { registerSpotter } from './env/spotter';
 import { PharoEntityFileSystem } from './env/entityFileSystem';
 import { ENTITY_SCHEME } from './env/entityUri';
+import { ClassPanel, registerClassPanel } from './env/classPanel';
 
 
 export let client: LanguageClient;
@@ -48,6 +50,7 @@ export let iceControlManager: IceControlManager;
 
 let pharoImagesExplorer: PharoImagesExplorer;
 let entityFileSystem: PharoEntityFileSystem;
+let classPanel: ClassPanel;
 
 let plsStatusBar: StatusBarItem;
 let pharoRepositoryStatusBar: StatusBarItem;
@@ -91,6 +94,8 @@ export async function activate(context: ExtensionContext) {
 	projectsView = new ProjectsView(context, (method, params) => client.sendRequest(method, params));
 	context.subscriptions.push(projectsView);
 	entityFileSystem = registerEntityEditors(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
+	classPanel = registerClassPanel(context, () => pharoEnvironment, entityFileSystem);
+	registerSpotter(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
 	syncPharoImageWorkspaceFolder();
 	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration('pharo.imageWorkspace')) {
@@ -143,6 +148,7 @@ export async function activate(context: ExtensionContext) {
 			client
 		);
 		void commands.executeCommand('setContext', 'pharo.envEdit', pharoEnvironment?.capabilities.edit === true);
+		void commands.executeCommand('setContext', 'pharo.envSearch', pharoEnvironment?.capabilities.edit === true && pharoEnvironment.capabilities.search);
 		if (pharoEnvironment) {
 			context.subscriptions.push(pharoEnvironment);
 		} else {
@@ -150,6 +156,7 @@ export async function activate(context: ExtensionContext) {
 		}
 
 		pharoImageExplorer.refresh();
+		void classPanel.refresh().then(() => window.activeTextEditor && classPanel.follow(window.activeTextEditor.document.uri));
 		documentExplorer = new PharoDocumentExplorer(context);
 
 		// Create debugguer
@@ -207,6 +214,7 @@ export async function activate(context: ExtensionContext) {
 function onImageChanged(summary: EnvChangeSummary): void {
 	const conflicts = pharoImageExplorer.applyEnvironmentChanges(summary);
 	entityFileSystem.applyChanges(summary.changes, summary.reset);
+	classPanel.applyChanges(summary);
 	void iceControlManager?.refresh();
 	if (conflicts.length > 0) {
 		void warnOfConflicts(conflicts);
