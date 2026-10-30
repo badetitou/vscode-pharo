@@ -25,7 +25,7 @@ The server announces the model in the `initialize` result:
 | --- | --- |
 | `version` | Version of this protocol. |
 | `didChange` | The server sends `pls-env/didChange` notifications. |
-| `edit` | The server answers `pls-env:read`, `pls-env:compile` and `pls-env:remove`. |
+| `edit` | The server answers `pls-env:read`, `pls-env:compile`, `pls-env:classify` and `pls-env:remove`. |
 
 Without `pls-env`, the server predates the model: the extension creates no `PharoEnvironment` and keeps using the older `pls:*` requests.
 
@@ -75,6 +75,8 @@ Navigation requests answer nodes:
 | `protocol` | `extension` |
 | `method` | `abstract`, `extension`, `override`, `test`, `deprecated`, `fromTrait` |
 
+A method node whose `fromTrait` flag is set also has a `trait` field: the id of the trait it comes from, such as `class:TCountable`, on both sides.
+
 ## Navigation
 
 ### `pls-env:projects`
@@ -111,7 +113,12 @@ Parameter: `id`. Answers the node of `id`, with additional fields:
 - `package`: id of the package that holds the entity (for an extension protocol, the package of its methods), or `null` for a project;
 - `repository`: name of the Iceberg repository that holds this package, or `null`;
 - `superclass`: for a class, id of its superclass, or `null`;
-- `version`: for a class or a method, its version (see below).
+- `version`: for a class or a method, its version (see below);
+- for a side:
+  - `slots`: the names of the slots the side defines itself (instance variables on the instance side, class-side instance variables on the class side);
+  - `classVariables`: on the instance side, the names of the class variables of the class, sorted; empty on the class side;
+  - `traits`: the ids of the traits the class uses, `class:TFoo`, the same on both sides;
+  - `overridden`: the selectors of the side that a subclass redefines, sorted.
 
 ## Edition
 
@@ -145,6 +152,10 @@ Each diagnostic has a `message`, a `severity` (`1` error, `2` warning) and an LS
 ```json
 { "message": "Variable or expression expected", "severity": 1, "range": { "start": { "line": 1, "character": 10 }, "end": { "line": 1, "character": 10 } } }
 ```
+
+### `pls-env:classify`
+
+Parameters: `id` of a method and `protocol`. Moves the method to `protocol` without compiling it again: its version does not change. Answers `{ id, protocol }`, the protocol the method is now in. The image notifies the change as `moved`.
 
 ### `pls-env:remove`
 
@@ -227,3 +238,14 @@ A class definition editor uses `pharo:/<image>/<package>/<class>.class.st`, whic
 - **Conflicts.** Each entity gets a modification time that moves forward when its version changes. On `pls-env/didChange`, the extension tells VS Code which open editors changed: VS Code reloads those without local changes. Saving one with local changes makes VS Code offer to compare, overwrite or revert. When the image changes between that check and the compilation, the server answers a conflict: the save fails, and saving again offers the same choice.
 - **Removed entities.** A removed method or class shows as deleted. Saving its editor compiles the method again on its side.
 - **Tab titles.** The extension sets `workbench.editor.customLabels.patterns` so that a method tab reads `Array>>collect:` or `Array class>>new:`.
+
+## Class panel
+
+The **Class** view (`pharoClassPanel`) lives in the Secondary Side Bar. `ClassPanel` (`src/env/classPanel.ts`) shows the class of the active editor: a `pharo:` entity editor, a `pharoImage:` class, or a Tonel file (`.class.st`, `.trait.st`, `.extension.st`).
+
+- **Sides.** The title buttons switch between the instance side, the class side and the traits of the class. Opening a method editor shows its side and selects it in its protocol.
+- **Sections.** On a side, the panel shows its slots and class variables (`pls-env:entity` of the side), then its protocols, each with its number of methods, after `(All)`, which lists all the methods of the side. In traits mode, it shows each trait the class uses with its protocols and methods, its class side apart.
+- **Markers.** A method shows `↑` when it overrides a method of a superclass, `↓` when a subclass redefines it, then `abstract`, `extension`, `from <trait>` and `deprecated`. A test shows a beaker, an extension method a purple icon.
+- **Filter.** **Filter Slots and Methods…** keeps the slots and methods whose name holds a text, and hides the protocols left empty.
+- **Actions.** New method in a protocol, accessors for a slot (in `accessing`, skipping those that exist), move a method to another protocol (`pls-env:classify`), remove a method, and run a test.
+- **Changes.** On each `EnvChangeSummary` that names the class or one of its traits, or on a reset, the panel loads the class again.

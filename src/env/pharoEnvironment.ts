@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import {
 	EnvCapabilities,
+	EnvClassification,
 	EnvCompileResult,
 	EnvDidChangeParams,
 	EnvEntity,
@@ -8,11 +9,13 @@ import {
 	EnvSource,
 	envCapabilitiesFrom,
 	expectEnvChildrenPage,
+	expectEnvClassification,
 	expectEnvCompileResult,
 	expectEnvDidChangeParams,
 	expectEnvEntity,
 	expectEnvNodes,
-	expectEnvSource
+	expectEnvSource,
+	parseEnvId
 } from './envContracts';
 
 /** What the environment needs from the language client, so that tests can replay recorded responses. */
@@ -102,6 +105,17 @@ export class PharoEnvironment implements vscode.Disposable {
 				this.invalidate(result.id);
 			}
 		}
+		return result;
+	}
+
+	/** Move a method to another protocol without compiling it again. */
+	async classify(id: string, protocol: string): Promise<EnvClassification> {
+		const result = expectEnvClassification(await this.transport.sendRequest('pls-env:classify', { id, protocol }), 'pls-env:classify');
+		const path = parseEnvId(id).path;
+		const sidePath = path.slice(0, path.indexOf('>>'));
+		this.forget(id);
+		this.childrenCache.delete(`side:${sidePath}`);
+		this.childrenCache.delete(`protocol:${sidePath}>>${result.protocol}`);
 		return result;
 	}
 

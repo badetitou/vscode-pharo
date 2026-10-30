@@ -25,6 +25,8 @@ export interface EnvNode {
 	parent: string | null;
 	hasChildren: boolean;
 	flags: Record<string, boolean>;
+	/** For a method that comes from a trait, the id of that trait. */
+	trait?: string;
 }
 
 export interface EnvChildrenPage {
@@ -37,6 +39,14 @@ export interface EnvEntity extends EnvNode {
 	repository: string | null;
 	superclass?: string | null;
 	version?: string;
+	/** For a side: the names of the slots it defines itself. */
+	slots?: string[];
+	/** For a side: the class variables of its class, on the instance side only. */
+	classVariables?: string[];
+	/** For a side: the ids of the traits its class uses. */
+	traits?: string[];
+	/** For a side: its selectors that a subclass redefines. */
+	overridden?: string[];
 }
 
 export interface EnvSource {
@@ -45,6 +55,11 @@ export interface EnvSource {
 	version: string;
 	protocol?: string;
 	side?: string;
+}
+
+export interface EnvClassification {
+	id: string;
+	protocol: string;
 }
 
 export interface EnvDiagnostic {
@@ -112,7 +127,7 @@ export function expectEnvNode(value: unknown, method: string): EnvNode {
 	if (!(ENV_KINDS as readonly string[]).includes(kind) || parseEnvId(id).kind !== kind) {
 		throw invalid(method, `unknown entity kind ${JSON.stringify(kind)}`);
 	}
-	return {
+	const node: EnvNode = {
 		id,
 		kind: kind as EnvKind,
 		name: expectField(value, 'name', 'string', method),
@@ -120,6 +135,10 @@ export function expectEnvNode(value: unknown, method: string): EnvNode {
 		hasChildren: expectField(value, 'hasChildren', 'boolean', method),
 		flags: expectFlags(value.flags, method)
 	};
+	if (value.trait !== undefined) {
+		node.trait = expectField(value, 'trait', 'string', method);
+	}
+	return node;
 }
 
 export function expectEnvNodes(value: unknown, method: string): EnvNode[] {
@@ -153,6 +172,11 @@ export function expectEnvEntity(value: unknown, method: string): EnvEntity {
 	if (entity.version !== undefined) {
 		result.version = expectField(entity, 'version', 'string', method);
 	}
+	for (const field of ['slots', 'classVariables', 'traits', 'overridden'] as const) {
+		if (entity[field] !== undefined) {
+			result[field] = expectStrings(entity[field], `${method}.${field}`);
+		}
+	}
 	return result;
 }
 
@@ -172,6 +196,13 @@ export function expectEnvSource(value: unknown, method: string): EnvSource {
 		result.side = expectField(value, 'side', 'string', method);
 	}
 	return result;
+}
+
+export function expectEnvClassification(value: unknown, method: string): EnvClassification {
+	if (!isObject(value)) {
+		throw invalid(method, 'expected a classification');
+	}
+	return { id: expectField(value, 'id', 'string', method), protocol: expectField(value, 'protocol', 'string', method) };
 }
 
 export function expectEnvCompileResult(value: unknown, method: string): EnvCompileResult {
@@ -261,6 +292,13 @@ function expectField(value: Record<string, unknown>, field: string, type: 'strin
 		throw invalid(`${method}.${field}`, `expected a ${type}`);
 	}
 	return value[field];
+}
+
+function expectStrings(value: unknown, method: string): string[] {
+	if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
+		throw invalid(method, 'expected an array of strings');
+	}
+	return value;
 }
 
 function expectNullableString(value: unknown, method: string): string | null {
