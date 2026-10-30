@@ -1,0 +1,190 @@
+{
+	"initialize-capabilities": {
+		"pls-env": {
+			"version": 1,
+			"edit": true,
+			"didChange": true
+		}
+	},
+	"projects": [
+		{
+			"flags": { "volatile": false },
+			"parent": null,
+			"hasChildren": true,
+			"kind": "project",
+			"name": "PharoLanguageServer",
+			"id": "project:PharoLanguageServer"
+		},
+		{
+			"flags": { "volatile": true },
+			"parent": null,
+			"hasChildren": true,
+			"kind": "project",
+			"name": "Volatile",
+			"id": "project:*"
+		}
+	],
+	"children-project": {
+		"items": [
+			{
+				"flags": { "test": false },
+				"parent": "project:PharoLanguageServer",
+				"hasChildren": true,
+				"kind": "package",
+				"name": "BaselineOfPharoLanguageServer",
+				"id": "package:BaselineOfPharoLanguageServer"
+			},
+			{
+				"flags": { "test": false },
+				"parent": "project:PharoLanguageServer",
+				"hasChildren": true,
+				"kind": "package",
+				"name": "PLS-Pharo9-Extension",
+				"id": "package:PLS-Pharo9-Extension"
+			},
+			{
+				"flags": { "test": false },
+				"parent": "project:PharoLanguageServer",
+				"hasChildren": true,
+				"kind": "package",
+				"name": "PLSDAP-Helpers",
+				"id": "package:PLSDAP-Helpers"
+			}
+		],
+		"total": 9
+	},
+	"children-package-page1": {
+		"items": [
+			{
+				"flags": { "trait": false, "deprecated": false, "abstract": false, "test": false },
+				"parent": "package:PLSRecordedProbe",
+				"hasChildren": true,
+				"kind": "class",
+				"name": "PLSRecordedProbe",
+				"id": "class:PLSRecordedProbe"
+			}
+		],
+		"total": 1
+	},
+	"children-class": {
+		"items": [
+			{
+				"flags": {},
+				"parent": "class:PLSRecordedProbe",
+				"hasChildren": true,
+				"kind": "side",
+				"name": "instance side",
+				"id": "side:PLSRecordedProbe"
+			},
+			{
+				"flags": {},
+				"parent": "class:PLSRecordedProbe",
+				"hasChildren": false,
+				"kind": "side",
+				"name": "class side",
+				"id": "side:PLSRecordedProbe class"
+			}
+		],
+		"total": 2
+	},
+	"children-protocol": {
+		"items": [
+			{
+				"flags": { "deprecated": false, "override": false, "fromTrait": false, "test": false, "abstract": false, "extension": false },
+				"parent": "protocol:PLSRecordedProbe>>accessing",
+				"hasChildren": false,
+				"kind": "method",
+				"name": "count",
+				"id": "method:PLSRecordedProbe>>count"
+			}
+		],
+		"total": 1
+	},
+	"entity-class": {
+		"hasChildren": true,
+		"superclass": "class:Object",
+		"repository": null,
+		"kind": "class",
+		"name": "PLSRecordedProbe",
+		"version": "9cb4dd47fce06ff0eaf2a916d29dbf7e7c79f894",
+		"flags": { "trait": false, "deprecated": false, "abstract": false, "test": false },
+		"id": "class:PLSRecordedProbe",
+		"parent": "package:PLSRecordedProbe",
+		"package": "package:PLSRecordedProbe"
+	},
+	"entity-method": {
+		"flags": { "deprecated": false, "override": false, "fromTrait": false, "test": false, "abstract": false, "extension": false },
+		"package": "package:PLSRecordedProbe",
+		"repository": null,
+		"parent": "protocol:PLSRecordedProbe>>accessing",
+		"version": "fbbfffd1cd708d059983c68cc8ca6e370e5907d5",
+		"hasChildren": false,
+		"kind": "method",
+		"name": "count",
+		"id": "method:PLSRecordedProbe>>count"
+	},
+	"read-method": {
+		"source": "count\n\t^ count",
+		"version": "fbbfffd1cd708d059983c68cc8ca6e370e5907d5",
+		"protocol": "accessing",
+		"id": "method:PLSRecordedProbe>>count",
+		"side": "side:PLSRecordedProbe"
+	},
+	"compile-success": {
+		"compiled": true,
+		"id": "method:PLSRecordedProbe>>count",
+		"version": "53178c89f76f54e84aa17c909e8afdc4b246e3fa",
+		"diagnostics": []
+	},
+	"compile-failure": {
+		"compiled": false,
+		"id": null,
+		"version": null,
+		"diagnostics": [
+			{
+				"severity": 1,
+				"message": "Variable or expression expected",
+				"range": {
+					"start": { "line": 1, "character": 10 },
+					"end": { "line": 1, "character": 10 }
+				}
+			}
+		]
+	},
+	"error-conflict": {
+		"data": {
+			"id": "method:PLSRecordedProbe>>count",
+			"currentVersion": "53178c89f76f54e84aa17c909e8afdc4b246e3fa"
+		},
+		"message": "method:PLSRecordedProbe>>count changed in the image",
+		"code": -32001
+	},
+	"error-unknown": {
+		"message": "Unknown class: 'NoSuchClass'",
+		"code": -32602
+	},
+	"remove": {
+		"removed": "method:PLSRecordedProbe>>count"
+	},
+	"didChange": {
+		"changes": [
+			{
+				"kind": "added",
+				"parent": "side:PLSRecordedProbe",
+				"id": "protocol:PLSRecordedProbe>>accessing"
+			},
+			{
+				"version": "31e9eafcf288dc1f0c9350cbf2158c0c29f0b751",
+				"kind": "added",
+				"parent": "protocol:PLSRecordedProbe>>accessing",
+				"id": "method:PLSRecordedProbe>>step"
+			},
+			{
+				"oldId": "class:PLSRecordedProbe",
+				"kind": "renamed",
+				"id": "class:PLSRecordedProbeRenamed"
+			}
+		],
+		"reset": false
+	}
+}
