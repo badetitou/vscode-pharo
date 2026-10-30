@@ -1,4 +1,4 @@
-import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel, FileSystemError, ConfigurationTarget } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel, FileSystemError, ConfigurationTarget, TextDocument } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
@@ -29,11 +29,14 @@ import { expectString, expectStringArray } from './rpcContracts';
 import { registerServerDiagnosticsCommand } from './serverDiagnostics';
 import { installImageDirectory, ImageInstallResult } from './imageInstall';
 import { PharoEnvironment, createPharoEnvironment } from './env/pharoEnvironment';
+import { EnvChangeBus, EnvChangeSummary } from './env/environmentChanges';
 
 
 export let client: LanguageClient;
 /** Environment model of the active image, or undefined while the server is not started or predates pls-env. */
 export let pharoEnvironment: PharoEnvironment | undefined;
+/** Changes of the active image, grouped by burst, or undefined when the server does not notify them. */
+export let pharoChanges: EnvChangeBus | undefined;
 export let documentExplorer: PharoDocumentExplorer;
 let dls: child_process.ChildProcess | undefined;
 export let extensionContext: ExtensionContext;
@@ -149,8 +152,14 @@ export async function activate(context: ExtensionContext) {
 		iceControlManager = new IceControlManager(client, () => pharoImageExplorer?.refresh());
 		context.subscriptions.push(iceControlManager);
 
+		// Follow the changes of the image, whoever makes them
+		pharoChanges = pharoEnvironment?.capabilities.didChange ? new EnvChangeBus(pharoEnvironment.onDidChange) : undefined;
+		if (pharoChanges) {
+			context.subscriptions.push(pharoChanges, pharoChanges.onDidChange(onImageChanged));
+		}
+
 		// Create Tests
-		context.subscriptions.push(initTestController());
+		context.subscriptions.push(initTestController(client, pharoChanges?.onDidChange));
 
 		resetStatusBarText();
 	} catch (err) {
@@ -177,6 +186,32 @@ export async function activate(context: ExtensionContext) {
 			}
 		}
 		await stopPharoProcess();
+	}
+}
+
+/** Refresh the views that a burst of changes of the image touched, and reload the class editors without local changes. */
+function onImageChanged(summary: EnvChangeSummary): void {
+	const conflicts = pharoImageExplorer.applyEnvironmentChanges(summary);
+	void iceControlManager?.refresh();
+	if (conflicts.length > 0) {
+		void warnOfConflicts(conflicts);
+	}
+}
+
+/** Until entity editors detect conflicts on save (#64), tell the user that an edited class changed in the image. */
+async function warnOfConflicts(documents: TextDocument[]): Promise<void> {
+	const names = documents.map((document) => document.uri.path.split('/').pop()).join(', ');
+	const revert = 'Revert to Image';
+	const selection = await window.showWarningMessage(
+		`${names} changed in the image while you have unsaved changes. Saving will overwrite the image version.`,
+		revert
+	);
+	if (selection !== revert) {
+		return;
+	}
+	for (const document of documents) {
+		await window.showTextDocument(document);
+		await commands.executeCommand('workbench.action.files.revert');
 	}
 }
 

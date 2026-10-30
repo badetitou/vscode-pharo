@@ -191,6 +191,19 @@ Once the client sends `initialized`, the server listens to the system announceme
 
 `PharoEnvironment` invalidates its cache on each notification: the parents of the changes, and every renamed or removed entity with all it holds. Then it fires `onDidChange`.
 
+### In the extension
+
+`EnvChangeBus` (`src/env/environmentChanges.ts`) is the event bus that the views listen to. It gathers the notifications that arrive within 100 ms of each other, for at most 500 ms, and fires one `EnvChangeSummary` per burst: the classes changed or removed, the packages whose classes changed, whether the list of packages changed, and whether the server sent a reset. Views that know entities by name use the summary, views built on ids use its `changes`.
+
+On each summary:
+
+- the `pharoImage:` file system and its tree reload the classes of the packages concerned, and fire `onDidChangeFile` for the open class documents concerned. VS Code then reloads the documents without local changes;
+- an open class document with local changes is in conflict: the extension warns the user and offers to revert it to the image version, until entity editors detect conflicts on save (#64);
+- the Test Explorer resolves again the test packages and classes concerned that it already shows;
+- Iceberg refreshes the state of its repositories.
+
+Refreshing a view only reads the image, so it produces no new notification.
+
 ## Method documents
 
 An editor of one method uses the URI:
