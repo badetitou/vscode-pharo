@@ -37,6 +37,8 @@ export interface EnvEntity extends EnvNode {
 	repository: string | null;
 	superclass?: string | null;
 	version?: string;
+	/** For a project or a package: its Iceberg repository holds changes of it not committed yet. */
+	modified?: boolean;
 }
 
 export interface EnvSource {
@@ -152,6 +154,9 @@ export function expectEnvEntity(value: unknown, method: string): EnvEntity {
 	}
 	if (entity.version !== undefined) {
 		result.version = expectField(entity, 'version', 'string', method);
+	}
+	if (entity.modified !== undefined) {
+		result.modified = expectField(entity, 'modified', 'boolean', method);
 	}
 	return result;
 }
