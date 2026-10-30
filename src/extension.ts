@@ -98,6 +98,7 @@ export async function activate(context: ExtensionContext) {
 	entityFileSystem = registerEntityEditors(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
 	editorSession = registerEditorSession(context);
 	classPanel = registerClassPanel(context, () => pharoEnvironment, entityFileSystem);
+	context.subscriptions.push(editorSession.registerView(projectsView), editorSession.registerView(classPanel));
 	registerSpotter(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
 	syncPharoImageWorkspaceFolder();
 	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
@@ -154,10 +155,6 @@ export async function activate(context: ExtensionContext) {
 		void commands.executeCommand('setContext', 'pharo.envSearch', pharoEnvironment?.capabilities.edit === true && pharoEnvironment.capabilities.search);
 		if (pharoEnvironment) {
 			context.subscriptions.push(pharoEnvironment);
-			if (pharoEnvironment.capabilities.edit) {
-				void editorSession.start(pharoEnvironment).catch((error) =>
-					outputChannel.appendLine(`Unable to restore the Pharo editor session: ${formatError(error)}`));
-			}
 		} else {
 			outputChannel.appendLine('The Pharo Language Server does not provide the environment model (pls-env); update the server to use it.');
 		}
@@ -185,6 +182,10 @@ export async function activate(context: ExtensionContext) {
 			context.subscriptions.push(pharoChanges, pharoChanges.onDidChange(onImageChanged));
 		}
 		projectsView.setEnvironment(pharoEnvironment, pharoChanges?.onDidChange);
+		if (pharoEnvironment?.capabilities.edit) {
+			void editorSession.start(pharoEnvironment).catch((error) =>
+				outputChannel.appendLine(`Unable to restore the Pharo editor session: ${formatError(error)}`));
+		}
 
 		// Create Tests
 		context.subscriptions.push(initTestController(client, pharoChanges?.onDidChange));

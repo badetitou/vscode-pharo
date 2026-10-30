@@ -11,6 +11,17 @@ export type SessionEnvironment = Pick<PharoEnvironment, 'image' | 'entity'>;
 
 const SESSION_KEY_PREFIX = 'pharo.editorSession:';
 
+/** A view whose state belongs to the session of the image, such as its selection or its filter. */
+export interface SessionView {
+	/** Key of the state of the view in the session. */
+	readonly sessionKey: string;
+	readonly onDidChangeSessionState: vscode.Event<void>;
+	/** Answer the state to save, a JSON value. */
+	sessionState(): unknown;
+	/** Restore a saved state, or undefined for an image without one. Entities removed from the image are skipped. */
+	restoreSessionState(state: unknown): Promise<void>;
+}
+
 /** Answer the key of the workspace state that holds the session of an image. */
 export function sessionKeyOf(pathToImage: string): string {
 	return `${SESSION_KEY_PREFIX}${path.resolve(pathToImage)}`;
@@ -25,6 +36,9 @@ export class EditorSession implements vscode.Disposable {
 	readonly stack = new EditorStack();
 	private environment: SessionEnvironment | undefined;
 	private views: Record<string, unknown> = {};
+	private readonly sessionViews: SessionView[] = [];
+	/** The editors and the views of the session are restored: changes of the views are now saved. */
+	private restored = false;
 	private readonly disposables: vscode.Disposable[] = [];
 	private readonly didChangeEmitter = new vscode.EventEmitter<void>();
 
@@ -45,6 +59,10 @@ export class EditorSession implements vscode.Disposable {
 		this.stack.restore(state);
 		this.views = { ...state?.views };
 		await this.restoreEditors(state?.openEditors ?? this.openEditors());
+		for (const view of this.sessionViews) {
+			await this.restoreView(view);
+		}
+		this.restored = true;
 
 		this.disposables.push(
 			vscode.window.onDidChangeActiveTextEditor((editor) => this.visit(editor?.document.uri)),
@@ -56,14 +74,25 @@ export class EditorSession implements vscode.Disposable {
 		this.changed();
 	}
 
-	/** Answer the saved state of another view of the image, such as its selection. */
-	viewState<T>(view: string): T | undefined {
-		return this.views[view] as T | undefined;
-	}
-
-	setViewState(view: string, value: unknown): void {
-		this.views[view] = value;
-		this.save();
+	/**
+	 * Save the state of a view with the session, and restore it once the editors of the session are: a view that follows
+	 * the active editor still shows the entity of that editor.
+	 */
+	registerView(view: SessionView): vscode.Disposable {
+		this.sessionViews.push(view);
+		if (this.restored) {
+			void this.restoreView(view);
+		}
+		const subscription = view.onDidChangeSessionState(() => {
+			if (this.restored) {
+				this.views[view.sessionKey] = view.sessionState();
+				this.save();
+			}
+		});
+		return new vscode.Disposable(() => {
+			subscription.dispose();
+			this.sessionViews.splice(this.sessionViews.indexOf(view), 1);
+		});
 	}
 
 	/** Answer the ids of the entities that have an open editor. */
@@ -115,6 +144,14 @@ export class EditorSession implements vscode.Disposable {
 		vscode.Disposable.from(...this.disposables).dispose();
 		this.stack.dispose();
 		this.didChangeEmitter.dispose();
+	}
+
+	private async restoreView(view: SessionView): Promise<void> {
+		try {
+			await view.restoreSessionState(this.views[view.sessionKey]);
+		} catch {
+			// A view that cannot be restored is not worth stopping the session.
+		}
 	}
 
 	private visit(uri: vscode.Uri | undefined): void {

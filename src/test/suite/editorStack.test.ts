@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { EnvEntity, ENV_UNKNOWN_ENTITY_ERROR_CODE } from '../../env/envContracts';
-import { EditorSession, SessionEnvironment, sessionKeyOf } from '../../env/editorSession';
+import { EditorSession, SessionEnvironment, SessionView, sessionKeyOf } from '../../env/editorSession';
 import { EditorSessionState, EditorStack, isEditorSessionState, labelOfEntityId } from '../../env/editorStack';
 
 suite('Pharo editor stack', () => {
@@ -120,27 +120,72 @@ class FakeImage implements SessionEnvironment {
 	}
 }
 
+/** A view whose state is its selection. */
+class FakeView implements SessionView {
+	readonly sessionKey = 'projects';
+	readonly emitter = new vscode.EventEmitter<void>();
+	readonly onDidChangeSessionState = this.emitter.event;
+	readonly restored: unknown[] = [];
+	selection: string | undefined;
+
+	sessionState(): unknown {
+		return { selection: this.selection };
+	}
+
+	async restoreSessionState(state: unknown): Promise<void> {
+		this.restored.push(state);
+		this.selection = (state as { selection?: string } | undefined)?.selection;
+	}
+
+	select(id: string): void {
+		this.selection = id;
+		this.emitter.fire();
+	}
+}
+
 suite('Pharo editor session', () => {
+	async function sessionOf(memento: FakeMemento, image: string): Promise<{ session: EditorSession; view: FakeView }> {
+		const session = new EditorSession(memento);
+		const view = new FakeView();
+		session.registerView(view);
+		await session.start(new FakeImage(image, new Set()));
+		return { session, view };
+	}
+
 	test('keeps one session per image', async () => {
 		const memento = new FakeMemento();
-		const first = new EditorSession(memento);
-		await first.start(new FakeImage('/images/A.image', new Set()));
-		first.stack.visit('class:Basket', 'Shop', 1);
-		first.setViewState('projects', 'project:Shop');
-		first.dispose();
+		const first = await sessionOf(memento, '/images/A.image');
+		assert.deepStrictEqual(first.view.restored, [undefined]);
+		first.session.stack.visit('class:Basket', 'Shop', 1);
+		first.view.select('project:Shop');
+		first.session.dispose();
 
-		const other = new EditorSession(memento);
-		await other.start(new FakeImage('/images/B.image', new Set()));
-		assert.strictEqual(other.stack.sorted().length, 0);
-		assert.strictEqual(other.viewState('projects'), undefined);
-		other.dispose();
+		const other = await sessionOf(memento, '/images/B.image');
+		assert.strictEqual(other.session.stack.sorted().length, 0);
+		assert.strictEqual(other.view.selection, undefined);
+		other.session.dispose();
 
-		const again = new EditorSession(memento);
-		await again.start(new FakeImage('/images/A.image', new Set()));
-		assert.deepStrictEqual(again.stack.sorted().map((entry) => entry.id), ['class:Basket']);
-		assert.strictEqual(again.viewState('projects'), 'project:Shop');
+		const again = await sessionOf(memento, '/images/A.image');
+		assert.deepStrictEqual(again.session.stack.sorted().map((entry) => entry.id), ['class:Basket']);
+		assert.strictEqual(again.view.selection, 'project:Shop');
 		assert.ok(memento.keys().includes(sessionKeyOf('/images/A.image')));
-		again.dispose();
+		again.session.dispose();
+	});
+
+	test('saves the views only once they are restored', async () => {
+		const memento = new FakeMemento();
+		const first = await sessionOf(memento, '/images/A.image');
+		first.view.select('project:Shop');
+		first.session.dispose();
+
+		const session = new EditorSession(memento);
+		const view = new FakeView();
+		session.registerView(view);
+		// A view that changes while the session restores its editors does not overwrite the saved state.
+		view.select('project:Other');
+		await session.start(new FakeImage('/images/A.image', new Set()));
+		assert.strictEqual(view.selection, 'project:Shop');
+		session.dispose();
 	});
 
 	test('skips the entities removed from the image', async () => {
