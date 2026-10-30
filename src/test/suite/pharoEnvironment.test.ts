@@ -13,6 +13,7 @@ import {
 	expectEnvDidChangeParams,
 	expectEnvEntity,
 	expectEnvNodes,
+	expectEnvSearchResult,
 	expectEnvSource,
 	isEnvUnknownEntityError,
 	parseEnvId
@@ -28,13 +29,15 @@ type Responder = (method: string, params: any) => unknown;
 
 class FakeTransport implements EnvTransport {
 	readonly requests: Array<{ method: string; params: any }> = [];
+	readonly tokens: Array<vscode.CancellationToken | undefined> = [];
 	notificationHandler: ((params: unknown) => void) | undefined;
 	disposed = false;
 
 	constructor(private readonly respond: Responder) { }
 
-	async sendRequest(method: string, params?: unknown): Promise<unknown> {
+	async sendRequest(method: string, params?: unknown, token?: vscode.CancellationToken): Promise<unknown> {
 		this.requests.push({ method, params });
+		this.tokens.push(token);
 		return this.respond(method, params);
 	}
 
@@ -57,14 +60,14 @@ function page(items: EnvNode[], offset = 0, limit = items.length): { items: EnvN
 	return { items: items.slice(offset, offset + limit), total: items.length };
 }
 
-const fullCapabilities = { version: 1, didChange: true, edit: true };
+const fullCapabilities = { version: 1, didChange: true, edit: true, search: true };
 
 suite('Pharo environment model contracts', () => {
 	test('reads the capabilities announced by the server', () => {
 		assert.deepStrictEqual(envCapabilitiesFrom(recorded['initialize-capabilities']), fullCapabilities);
 		assert.strictEqual(envCapabilitiesFrom(undefined), undefined);
 		assert.strictEqual(envCapabilitiesFrom({ 'pls-env': {} }), undefined);
-		assert.deepStrictEqual(envCapabilitiesFrom({ 'pls-env': { version: 1 } }), { version: 1, didChange: false, edit: false });
+		assert.deepStrictEqual(envCapabilitiesFrom({ 'pls-env': { version: 1 } }), { version: 1, didChange: false, edit: false, search: false });
 	});
 
 	test('accepts the recorded responses', () => {
@@ -78,6 +81,9 @@ suite('Pharo environment model contracts', () => {
 		const failure = expectEnvCompileResult(recorded['compile-failure'], 'pls-env:compile');
 		assert.strictEqual(failure.compiled, false);
 		assert.deepStrictEqual(failure.diagnostics[0].range.start, { line: 1, character: 10 });
+		const search = expectEnvSearchResult(recorded.search, 'pls-env:search');
+		assert.strictEqual(search.complete, false);
+		assert.deepStrictEqual([search.items[0].id, search.items[0].label], ['method:SequenceableCollection>>collect:', 'Array>>collect:']);
 		const changes = expectEnvDidChangeParams(recorded.didChange, 'pls-env/didChange');
 		assert.deepStrictEqual(changes.changes[2], { kind: 'renamed', id: 'class:PLSRecordedProbeRenamed', oldId: 'class:PLSRecordedProbe' });
 	});
@@ -87,6 +93,7 @@ suite('Pharo environment model contracts', () => {
 		assert.throws(() => expectEnvChildrenPage({ items: [] }, 'pls-env:children'), /pls-env:children\.total/);
 		assert.throws(() => expectEnvCompileResult({ compiled: true, id: null, version: null, diagnostics: [] }, 'pls-env:compile'), /pls-env:compile.*id and a version/);
 		assert.throws(() => expectEnvDidChangeParams({ changes: [{ kind: 'exploded', id: 'class:A' }] }, 'pls-env/didChange'), /change kind/);
+		assert.throws(() => expectEnvSearchResult({ items: [{ ...recorded.search.items[0], label: undefined }], complete: true }, 'pls-env:search'), /pls-env:search\.items\.label/);
 	});
 
 	test('reads the slots, traits and redefined selectors of a side, and the trait of a method', () => {
@@ -136,8 +143,20 @@ suite('Pharo environment model client', () => {
 
 	test('does not listen to changes the server does not send', () => {
 		const transport = new FakeTransport(() => undefined);
-		new PharoEnvironment('/images/A.image', { version: 1, didChange: false, edit: false }, transport).dispose();
+		new PharoEnvironment('/images/A.image', { version: 1, didChange: false, edit: false, search: false }, transport).dispose();
 		assert.strictEqual(transport.notificationHandler, undefined);
+	});
+
+	test('searches without caching, and passes the cancellation token', async () => {
+		const transport = new FakeTransport(() => recorded.search);
+		const environment = new PharoEnvironment('/images/A.image', fullCapabilities, transport);
+		const cancellation = new vscode.CancellationTokenSource();
+		await environment.search('Array col', { kinds: ['method'], limit: 2 }, cancellation.token);
+		await environment.search('Array col', { kinds: ['method'], limit: 2 }, cancellation.token);
+		assert.deepStrictEqual(transport.requests[0], { method: 'pls-env:search', params: { query: 'Array col', kinds: ['method'], limit: 2 } });
+		assert.strictEqual(transport.requestsFor('pls-env:search'), 2);
+		assert.strictEqual(transport.tokens[0], cancellation.token);
+		cancellation.dispose();
 	});
 
 	test('loads every page of children', async () => {

@@ -31,6 +31,7 @@ import { installImageDirectory, ImageInstallResult } from './imageInstall';
 import { PharoEnvironment, createPharoEnvironment } from './env/pharoEnvironment';
 import { EnvChangeBus, EnvChangeSummary } from './env/environmentChanges';
 import { registerEntityEditors } from './env/entityCommands';
+import { registerSpotter } from './env/spotter';
 import { PharoEntityFileSystem } from './env/entityFileSystem';
 import { ENTITY_SCHEME } from './env/entityUri';
 import { ClassPanel, registerClassPanel } from './env/classPanel';
@@ -90,6 +91,7 @@ export async function activate(context: ExtensionContext) {
 	pharoImageExplorer = new PharoImageExplorer(context);
 	entityFileSystem = registerEntityEditors(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
 	classPanel = registerClassPanel(context, () => pharoEnvironment, entityFileSystem);
+	registerSpotter(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
 	syncPharoImageWorkspaceFolder();
 	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration('pharo.imageWorkspace')) {
@@ -142,6 +144,7 @@ export async function activate(context: ExtensionContext) {
 			client
 		);
 		void commands.executeCommand('setContext', 'pharo.envEdit', pharoEnvironment?.capabilities.edit === true);
+		void commands.executeCommand('setContext', 'pharo.envSearch', pharoEnvironment?.capabilities.edit === true && pharoEnvironment.capabilities.search);
 		if (pharoEnvironment) {
 			context.subscriptions.push(pharoEnvironment);
 		} else {

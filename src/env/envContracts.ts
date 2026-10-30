@@ -16,6 +16,7 @@ export interface EnvCapabilities {
 	version: number;
 	didChange: boolean;
 	edit: boolean;
+	search: boolean;
 }
 
 export interface EnvNode {
@@ -47,6 +48,22 @@ export interface EnvEntity extends EnvNode {
 	traits?: string[];
 	/** For a side: its selectors that a subclass redefines. */
 	overridden?: string[];
+}
+
+/** The kinds of entities that pls-env:search finds. */
+export const ENV_SEARCH_KINDS = ['class', 'method', 'package', 'project'] as const;
+export type EnvSearchKind = typeof ENV_SEARCH_KINDS[number];
+
+export interface EnvSearchItem extends EnvNode {
+	/** How to show the entity: `Array>>collect:` for SequenceableCollection>>collect: found from Array. */
+	label: string;
+	package: string | null;
+}
+
+export interface EnvSearchResult {
+	items: EnvSearchItem[];
+	/** False when some kind had more matches than the limit. */
+	complete: boolean;
 }
 
 export interface EnvSource {
@@ -115,7 +132,7 @@ export function envCapabilitiesFrom(experimental: unknown): EnvCapabilities | un
 	if (typeof env.version !== 'number') {
 		return undefined;
 	}
-	return { version: env.version, didChange: env.didChange === true, edit: env.edit === true };
+	return { version: env.version, didChange: env.didChange === true, edit: env.edit === true, search: env.search === true };
 }
 
 export function expectEnvNode(value: unknown, method: string): EnvNode {
@@ -178,6 +195,24 @@ export function expectEnvEntity(value: unknown, method: string): EnvEntity {
 		}
 	}
 	return result;
+}
+
+export function expectEnvSearchResult(value: unknown, method: string): EnvSearchResult {
+	if (!isObject(value) || !Array.isArray(value.items)) {
+		throw invalid(method, 'expected a list of search results');
+	}
+	return {
+		items: value.items.map((item) => {
+			const node = expectEnvNode(item, `${method}.items`);
+			const fields = item as Record<string, unknown>;
+			return {
+				...node,
+				label: expectField(fields, 'label', 'string', `${method}.items`),
+				package: expectNullableString(fields.package, `${method}.items.package`)
+			};
+		}),
+		complete: expectField(value, 'complete', 'boolean', method)
+	};
 }
 
 export function expectEnvSource(value: unknown, method: string): EnvSource {

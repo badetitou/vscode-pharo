@@ -534,6 +534,12 @@
 		],
 		"commands": [
 			{
+				"command": "pharo.env.spotter",
+				"title": "%commands.pharo.env.spotter.title%",
+				"category": "Pharo",
+				"icon": "$(search)"
+			},
+			{
 				"command": "pharo.env.openEntity",
 				"title": "%commands.pharo.env.openEntity.title%",
 				"category": "Pharo",
@@ -885,6 +891,10 @@
 			],
 			"commandPalette": [
 				{
+					"command": "pharo.env.spotter",
+					"when": "pharo.envSearch"
+				},
+				{
 					"command": "pharo.env.openEntity",
 					"when": "pharo.envEdit"
 				},
@@ -954,6 +964,11 @@
 			]
 		},
 		"keybindings": [
+			{
+				"command": "pharo.env.spotter",
+				"key": "ctrl+alt+o",
+				"when": "pharo.envSearch"
+			},
 			{
 				"command": "pharo.showIt",
 				"key": "ctrl+alt+i"

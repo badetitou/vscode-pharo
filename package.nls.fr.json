@@ -1,6 +1,7 @@
 {
 	"extension.description": "Coloration syntaxique, auto-complétion, exécution, et plus encore.",
 	"commands.pharo.selectImage.title": "Sélectionner l’image Pharo active",
+	"commands.pharo.env.spotter.title": "Spotter…",
 	"commands.pharo.env.openEntity.title": "Ouvrir une classe ou une méthode…",
 	"commands.pharo.env.newMethod.title": "Nouvelle méthode…",
 	"viewsContainers.pharoClass.title": "Classe Pharo",
