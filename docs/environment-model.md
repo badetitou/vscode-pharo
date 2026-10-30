@@ -165,6 +165,42 @@ pharo:/Pharo/Collections-Sequenceable/SequenceableCollection/instance/collect%3A
 
 The command **Pharo: Spotter…** (`pharo.env.spotter`, `Ctrl+Alt+O`) searches the image as you type, together with the open Pharo editors and the Pharo commands. Each keystroke cancels the previous search. A prefix keeps one kind of entities: `#` classes, `>>` methods, `@` packages, `!` projects. The active class or method shows in a preview editor; choosing it opens its entity editor, choosing a project or a package lists its packages or its classes.
 
+## Semantic navigation
+
+The server answers the LSP navigation requests on every Pharo document: entity editors (`pharo:`), Tonel files (`file:` and `pharoImage:`) and scripts. It announces them in the `initialize` result: `referencesProvider`, `implementationProvider`, `callHierarchyProvider` and `typeHierarchyProvider` are `true`. The methods live in `PLSServer`, protocol `lsp - navigation`.
+
+### What the position designates
+
+In a method, the server parses the method that holds the position (in a Tonel file, the method between its `>>` and its closing bracket) and takes the node there, or the one just before, so that a cursor at the end of a word works:
+
+| Node | Target |
+| --- | --- |
+| a message, or the selector of the method | its selector |
+| a symbol literal | the class it names when it starts with an uppercase letter and the class exists, its selector otherwise |
+| a temporary or an argument | that variable, in its method |
+| an instance variable of the class of the method | that slot, in the class that defines it |
+| a class or trait | that class |
+| another class or global variable | its binding |
+
+Outside a method, in a Tonel class definition or a method header, the word at the position names a class, or a slot or class variable of the class of the file. The keyword of a definition, as in `Class {`, names no class. `self`, `super` and `thisContext` designate nothing.
+
+### Results
+
+Every location is in the entity editor of the method or class (see "Method documents"), with the range of the use in its source, so that VS Code opens and highlights it there. The uses of a temporary stay in the document of the request. The copies of trait methods in the classes that use them are left out.
+
+- **`textDocument/references`**: the senders of a selector (`SystemNavigation>>allSendersOf:`, which includes symbol literals), the methods that refer to a class or variable, the methods of a class and its subclasses that use a slot, the uses of a temporary. With `includeDeclaration`, also the implementors of the selector, or the definition of the class, at the declaration of a slot or class variable.
+- **`textDocument/implementation`**: the implementors of a selector, located on their selectors, or all the subclasses of a class, and the classes that use a trait.
+- **`textDocument/prepareCallHierarchy`**: the method that a send at the position most likely runs, the method whose selector is at the position, or else the method that holds it. `callHierarchy/incomingCalls` answers the senders of its selector, with the ranges of the sends. `callHierarchy/outgoingCalls` answers one call per selector the method sends, with the ranges of its sends, to the method most likely run: the lookup from the class of the method for `self`, from its superclass for `super`, from the class side for a class named as receiver, otherwise the implementor defined the highest in its hierarchy, a class rather than a trait.
+- **`textDocument/prepareTypeHierarchy`**: the class at the position, or the class of the method or definition. `typeHierarchy/supertypes` answers the superclass, then the traits the class uses. `typeHierarchy/subtypes` answers the direct subclasses, or the classes that use a trait, by name.
+
+The `data` of a call hierarchy item holds the `id` of its method, the one of a type hierarchy item the `id` of its class: `{ "id": "method:Array>>collect:" }`. An item whose entity left the image answers no calls and no types.
+
+### In the extension
+
+The native commands work on these editors: **Go to References** and **Peek References** (`Shift+F12`) list the senders, **Go to Implementations** (`Ctrl+F12`) the implementors, **Show Call Hierarchy** and **Show Type Hierarchy** open the References view.
+
+`src/env/navigationCommands.ts` adds `pharo.nav.senders`, `pharo.nav.implementors`, `pharo.nav.callHierarchy`, `pharo.nav.references` and `pharo.nav.typeHierarchy` to the context menus of the views: of a method of the class panel (senders, implementors, call hierarchy), of a slot, class variable or trait of the class panel (references, and type hierarchy for a trait), of a class of the Projects view (references, type hierarchy), and to the title of the class panel, for its class. Each command opens the entity editor on the selector, the class name or the declaration of the variable, then runs the matching command of the References view.
+
 ## Edition
 
 A **version** is a SHA-1 of the source: of a method's source, or of a class's definition on both sides plus its comment. It changes whenever the entity changes, whoever changes it.

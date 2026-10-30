@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Add a **Projects** view built on the Metacello baselines (project → package → tag → class), with pinning, a filter, Iceberg state, contextual actions and live update. It replaces the Image Browser view.
+- Navigate by messages: senders and references (`Shift+F12`), implementors (`Ctrl+F12`), call hierarchy and type hierarchy on entity editors and Tonel files, and from the context menus of the Projects view and the class panel. Results open in entity editors.
 
 ## v2.3.0
 
