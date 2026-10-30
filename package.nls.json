@@ -1,6 +1,8 @@
 {
 	"extension.description": "Syntax highlighting, auto-completion, execution, and more.",
 	"commands.pharo.selectImage.title": "Select Active Pharo Image",
+	"commands.pharo.env.openEntity.title": "Open Class or Method…",
+	"commands.pharo.env.newMethod.title": "New Method…",
 	"commands.pharo.tests.refresh.title": "Refresh Pharo Tests",
 	"commands.pharo.tests.rerunFailed.title": "Rerun Failed Pharo Tests",
 

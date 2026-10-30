@@ -35,6 +35,7 @@
 		"onLanguage:pharo",
 		"onDebugResolve:pharodb",
 		"onFileSystem:pharoImage",
+		"onFileSystem:pharo",
 		"onNotebook:moosebook",
 		"onChatParticipant:pharo-language-server.pharo"
 	],
@@ -44,6 +45,12 @@
 	],
 	"main": "./dist/extension",
 	"contributes": {
+		"configurationDefaults": {
+			"workbench.editor.customLabels.patterns": {
+				"/*/*/*/instance/*.st": "${dirname(1)}>>${filename}",
+				"/*/*/*/class/*.st": "${dirname(1)} class>>${filename}"
+			}
+		},
 		"chatParticipants": [
 			{
 				"id": "pharo-language-server.pharo",
@@ -508,6 +515,18 @@
 		],
 		"commands": [
 			{
+				"command": "pharo.env.openEntity",
+				"title": "%commands.pharo.env.openEntity.title%",
+				"category": "Pharo",
+				"icon": "$(symbol-method)"
+			},
+			{
+				"command": "pharo.env.newMethod",
+				"title": "%commands.pharo.env.newMethod.title%",
+				"category": "Pharo",
+				"icon": "$(add)"
+			},
+			{
 				"command": "pharo.tests.refresh",
 				"title": "%commands.pharo.tests.refresh.title%",
 				"category": "Pharo Tests",
@@ -701,12 +720,37 @@
 			],
 			"editor/title": [
 				{
+					"command": "pharo.env.newMethod",
+					"when": "pharo.envEdit && resourceScheme == pharo",
+					"group": "navigation@1"
+				},
+				{
 					"command": "extension.pharo-debug.debugEditorContents",
 					"when": "resourceLangId == pharo",
 					"group": "Pharo@2"
 				}
 			],
+			"commandPalette": [
+				{
+					"command": "pharo.env.openEntity",
+					"when": "pharo.envEdit"
+				},
+				{
+					"command": "pharo.env.newMethod",
+					"when": "pharo.envEdit"
+				}
+			],
 			"explorer/context": [
+				{
+					"command": "pharo.env.openEntity",
+					"when": "pharo.envEdit && resourceScheme == pharoImage && resourceFilename =~ /\\.class\\.st$/",
+					"group": "navigation@3"
+				},
+				{
+					"command": "pharo.env.newMethod",
+					"when": "pharo.envEdit && resourceScheme == pharoImage && resourceFilename =~ /\\.class\\.st$/",
+					"group": "navigation@4"
+				},
 				{
 					"command": "pharo.createPackage",
 					"when": "resourceScheme == pharoImage && explorerResourceIsFolder && (explorerResourceIsRoot || resourcePath == '/')",

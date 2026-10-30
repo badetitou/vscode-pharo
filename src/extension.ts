@@ -1,4 +1,4 @@
-import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel, FileSystemError, ConfigurationTarget } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel, FileSystemError, ConfigurationTarget, TextDocument } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
@@ -29,17 +29,24 @@ import { expectString, expectStringArray } from './rpcContracts';
 import { registerServerDiagnosticsCommand } from './serverDiagnostics';
 import { installImageDirectory, ImageInstallResult } from './imageInstall';
 import { PharoEnvironment, createPharoEnvironment } from './env/pharoEnvironment';
+import { EnvChangeBus, EnvChangeSummary } from './env/environmentChanges';
+import { registerEntityEditors } from './env/entityCommands';
+import { PharoEntityFileSystem } from './env/entityFileSystem';
+import { ENTITY_SCHEME } from './env/entityUri';
 
 
 export let client: LanguageClient;
 /** Environment model of the active image, or undefined while the server is not started or predates pls-env. */
 export let pharoEnvironment: PharoEnvironment | undefined;
+/** Changes of the active image, grouped by burst, or undefined when the server does not notify them. */
+export let pharoChanges: EnvChangeBus | undefined;
 export let documentExplorer: PharoDocumentExplorer;
 let dls: child_process.ChildProcess | undefined;
 export let extensionContext: ExtensionContext;
 export let iceControlManager: IceControlManager;
 
 let pharoImagesExplorer: PharoImagesExplorer;
+let entityFileSystem: PharoEntityFileSystem;
 
 let plsStatusBar: StatusBarItem;
 let pharoRepositoryStatusBar: StatusBarItem;
@@ -79,6 +86,7 @@ export async function activate(context: ExtensionContext) {
 	pharoImagesExplorer = new PharoImagesExplorer(context);
 	registerPharoImagesCommands(context);
 	pharoImageExplorer = new PharoImageExplorer(context);
+	entityFileSystem = registerEntityEditors(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
 	syncPharoImageWorkspaceFolder();
 	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration('pharo.imageWorkspace')) {
@@ -130,6 +138,7 @@ export async function activate(context: ExtensionContext) {
 			client.initializeResult?.capabilities.experimental,
 			client
 		);
+		void commands.executeCommand('setContext', 'pharo.envEdit', pharoEnvironment?.capabilities.edit === true);
 		if (pharoEnvironment) {
 			context.subscriptions.push(pharoEnvironment);
 		} else {
@@ -149,8 +158,14 @@ export async function activate(context: ExtensionContext) {
 		iceControlManager = new IceControlManager(client, () => pharoImageExplorer?.refresh());
 		context.subscriptions.push(iceControlManager);
 
+		// Follow the changes of the image, whoever makes them
+		pharoChanges = pharoEnvironment?.capabilities.didChange ? new EnvChangeBus(pharoEnvironment.onDidChange) : undefined;
+		if (pharoChanges) {
+			context.subscriptions.push(pharoChanges, pharoChanges.onDidChange(onImageChanged));
+		}
+
 		// Create Tests
-		context.subscriptions.push(initTestController());
+		context.subscriptions.push(initTestController(client, pharoChanges?.onDidChange));
 
 		resetStatusBarText();
 	} catch (err) {
@@ -177,6 +192,33 @@ export async function activate(context: ExtensionContext) {
 			}
 		}
 		await stopPharoProcess();
+	}
+}
+
+/** Refresh the views that a burst of changes of the image touched, and reload the class editors without local changes. */
+function onImageChanged(summary: EnvChangeSummary): void {
+	const conflicts = pharoImageExplorer.applyEnvironmentChanges(summary);
+	entityFileSystem.applyChanges(summary.changes, summary.reset);
+	void iceControlManager?.refresh();
+	if (conflicts.length > 0) {
+		void warnOfConflicts(conflicts);
+	}
+}
+
+/** Until entity editors detect conflicts on save (#64), tell the user that an edited class changed in the image. */
+async function warnOfConflicts(documents: TextDocument[]): Promise<void> {
+	const names = documents.map((document) => document.uri.path.split('/').pop()).join(', ');
+	const revert = 'Revert to Image';
+	const selection = await window.showWarningMessage(
+		`${names} changed in the image while you have unsaved changes. Saving will overwrite the image version.`,
+		revert
+	);
+	if (selection !== revert) {
+		return;
+	}
+	for (const document of documents) {
+		await window.showTextDocument(document);
+		await commands.executeCommand('workbench.action.files.revert');
 	}
 }
 
@@ -829,11 +871,17 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 		documentSelector: [
 			{ scheme: 'file', language: 'pharo' },
 			{ scheme: 'pharoImage', language: 'pharo' },
+			{ scheme: ENTITY_SCHEME, language: 'pharo' },
 			{ notebook: 'moosebook', language: 'pharo' }
 		],
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
+		},
+		middleware: {
+			// Saving an entity editor compiles it through its file system (pls-env:compile). The server would load a
+			// `.class.st` document a second time on didSave, without checking its version.
+			didSave: (document, next) => document.uri.scheme === ENTITY_SCHEME ? Promise.resolve() : next(document)
 		}
 	};
 

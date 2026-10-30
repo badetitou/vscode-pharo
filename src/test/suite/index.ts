@@ -20,6 +20,8 @@ export function run(): Promise<void> {
 	mocha.addFile(path.resolve(__dirname, './testController.test.js'));
 	mocha.addFile(path.resolve(__dirname, './iceControlManager.test.js'));
 	mocha.addFile(path.resolve(__dirname, './pharoEnvironment.test.js'));
+	mocha.addFile(path.resolve(__dirname, './environmentChanges.test.js'));
+	mocha.addFile(path.resolve(__dirname, './entityEditors.test.js'));
 
 	return new Promise((resolve, reject) => {
 		try {

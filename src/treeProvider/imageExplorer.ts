@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { client } from '../extension';
 import { buildPharoUri, ICE_REPOSITORY_QUERY_KEY, repositoryNameFromPharoUri } from './pharoUri';
 import { expectStringArray, isMethodNotFoundError } from '../rpcContracts';
+import { EnvChangeSummary } from '../env/environmentChanges';
 
 export interface PharoNode {
 	name: string;
@@ -203,6 +204,54 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		this._emitter.fire(changedFiles);
 	}
 
+	/**
+	 * Invalidate what a burst of changes of the image touched, and tell VS Code which files changed, so that it reloads
+	 * the open class editors without local changes. Answer the open class documents with local changes that the burst
+	 * touched: they are in conflict with the image.
+	 */
+	public applyEnvironmentChanges(
+		summary: EnvChangeSummary,
+		openDocuments: readonly vscode.TextDocument[] = vscode.workspace.textDocuments
+	): vscode.TextDocument[] {
+		if (summary.reset || summary.packagesChanged) {
+			this.refresh();
+		} else if (summary.packages.size > 0) {
+			this.cacheGeneration++;
+			for (const packageName of summary.packages) {
+				this.classesCache.delete(packageName);
+				this.classesInFlight.delete(packageName);
+			}
+			this.repositoryPackagesCache.clear();
+			this.repositoryPackagesInFlight.clear();
+			this._onDidChangeTreeData.fire(undefined);
+			this._emitter.fire([...summary.packages].map((packageName) => ({
+				type: vscode.FileChangeType.Changed,
+				uri: this.packageUri(packageName)
+			})));
+		}
+
+		const changedFiles: vscode.FileChangeEvent[] = [];
+		const conflicts: vscode.TextDocument[] = [];
+		for (const document of openDocuments) {
+			const className = this.classNameOfDocument(document);
+			if (!className) {
+				continue;
+			}
+			const removed = summary.removedClasses.has(className);
+			if (!summary.reset && !removed && !summary.classes.has(className)) {
+				continue;
+			}
+			if (document.isDirty) {
+				conflicts.push(document);
+			}
+			changedFiles.push({ type: removed ? vscode.FileChangeType.Deleted : vscode.FileChangeType.Changed, uri: document.uri });
+		}
+		if (changedFiles.length > 0) {
+			this._emitter.fire(changedFiles);
+		}
+		return conflicts;
+	}
+
 	dispose(): void {
 		this.saveListener.dispose();
 		this._onDidChangeTreeData.dispose();
@@ -355,6 +404,14 @@ export class PharoDataProvider implements vscode.TreeDataProvider<PharoNode>, vs
 		return pathSegment;
 	}
 
+	private classNameOfDocument(document: vscode.TextDocument): string | undefined {
+		if (document.uri.scheme !== 'pharoImage' || this.isIceOriginalUri(document.uri)) {
+			return undefined;
+		}
+		const segments = this.getPathSegments(document.uri);
+		return segments.length === 2 ? this.toClassName(segments[1]) : undefined;
+	}
+
 	private toClassFilename(className: string): string {
 		return `${this.toClassName(className)}${CLASS_FILE_SUFFIX}`;
 	}
@@ -457,6 +514,10 @@ export class PharoImageExplorer {
 
 	public refresh(): void {
 		this.pharoDataProvider.refresh();
+	}
+
+	public applyEnvironmentChanges(summary: EnvChangeSummary): vscode.TextDocument[] {
+		return this.pharoDataProvider.applyEnvironmentChanges(summary);
 	}
 
 	dispose(): void {

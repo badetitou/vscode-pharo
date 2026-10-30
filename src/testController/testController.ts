@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { client } from '../extension';
 import { expectStringArray, expectTestResult, PharoTestResult } from '../rpcContracts';
 import { parseTonelMethods } from '../tonel';
+import { EnvChangeSummary } from '../env/environmentChanges';
 
 interface PharoTestClient {
 	isRunning(): boolean;
@@ -32,7 +33,10 @@ export function formatTestResult(result: PharoTestResult): string {
 	return messages.length > 0 ? messages.join('\n') : 'Pharo did not report this test as passed.';
 }
 
-export function initTestController(testClient: PharoTestClient = client): vscode.Disposable {
+export function initTestController(
+	testClient: PharoTestClient = client,
+	changes: vscode.Event<EnvChangeSummary> = () => new vscode.Disposable(() => undefined)
+): vscode.Disposable {
 	const testController = vscode.tests.createTestController('pharo-tests', 'Pharo Tests');
 	const failedTests = new Map<string, vscode.TestItem>();
 	testController.resolveHandler = async (test) => {
@@ -74,7 +78,58 @@ export function initTestController(testClient: PharoTestClient = client): vscode
 		}
 	});
 
-	return vscode.Disposable.from(testController, refreshCommand, rerunFailedCommand);
+	const changesSubscription = changes((summary) => {
+		refreshTestsAfterChanges(testClient, testController, summary).catch((error: unknown) => {
+			console.error('Unable to refresh the Pharo tests after a change of the image:', error);
+		});
+	});
+
+	return vscode.Disposable.from(testController, refreshCommand, rerunFailedCommand, changesSubscription);
+}
+
+/**
+ * Update the tests that a burst of changes of the image touched. Only the packages and classes already resolved
+ * are resolved again; the list of test packages is reloaded on a reset or when a package that it lacks changed.
+ */
+export async function refreshTestsAfterChanges(
+	testClient: PharoTestClient,
+	testController: vscode.TestController,
+	summary: EnvChangeSummary
+): Promise<void> {
+	if (!testClient.isRunning()) {
+		return;
+	}
+	const packageItems = new Map<string, vscode.TestItem>();
+	testController.items.forEach((item) => packageItems.set(testItemName(item), item));
+	if (summary.reset || summary.packagesChanged || [...summary.packages].some((name) => !packageItems.has(name))) {
+		await discoverAllTests(testClient, testController);
+		testController.items.forEach((item) => packageItems.set(testItemName(item), item));
+	}
+
+	const toResolve: vscode.TestItem[] = [];
+	for (const [packageName, packageItem] of packageItems) {
+		if (packageItem.children.size === 0) {
+			continue;
+		}
+		if (summary.reset || summary.packages.has(packageName)) {
+			toResolve.push(packageItem);
+		}
+		packageItem.children.forEach((classItem) => {
+			const className = testItemName(classItem);
+			if (classItem.children.size > 0 && (summary.reset || summary.classes.has(className))) {
+				toResolve.push(classItem);
+			}
+		});
+	}
+	for (const item of toResolve) {
+		await discoverTestOf(testClient, item, testController);
+	}
+}
+
+/** Answer the package or class name of a test item, from the last segment of its URI. */
+function testItemName(item: vscode.TestItem): string {
+	const segment = decodeURIComponent(item.uri?.path.split('/').pop() ?? item.label);
+	return segment.replace(/(\.class)?\.st$/, '');
 }
 
 export async function discoverAllTests(testClient: PharoTestClient, testController: vscode.TestController): Promise<void> {
@@ -110,7 +165,7 @@ function getTest(
 	return item;
 }
 
-async function discoverTestOf(
+export async function discoverTestOf(
 	testClient: PharoTestClient,
 	testItem: vscode.TestItem,
 	testController: vscode.TestController
