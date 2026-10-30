@@ -32,6 +32,7 @@ import { PharoEnvironment, createPharoEnvironment } from './env/pharoEnvironment
 import { EnvChangeBus, EnvChangeSummary } from './env/environmentChanges';
 import { ProjectsView } from './env/projectsView';
 import { registerEntityEditors } from './env/entityCommands';
+import { EditorSession, registerEditorSession } from './env/editorSession';
 import { registerSpotter } from './env/spotter';
 import { registerNavigationCommands } from './env/navigationCommands';
 import { PharoEntityFileSystem } from './env/entityFileSystem';
@@ -51,6 +52,7 @@ export let iceControlManager: IceControlManager;
 
 let pharoImagesExplorer: PharoImagesExplorer;
 let entityFileSystem: PharoEntityFileSystem;
+let editorSession: EditorSession;
 let classPanel: ClassPanel;
 
 let plsStatusBar: StatusBarItem;
@@ -95,7 +97,9 @@ export async function activate(context: ExtensionContext) {
 	projectsView = new ProjectsView(context, (method, params) => client.sendRequest(method, params));
 	context.subscriptions.push(projectsView);
 	entityFileSystem = registerEntityEditors(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
+	editorSession = registerEditorSession(context);
 	classPanel = registerClassPanel(context, () => pharoEnvironment, entityFileSystem);
+	context.subscriptions.push(editorSession.registerView(projectsView), editorSession.registerView(classPanel));
 	registerSpotter(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
 	registerNavigationCommands(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined, () => classPanel.provider.className);
 	syncPharoImageWorkspaceFolder();
@@ -180,6 +184,10 @@ export async function activate(context: ExtensionContext) {
 			context.subscriptions.push(pharoChanges, pharoChanges.onDidChange(onImageChanged));
 		}
 		projectsView.setEnvironment(pharoEnvironment, pharoChanges?.onDidChange);
+		if (pharoEnvironment?.capabilities.edit) {
+			void editorSession.start(pharoEnvironment).catch((error) =>
+				outputChannel.appendLine(`Unable to restore the Pharo editor session: ${formatError(error)}`));
+		}
 
 		// Create Tests
 		context.subscriptions.push(initTestController(client, pharoChanges?.onDidChange));
@@ -216,6 +224,7 @@ export async function activate(context: ExtensionContext) {
 function onImageChanged(summary: EnvChangeSummary): void {
 	const conflicts = pharoImageExplorer.applyEnvironmentChanges(summary);
 	entityFileSystem.applyChanges(summary.changes, summary.reset);
+	editorSession.stack.applyChanges(summary.changes);
 	classPanel.applyChanges(summary);
 	void iceControlManager?.refresh();
 	if (conflicts.length > 0) {
