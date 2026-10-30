@@ -3,7 +3,8 @@
 		"pls-env": {
 			"version": 1,
 			"edit": true,
-			"didChange": true
+			"didChange": true,
+			"search": true
 		}
 	},
 	"projects": [
@@ -165,6 +166,31 @@
 	},
 	"remove": {
 		"removed": "method:PLSRecordedProbe>>count"
+	},
+	"search": {
+		"items": [
+			{
+				"flags": { "deprecated": false, "override": true, "fromTrait": false, "test": false, "abstract": false, "extension": false },
+				"package": "package:Collections-Sequenceable",
+				"parent": "protocol:SequenceableCollection>>enumerating",
+				"hasChildren": false,
+				"kind": "method",
+				"name": "collect:",
+				"id": "method:SequenceableCollection>>collect:",
+				"label": "Array>>collect:"
+			},
+			{
+				"flags": { "deprecated": false, "override": false, "fromTrait": false, "test": false, "abstract": false, "extension": false },
+				"package": "package:Collections-Abstract",
+				"parent": "protocol:Collection>>enumerating",
+				"hasChildren": false,
+				"kind": "method",
+				"name": "collect:as:",
+				"id": "method:Collection>>collect:as:",
+				"label": "Array>>collect:as:"
+			}
+		],
+		"complete": false
 	},
 	"didChange": {
 		"changes": [
