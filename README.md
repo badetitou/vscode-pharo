@@ -191,6 +191,12 @@ Source Control groups are hidden while empty. **Image vs Repository** and **Iceb
 
 > From version v1.0.0, please use at least version v1.1.0 of the Pharo Language Server.
 
+### Pharo editor profile
+
+**Pharo: Set Up Pharo Editor Profile** (also the last step of the *Set Up PLS* walkthrough) prepares a dedicated **Pharo** [VS Code profile](https://code.visualstudio.com/docs/editor/profiles) that only shows the views of the extension: the *Pharo* view in the primary sidebar, the class panel in the secondary sidebar, and the inspector and the Output view (Pharo Transcript) in the bottom panel. Explorer, Search, Source Control, Run and Debug and Extensions are hidden, not removed. The profile keeps your `pharo.*` settings and only contains the Pharo extensions; your current profile is not modified.
+
+VS Code does not let extensions create profiles, so the command writes a `.code-profile` file, copies its path to the clipboard and opens the Profiles editor: open the menu next to **New Profile**, choose **Import Profile...** and paste the path. Then switch to the profile, or use it for the current folder. Running the command again from the Pharo profile puts the Pharo views back in place, and can recreate the profile to hide the other views again.
+
 ### Using VMs from the Pharo Launcher
 
 Assuming you have [the official Pharo Launcher](https://pharo.org/download) installed, you can also configure the extension to use the launcher's VMs along with the language server image like so:

@@ -28,6 +28,7 @@ import { MCP_PROVIDER_ID, PharoMcpServers, mcpEndpointFrom, mcpInitializationOpt
 import { buildPharoUri, ICE_REPOSITORY_QUERY_KEY, repositoryNameFromPharoUri } from './treeProvider/pharoUri';
 import { expectString, expectStringArray } from './rpcContracts';
 import { registerServerDiagnosticsCommand } from './serverDiagnostics';
+import { registerEditorProfileCommand } from './editorProfile';
 import { installImageDirectory, ImageInstallResult } from './imageInstall';
 import { PharoEnvironment, createPharoEnvironment } from './env/pharoEnvironment';
 import { EnvChangeBus, EnvChangeSummary } from './env/environmentChanges';
@@ -109,6 +110,7 @@ export async function activate(context: ExtensionContext) {
 		getExtensionVersion: () => extensionContext.extension.packageJSON.version,
 		outputChannel
 	}));
+	context.subscriptions.push(registerEditorProfileCommand(context));
 	pharoImagesExplorer = new PharoImagesExplorer(context);
 	registerPharoImagesCommands(context);
 	pharoImageExplorer = new PharoImageExplorer(context);
