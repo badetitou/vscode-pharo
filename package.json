@@ -402,6 +402,13 @@
 					"description": "%configuration.pharo.pathToVM.description%",
 					"ignoreSync": true
 				},
+				"pharo.editorProfile": {
+					"title": "Pharo Editor Profile",
+					"scope": "window",
+					"type": "boolean",
+					"default": false,
+					"description": "%configuration.pharo.editorProfile.description%"
+				},
 				"pharo.pathToImage": {
 					"title": "Path to Image",
 					"scope": "window",
@@ -888,6 +895,11 @@
 			{
 				"command": "pharo.extensionVersion",
 				"title": "Show Pharo Language Server Version",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.profile.setup",
+				"title": "%commands.pharo.profile.setup.title%",
 				"category": "Pharo"
 			},
 			{
@@ -2041,6 +2053,17 @@
 							"image": "media/pharo-bar.svg",
 							"altText": ""
 						}
+					},
+					{
+						"id": "setupProfile",
+						"title": "%walkthrough.setup.steps.setupProfile.title%",
+						"description": "%walkthrough.setup.steps.setupProfile.description%",
+						"media": {
+							"markdown": "media/editor-profile.md"
+						},
+						"completionEvents": [
+							"onCommand:pharo.profile.setup"
+						]
 					}
 				]
 			}
