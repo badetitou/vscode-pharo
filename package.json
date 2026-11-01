@@ -37,7 +37,8 @@
 		"onFileSystem:pharoImage",
 		"onFileSystem:pharo",
 		"onNotebook:moosebook",
-		"onChatParticipant:pharo-language-server.pharo"
+		"onChatParticipant:pharo-language-server.pharo",
+		"onMcpCollection:pharo-language-server.mcp"
 	],
 	"extensionDependencies": [
 		"mindaro-dev.file-downloader",
@@ -170,7 +171,8 @@
 						"packageName",
 						"className"
 					]
-				}
+				},
+				"when": "!pharo.mcp.available"
 			},
 			{
 				"name": "pharo-read-class",
@@ -194,7 +196,8 @@
 					"required": [
 						"className"
 					]
-				}
+				},
+				"when": "!pharo.mcp.available"
 			},
 			{
 				"name": "pharo-list-packages",
@@ -237,7 +240,8 @@
 					"required": [
 						"packageName"
 					]
-				}
+				},
+				"when": "!pharo.mcp.available"
 			},
 			{
 				"name": "pharo-eval",
@@ -261,7 +265,8 @@
 					"required": [
 						"code"
 					]
-				}
+				},
+				"when": "!pharo.mcp.available"
 			},
 			{
 				"name": "pharo-run-class-tests",
@@ -285,7 +290,8 @@
 					"required": [
 						"className"
 					]
-				}
+				},
+				"when": "!pharo.mcp.available"
 			},
 			{
 				"name": "pharo-run-test-method",
@@ -313,7 +319,8 @@
 						"className",
 						"testMethod"
 					]
-				}
+				},
+				"when": "!pharo.mcp.available"
 			},
 			{
 				"name": "pharo-ice-list-changes",
@@ -376,6 +383,12 @@
 				}
 			}
 		],
+		"mcpServerDefinitionProviders": [
+			{
+				"id": "pharo-language-server.mcp",
+				"label": "Pharo"
+			}
+		],
 		"configuration": {
 			"type": "object",
 			"title": "Pharo",
@@ -416,6 +429,13 @@
 					"type": "boolean",
 					"default": false,
 					"description": "%configuration.pharo.debugMode.description%"
+				},
+				"pharo.mcp.enabled": {
+					"title": "MCP server",
+					"scope": "window",
+					"type": "boolean",
+					"default": true,
+					"description": "%configuration.pharo.mcp.enabled.description%"
 				},
 				"pharo quick install.image name": {
 					"title": "Quick install image name",
@@ -548,6 +568,12 @@
 			}
 		],
 		"commands": [
+			{
+				"command": "pharo.mcp.configureAgent",
+				"title": "%commands.pharo.mcp.configureAgent.title%",
+				"category": "Pharo",
+				"icon": "$(hubot)"
+			},
 			{
 				"command": "pharo.env.spotter",
 				"title": "%commands.pharo.env.spotter.title%",

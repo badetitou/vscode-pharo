@@ -91,6 +91,10 @@ The native Test Explorer integration requires Pharo Language Server **5.0.1 or l
 ![Step the stack gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/debugSteps.gif)
 
 
+### Agents
+
+Copilot (agent mode), Claude Code, Codex and OpenCode work on the image of the window through the MCP server of [evref-BL/MCP](https://github.com/evref-BL/MCP), that the language server starts in the image. Copilot sees its tools without configuration; **Pharo: Configure a CLI Agent…** connects a CLI agent to it. Set `pharo.mcp.enabled` to `false` to not start it. See [docs/agents.md](docs/agents.md).
+
 ### Moose Book (Notebook for Moose/Pharo)
 
 MooseBook is a way to use a notebook with Pharo

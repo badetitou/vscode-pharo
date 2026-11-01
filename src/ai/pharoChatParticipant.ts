@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { findPharoMcpTool, isPharoMcpTool } from './pharoMcp';
 
 const PARTICIPANT_ID = 'pharo-language-server.pharo';
 
@@ -16,8 +17,51 @@ export function toolInfoToChatTool(info: vscode.LanguageModelToolInformation): v
 	};
 }
 
+/** The tools of the MCP server of the image, with the pharo-* tools it does not replace; only the pharo-* tools without it. */
 export function getPharoChatTools(tools: readonly vscode.LanguageModelToolInformation[] = vscode.lm.tools): vscode.LanguageModelChatTool[] {
-	return tools.filter((tool) => tool.name.startsWith('pharo-')).map(toolInfoToChatTool);
+	return tools.filter((tool) => isPharoMcpTool(tool.name) || tool.name.startsWith('pharo-')).map(toolInfoToChatTool);
+}
+
+/**
+ * The tool of the MCP server of the image that does what a deprecated pharo-* tool did, with its input,
+ * or the pharo-* tool itself when the image does not run the MCP server or the server has no such tool.
+ */
+export function pharoToolCall(
+	legacyTool: string,
+	input: Record<string, any>,
+	tools: readonly { name: string }[] = vscode.lm.tools
+): { name: string; input: object } {
+	const mcp = (toolName: string, mcpInput: object) => {
+		const tool = findPharoMcpTool(tools, toolName);
+		return tool ? { name: tool.name, input: mcpInput } : undefined;
+	};
+	let call: { name: string; input: object } | undefined;
+	switch (legacyTool) {
+		case 'pharo-create-class':
+			call = mcp('class_create', {
+				name: input.className,
+				package: input.packageName,
+				superclass: input.superclassName,
+				slots: String(input.instanceVariables ?? '').split(/\s+/).filter(Boolean)
+			});
+			break;
+		case 'pharo-read-class':
+			call = mcp('class_get', { name: input.className, includeComment: true });
+			break;
+		case 'pharo-list-classes':
+			call = mcp('class_search', { scope: { packages: [input.packageName] } });
+			break;
+		case 'pharo-eval':
+			call = mcp('image_evaluate', { code: input.code });
+			break;
+		case 'pharo-run-class-tests':
+			call = mcp('test_run', { classes: [input.className] });
+			break;
+		case 'pharo-run-test-method':
+			call = mcp('test_run', { methods: [`${input.className}>>#${input.testMethod}`] });
+			break;
+	}
+	return call ?? { name: legacyTool, input };
 }
 
 export function trimCodeFence(value: string): string {
@@ -61,12 +105,13 @@ export function parseJsonIfPossible(prompt: string): unknown | undefined {
 }
 
 async function invokeAndRenderTool(
-	toolName: string,
-	input: object,
+	legacyTool: string,
+	legacyInput: Record<string, any>,
 	request: vscode.ChatRequest,
 	stream: vscode.ChatResponseStream,
 	token: vscode.CancellationToken
 ): Promise<void> {
+	const { name: toolName, input } = pharoToolCall(legacyTool, legacyInput);
 	try {
 		const result = await vscode.lm.invokeTool(toolName, {
 			toolInvocationToken: request.toolInvocationToken,
@@ -175,18 +220,19 @@ async function handleExplicitCommand(
 const BASE_PROMPT = [
 	'You are a Pharo assistant integrated into VS Code.',
 	'Goal: manipulate the Pharo image using the available tools (package/class creation, class reading, execution, tests).',
+	'The tools whose name starts with `mcp_` come from the MCP server running in the image: search, read, compile, refactor, test, critiques, Iceberg, history.',
 	'Rules:',
-	'- When an action is needed, prefer calling a `pharo-*` tool rather than inventing.',
+	'- When an action is needed, prefer calling a tool rather than inventing.',
 	'- Ask for clarification if information is missing (package name, class name, etc.).',
 	'- Return concise answers',
 	'- Virtual file systems with scheme `pharoImage` are registered as workspace folders.',
 	'  Use VS Code built-in file tools (list_directory, read_file) on `pharoImage://` URIs to browse packages and classes.',
 	'  Structure: `pharoImage:/` → root lists packages (directories); `pharoImage:/PackageName/` → lists class files (*.class.st).',
 	'  A `pharoImage:/?iceRepository=RepoName` URI scopes the view to a specific Iceberg repository.',
-	'- Prefer VFS navigation for exploration; use `pharo-*` tools for actions (create, eval, test).',
+	'- Prefer VFS navigation for exploration; use the tools for actions (create, eval, test).',
 	'- To EDIT a Pharo class: use VS Code built-in edit_file on its `pharoImage:/PackageName/ClassName.class.st` URI.',
 	'  Saving the file (after editing) automatically propagates the change to the Pharo image via the language server (textDocument/didSave).',
-	'  Do NOT use pharo-eval to rewrite entire class definitions; prefer direct file editing on the pharoImage:// URI.',
+	'  Do NOT evaluate code to rewrite entire class definitions; prefer direct file editing on the pharoImage:// URI.',
 ].join('\n');
 
 function buildWorkspaceFoldersContextMessage(): vscode.LanguageModelChatMessage {
@@ -266,7 +312,7 @@ export function registerPharoChatParticipant(context: vscode.ExtensionContext): 
 
 		const tools = getPharoChatTools();
 		if (tools.length === 0) {
-			stream.markdown('Aucun tool `pharo-*` n\'est enregistré. Vérifie `contributes.languageModelTools` + `registerTool()`.' );
+			stream.markdown('Aucun outil Pharo n\'est disponible : démarre le serveur de langage Pharo, qui fournit le serveur MCP de l\'image.');
 			return;
 		}
 
