@@ -1068,7 +1068,9 @@ async function createServerWithSocket(pharoPath: string, pathToImage: string, co
 	}
 	outputChannel.appendLine(`Starting Pharo VM: ${pharoPath} ${options.join(' ')}`);
 	try {
-		dls = child_process.spawn(pharoPath, options);
+		// run-server.st loads this release of the language server in an image that does not have it yet.
+		const serverVersion = workspace.getConfiguration('pharo quick install').get<string>('server version');
+		dls = child_process.spawn(pharoPath, options, { env: { ...globalThis.process.env, PLS_SERVER_VERSION: serverVersion } });
 	} catch (error) {
 		throw new Error(`Unable to launch the Pharo VM: ${formatError(error)}`);
 	}
