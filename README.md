@@ -95,9 +95,21 @@ The native Test Explorer integration requires Pharo Language Server **5.0.1 or l
 
 Copilot (agent mode), Claude Code, Codex and OpenCode work on the image of the window through the MCP server of [evref-BL/MCP](https://github.com/evref-BL/MCP), that the language server starts in the image. Copilot sees its tools without configuration; **Pharo: Configure a CLI Agent…** connects a CLI agent to it. Set `pharo.mcp.enabled` to `false` to not start it. See [docs/agents.md](docs/agents.md).
 
+### Playground
+
+**Pharo: New Playground** opens a page `pharo-playground:` evaluated in the active image.
+
+- **Do it** (`Ctrl+D`), **Print it** (`Ctrl+P`) and **Inspect it** (`Ctrl+I`; `Cmd` on macOS) evaluate the selection, or else the line of the cursor. The same actions are offered as Code Lens above each paragraph of the page. Print it writes the result after the code, selected, so that typing replaces it; Inspect it binds the result to the variable `it` and shows it in the **Variables** view.
+- The variables of a page survive between its evaluations and show in the **Variables** view, whose title button resets them.
+- What the image shows on the `Transcript` appears live in the **Pharo Transcript** output channel (**Pharo: Show Transcript**).
+- An evaluation that fails offers to **Debug** the code in the debugger of the image (DAP), without the variables of the page.
+- The pages are kept for each image: **Pharo: Open Playground Page…** reopens or deletes them, the most recent first.
+
+The playground needs a language server that announces the `pls-playground` capability.
+
 ### Moose Book (Notebook for Moose/Pharo)
 
-MooseBook is a way to use a notebook with Pharo
+MooseBook is a way to use a notebook with Pharo. The playground is for trying things in the image; a Moosebook is a file of the workspace, for analyses that are recorded and shared with their results.
 
 ### Additional feature
 

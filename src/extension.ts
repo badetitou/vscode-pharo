@@ -39,6 +39,8 @@ import { registerNavigationCommands } from './env/navigationCommands';
 import { PharoEntityFileSystem } from './env/entityFileSystem';
 import { ENTITY_SCHEME } from './env/entityUri';
 import { ClassPanel, registerClassPanel } from './env/classPanel';
+import { Playground, playgroundFeaturesFrom } from './playground/playground';
+import { PLAYGROUND_SCHEME, PlaygroundFileSystem } from './playground/playgroundPages';
 
 
 export let client: LanguageClient;
@@ -55,6 +57,7 @@ let pharoImagesExplorer: PharoImagesExplorer;
 let entityFileSystem: PharoEntityFileSystem;
 let editorSession: EditorSession;
 let classPanel: ClassPanel;
+let playground: Playground;
 /** The MCP server of the image of this window, declared to VS Code for the agents. */
 let pharoMcpServers: PharoMcpServers | undefined;
 
@@ -111,6 +114,11 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(editorSession.registerView(projectsView), editorSession.registerView(classPanel));
 	registerSpotter(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
 	registerNavigationCommands(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined, () => classPanel.provider.className);
+	// The pages are registered before the server starts, so that VS Code reopens them
+	const playgroundPages = new PlaygroundFileSystem(context.globalStorageUri, configuredImagePath);
+	playground = new Playground(playgroundPages, Uri.joinPath(context.globalStorageUri, 'playgrounds', 'debug'));
+	playground.register();
+	context.subscriptions.push(playgroundPages, playground);
 	syncPharoImageWorkspaceFolder();
 	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration('pharo.imageWorkspace')) {
@@ -175,6 +183,10 @@ export async function activate(context: ExtensionContext) {
 		pharoImageExplorer.refresh();
 		void classPanel.refresh().then(() => window.activeTextEditor && classPanel.follow(window.activeTextEditor.document.uri));
 		documentExplorer = new PharoDocumentExplorer(context);
+		playground.attach({
+			sendRequest: (method, params) => client.sendRequest(method, params),
+			onNotification: (method, handler) => client.onNotification(method, handler)
+		}, playgroundFeaturesFrom(client.initializeResult?.capabilities.experimental), () => documentExplorer.refresh());
 
 		// Create debugguer
 		let factory = new DebugAdapterFactory();
@@ -277,6 +289,11 @@ async function warnOfConflicts(documents: TextDocument[]): Promise<void> {
 		await window.showTextDocument(document);
 		await commands.executeCommand('workbench.action.files.revert');
 	}
+}
+
+/** Answer the image of the settings, before the server checks it, or undefined when none is set. */
+function configuredImagePath(): string | undefined {
+	return workspace.getConfiguration('pharo').get<string>('pathToImage', '').trim() || undefined;
 }
 
 function formatError(error: unknown): string {
@@ -929,6 +946,7 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 			{ scheme: 'file', language: 'pharo' },
 			{ scheme: 'pharoImage', language: 'pharo' },
 			{ scheme: ENTITY_SCHEME, language: 'pharo' },
+			{ scheme: PLAYGROUND_SCHEME, language: 'pharo' },
 			{ notebook: 'moosebook', language: 'pharo' }
 		],
 		initializationOptions: mcpInitializationOptions(workspace.getConfiguration('pharo').get<boolean>('mcp.enabled', true)),
