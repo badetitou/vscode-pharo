@@ -7,18 +7,26 @@ name: Deploy Extension
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # The Visual Studio Marketplace authenticates the workflow with its OpenID Connect token
+      id-token: write
     env:
       # A tag with a suffix (2.4.0-alpha.1) publishes the version of package.json as a pre-release
       PRE_RELEASE: ${{ contains(github.ref_name, '-') }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          # vsce 4 needs Node 22
+          node-version: 22
       - run: npm ci
       - name: Publish to Open VSX Registry
         uses: HaaLeo/publish-vscode-extension@v1
         with:
           pat: ${{ secrets.OPEN_VSX_TOKEN }}
           preRelease: ${{ env.PRE_RELEASE == 'true' }}
-      - run: npx @vscode/vsce publish --oidc
+          # Publishing again a tag only completes the registries that miss its version
+          skipDuplicate: true
+      - name: Publish to Visual Studio Marketplace
+        run: npx --yes @vscode/vsce@4.1.0 publish --oidc --skip-duplicate ${{ env.PRE_RELEASE == 'true' && '--pre-release' || '' }}
