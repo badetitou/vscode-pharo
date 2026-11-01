@@ -1,4 +1,4 @@
-import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel, FileSystemError, ConfigurationTarget, TextDocument, lm } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel, FileSystemError, ConfigurationTarget, TextDocument, lm, env } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
@@ -344,7 +344,8 @@ function createCommands(context: ExtensionContext) {
 }
 
 function registerPharoImagesCommands(context: ExtensionContext) {
-	context.subscriptions.push(commands.registerCommand('pharo.selectImage', commandPharoSelectImage));
+	context.subscriptions.push(commands.registerCommand('pharo.selectImage', (imagePath?: unknown) =>
+		commandPharoSelectImage(typeof imagePath === 'string' ? imagePath : undefined)));
 	context.subscriptions.push(commands.registerCommand('pharo.images.refresh', () => {
 		pharoImagesExplorer?.refresh();
 	}));
@@ -354,12 +355,32 @@ function registerPharoImagesCommands(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('pharo.images.download', async () => {
 		await commandPharoImagesDownload();
 	}));
+	context.subscriptions.push(commands.registerCommand('pharo.images.use', async (node?: PharoImagesNode) => {
+		if (node) {
+			await commandPharoSelectImage(node.imageUri.fsPath);
+		}
+	}));
+	context.subscriptions.push(commands.registerCommand('pharo.images.reveal', async (node?: PharoImagesNode) => {
+		if (node) {
+			await commands.executeCommand('revealFileInOS', node.imageUri);
+		}
+	}));
+	context.subscriptions.push(commands.registerCommand('pharo.images.copyPath', async (node?: PharoImagesNode) => {
+		if (node) {
+			await env.clipboard.writeText(node.imageUri.fsPath);
+		}
+	}));
+	context.subscriptions.push(commands.registerCommand('pharo.images.openFolder', async () => {
+		const imagesDirectory = Uri.file(await pharoImagesExplorer.imagesDirectory());
+		await workspace.fs.createDirectory(imagesDirectory);
+		await commands.executeCommand('revealFileInOS', imagesDirectory);
+	}));
 }
 
-async function commandPharoSelectImage(): Promise<void> {
+async function commandPharoSelectImage(imagePath?: string): Promise<void> {
 	const configuration = workspace.getConfiguration('pharo');
 	const currentImagePath = configuration.get<string>('pathToImage', '');
-	const selectedImages = await window.showOpenDialog({
+	const selectedImages = imagePath ? [Uri.file(imagePath)] : await window.showOpenDialog({
 		canSelectFiles: true,
 		canSelectFolders: false,
 		canSelectMany: false,
@@ -444,12 +465,8 @@ async function commandPharoSelectImage(): Promise<void> {
 	}
 }
 
-function pharoImagesRootFolderFsPath(): string {
-	return path.join(os.homedir(), 'Documents', 'Pharo', 'images');
-}
-
 async function commandPharoImagesDownload(): Promise<void> {
-	const rootFolder = Uri.file(pharoImagesRootFolderFsPath());
+	const rootFolder = Uri.file(await pharoImagesExplorer.imagesDirectory());
 	let localName: string | undefined;
 	let replaceExisting = false;
 	while (!localName) {

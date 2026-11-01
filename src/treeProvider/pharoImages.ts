@@ -1,20 +1,22 @@
 import * as vscode from 'vscode';
-import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
 import { parseJsoncObject } from '../jsonc';
+import { isExplicitlySet } from '../requirements';
+import { LauncherImage, LauncherLocations, findImages, pharoVersionLabel, readLauncherLocations } from '../pharoLauncher';
 
 type WorkspaceDescriptor =
 	| { kind: 'workspaceFile'; uri: vscode.Uri }
 	| { kind: 'folderSettings'; uri: vscode.Uri };
 
-export type PharoImagesNode =
-	| { kind: 'folder'; label: string; uri: vscode.Uri }
-	| { kind: 'image'; label: string; imageUri: vscode.Uri; folderUri: vscode.Uri; workspace?: WorkspaceDescriptor };
-
-function defaultPharoImagesFolderUri(): vscode.Uri {
-	return vscode.Uri.file(path.join(os.homedir(), 'Documents', 'Pharo', 'images'));
-}
+export type PharoImagesNode = {
+	kind: 'image';
+	label: string;
+	imageUri: vscode.Uri;
+	folderUri: vscode.Uri;
+	workspace?: WorkspaceDescriptor;
+	image: LauncherImage;
+};
 
 async function uriExists(uri: vscode.Uri): Promise<boolean> {
 	try {
@@ -85,7 +87,10 @@ export async function createWorkspaceForImage(imageUri: vscode.Uri): Promise<vsc
 	];
 
 	const currentPharoConfig = vscode.workspace.getConfiguration('pharo');
-	const pathToVM = currentPharoConfig.get<string>('pathToVM');
+	// A VM left to its default is resolved for each image from Pharo Launcher, so it is not copied
+	const pathToVM = isExplicitlySet(currentPharoConfig.inspect<string>('pathToVM'))
+		? currentPharoConfig.get<string>('pathToVM')
+		: undefined;
 	const headless = currentPharoConfig.get<boolean>('headless');
 
 	const settings: Record<string, unknown> = {
@@ -136,9 +141,43 @@ function isAlreadyExistsError(error: unknown): error is NodeJS.ErrnoException {
 	return error instanceof Error && 'code' in error && error.code === 'EEXIST';
 }
 
+function activeImagePath(): string | undefined {
+	const configured = vscode.workspace.getConfiguration('pharo').get<string>('pathToImage', '').trim();
+	return configured ? normalizeFsPath(configured) : undefined;
+}
+
+function imageTooltip(node: PharoImagesNode, active: boolean): vscode.MarkdownString {
+	const metadata = node.image.metadata;
+	const version = pharoVersionLabel(metadata?.pharoVersion);
+	const lines = [`**${node.label}**${active ? ' — active in this window' : ''}`, ''];
+	const addLine = (label: string, value: string | undefined) => {
+		if (value) {
+			lines.push(`${label}: ${value}  `);
+		}
+	};
+	addLine('Pharo', version && metadata?.architecture ? `${version} (${metadata.architecture} bits)` : version);
+	addLine('Template', metadata?.template);
+	addLine('VM', metadata?.vmId);
+	addLine('Last saved', new Date(node.image.lastModified).toLocaleString());
+	addLine('Workspace', node.workspace
+		? (node.workspace.kind === 'workspaceFile' ? path.basename(node.workspace.uri.fsPath) : 'folder settings')
+		: 'none');
+	addLine('Path', node.imageUri.fsPath);
+	if (metadata?.description) {
+		lines.push('', metadata.description);
+	}
+	const tooltip = new vscode.MarkdownString(lines.join('\n'));
+	tooltip.supportHtml = false;
+	return tooltip;
+}
+
 export class PharoImagesProvider implements vscode.TreeDataProvider<PharoImagesNode> {
 	private readonly didChangeTreeDataEmitter = new vscode.EventEmitter<void>();
 	readonly onDidChangeTreeData: vscode.Event<void> = this.didChangeTreeDataEmitter.event;
+	/** The locations of the last listing, to describe the view. */
+	locations: LauncherLocations | undefined;
+
+	constructor(private readonly onListed: (locations: LauncherLocations, count: number) => void = () => undefined) {}
 
 	refresh(): void {
 		this.didChangeTreeDataEmitter.fire();
@@ -148,103 +187,50 @@ export class PharoImagesProvider implements vscode.TreeDataProvider<PharoImagesN
 		this.didChangeTreeDataEmitter.dispose();
 	}
 
-	getTreeItem(element: PharoImagesNode): vscode.TreeItem | Thenable<vscode.TreeItem> {
-		if (element.kind === 'folder') {
-			const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.Collapsed);
-			item.iconPath = new vscode.ThemeIcon('folder');
-			item.contextValue = 'pharoImages.folder';
-			item.tooltip = element.uri.fsPath;
-			return item;
-		}
-
+	getTreeItem(element: PharoImagesNode): vscode.TreeItem {
+		const active = activeImagePath() === normalizeFsPath(element.imageUri.fsPath);
+		const metadata = element.image.metadata;
 		const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
-		item.iconPath = new vscode.ThemeIcon('file-binary');
-		item.contextValue = 'pharoImages.image';
-		item.tooltip = element.imageUri.fsPath;
-		item.description = element.workspace
-			? (element.workspace.kind === 'workspaceFile' ? 'workspace' : 'dossier configuré')
-			: 'pas de workspace';
-		item.command = {
-			command: 'pharo.images.play',
-			title: 'Ouvrir le workspace Pharo',
-			arguments: [element]
-		};
+		item.id = element.imageUri.fsPath;
+		item.iconPath = active
+			? new vscode.ThemeIcon('vm-running', new vscode.ThemeColor('charts.green'))
+			: new vscode.ThemeIcon('vm');
+		item.contextValue = active ? 'pharoImages.image.active' : 'pharoImages.image';
+		item.description = [
+			active ? 'active' : undefined,
+			pharoVersionLabel(metadata?.pharoVersion) && `Pharo ${pharoVersionLabel(metadata?.pharoVersion)}`,
+			metadata?.template
+		].filter(Boolean).join(' · ');
+		item.tooltip = imageTooltip(element, active);
 		return item;
 	}
 
 	async getChildren(element?: PharoImagesNode): Promise<PharoImagesNode[]> {
-		if (element?.kind === 'image') {
+		if (element) {
 			return [];
 		}
-
-		if (element?.kind === 'folder') {
-			let entries: Array<[string, vscode.FileType]> = [];
+		const locations = await readLauncherLocations();
+		this.locations = locations;
+		const images = await findImages(locations);
+		const nodes = await Promise.all(images.map(async (image): Promise<PharoImagesNode> => {
+			const imageUri = vscode.Uri.file(image.imagePath);
+			let workspace: WorkspaceDescriptor | undefined;
 			try {
-				entries = await vscode.workspace.fs.readDirectory(element.uri);
+				workspace = await resolveWorkspaceForImage(imageUri);
 			} catch {
-				return [];
+				// An unreadable workspace file does not hide the image
 			}
-
-			const images = entries
-				.filter(([name, type]) => type === vscode.FileType.File && name.toLowerCase().endsWith('.image'))
-				.map(([name]) => vscode.Uri.joinPath(element.uri, name));
-
-			const nodes = await Promise.all(images.map(async (imageUri) => {
-				const label = path.basename(imageUri.fsPath, '.image');
-				const workspace = await resolveWorkspaceForImage(imageUri);
-				return { kind: 'image', label, imageUri, folderUri: element.uri, workspace } as PharoImagesNode;
-			}));
-
-			return nodes.sort((a, b) => a.kind === 'image' && b.kind === 'image'
-				? a.label.localeCompare(b.label)
-				: 0
-			);
-		}
-
-		const rootUri = defaultPharoImagesFolderUri();
-		if (!(await uriExists(rootUri))) {
-			return [];
-		}
-
-		let entries: Array<[string, vscode.FileType]> = [];
-		try {
-			entries = await vscode.workspace.fs.readDirectory(rootUri);
-		} catch {
-			return [];
-		}
-
-		const directImages = entries
-			.filter(([name, type]) => type === vscode.FileType.File && name.toLowerCase().endsWith('.image'))
-			.map(([name]) => vscode.Uri.joinPath(rootUri, name));
-
-		const directories = entries
-			.filter(([_, type]) => type === vscode.FileType.Directory)
-			.map(([name]) => ({ name, uri: vscode.Uri.joinPath(rootUri, name) }));
-
-		const folderNodes: PharoImagesNode[] = [];
-		for (const dir of directories) {
-			try {
-				const subEntries = await vscode.workspace.fs.readDirectory(dir.uri);
-				const hasImage = subEntries.some(([name, type]) => type === vscode.FileType.File && name.toLowerCase().endsWith('.image'));
-				if (hasImage) {
-					folderNodes.push({ kind: 'folder', label: dir.name, uri: dir.uri });
-				}
-			} catch {
-				// ignore unreadable subdirs
-			}
-		}
-
-		const directImageNodes = await Promise.all(directImages.map(async (imageUri) => {
-			const label = path.basename(imageUri.fsPath, '.image');
-			const folderUri = rootUri;
-			const workspace = await resolveWorkspaceForImage(imageUri);
-			return { kind: 'image', label, imageUri, folderUri, workspace } as PharoImagesNode;
+			return {
+				kind: 'image',
+				label: image.label,
+				imageUri,
+				folderUri: vscode.Uri.file(path.dirname(image.imagePath)),
+				workspace,
+				image
+			};
 		}));
-
-		return [
-			...folderNodes.sort((a, b) => (a.kind === 'folder' && b.kind === 'folder') ? a.label.localeCompare(b.label) : 0),
-			...directImageNodes.sort((a, b) => (a.kind === 'image' && b.kind === 'image') ? a.label.localeCompare(b.label) : 0)
-		];
+		this.onListed(locations, nodes.length);
+		return nodes;
 	}
 }
 
@@ -253,9 +239,13 @@ export class PharoImagesExplorer {
 	private readonly view: vscode.TreeView<PharoImagesNode>;
 
 	constructor(context: vscode.ExtensionContext) {
-		this.provider = new PharoImagesProvider();
+		this.provider = new PharoImagesProvider((locations, count) => this.describe(locations, count));
 		this.view = vscode.window.createTreeView('images', { treeDataProvider: this.provider });
-		context.subscriptions.push(this);
+		context.subscriptions.push(this, vscode.workspace.onDidChangeConfiguration((event) => {
+			if (event.affectsConfiguration('pharo.pathToImage')) {
+				this.refresh();
+			}
+		}));
 	}
 
 	refresh(): void {
@@ -267,17 +257,25 @@ export class PharoImagesExplorer {
 		this.provider.dispose();
 	}
 
+	/** The folder the images are listed from, the one Pharo Launcher uses when it is installed. */
+	async imagesDirectory(): Promise<string> {
+		return (this.provider.locations ?? await readLauncherLocations()).imagesDirectory;
+	}
+
+	private describe(locations: LauncherLocations, count: number): void {
+		this.view.description = locations.settingsFile ? 'Pharo Launcher' : undefined;
+		this.view.message = count === 0
+			? `No Pharo image in ${locations.imagesDirectory}. Download one with the toolbar.`
+			: undefined;
+	}
+
 	async play(node?: PharoImagesNode): Promise<void> {
-		if (!node || node.kind !== 'image') {
+		if (!node) {
 			return;
 		}
 
 		const existing = await resolveWorkspaceForImage(node.imageUri);
-		if (existing?.kind === 'workspaceFile') {
-			await vscode.commands.executeCommand('vscode.openFolder', existing.uri, true);
-			return;
-		}
-		if (existing?.kind === 'folderSettings') {
+		if (existing) {
 			await vscode.commands.executeCommand('vscode.openFolder', existing.uri, true);
 			return;
 		}

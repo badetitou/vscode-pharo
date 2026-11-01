@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { launcherVmForImage } from './pharoLauncher';
 
 export interface RequirementsData {
 	pathToVM: string;
@@ -24,7 +25,11 @@ export async function resolveRequirements(imagePathOverride?: string): Promise<R
 	const configuredVM = configuration.get<string>('pathToVM', '').trim();
 	const configuredImage = (imagePathOverride ?? configuration.get<string>('pathToImage', '')).trim();
 
-	const pathToVM = await resolveVMPath(configuredVM);
+	// Without an explicit pharo.pathToVM, the image runs with the VM Pharo Launcher would use for it
+	const launcherVM = !isExplicitlySet(configuration.inspect<string>('pathToVM')) && configuredImage
+		? await launcherVmForImage(path.resolve(configuredImage))
+		: undefined;
+	const pathToVM = launcherVM ?? await resolveVMPath(configuredVM);
 	if (!pathToVM) {
 		throw new RequirementsError(
 			configuredVM
@@ -61,6 +66,10 @@ export async function resolveRequirements(imagePathOverride?: string): Promise<R
 	}
 
 	return { pathToVM, pathToImage };
+}
+
+export function isExplicitlySet<T>(inspected: { globalValue?: T; workspaceValue?: T; workspaceFolderValue?: T } | undefined): boolean {
+	return inspected?.globalValue !== undefined || inspected?.workspaceValue !== undefined || inspected?.workspaceFolderValue !== undefined;
 }
 
 async function resolveVMPath(configuredVM: string): Promise<string | undefined> {
