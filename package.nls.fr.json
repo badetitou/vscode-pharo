@@ -131,5 +131,21 @@
 	"walkthrough.setup.description": "Configurer le Pharo Language Server",
 	"walkthrough.setup.steps.downloadImage.description": "Dans cette étape, vous devez télécharger la dernière image Pharo Language Server depuis la [page des releases GitHub](https://github.com/badetitou/Pharo-LanguageServer/releases)",
 	"walkthrough.setup.steps.downloadVM.description": "Dans cette étape, vous devez télécharger la dernière [VM pour votre image Pharo](https://files.pharo.org/vm/pharo-spur64-headless/)",
-	"walkthrough.setup.steps.modifySetting.description": "Mettez à jour les paramètres Pharo avec les chemins de l'image et de la VM correspondants\n[Ouvrir les paramètres](command:workbench.action.openSettings)"
+	"walkthrough.setup.steps.modifySetting.description": "Mettez à jour les paramètres Pharo avec les chemins de l'image et de la VM correspondants\n[Ouvrir les paramètres](command:workbench.action.openSettings)",
+	"commands.pharo.inspectIt.title": "Inspecter",
+	"commands.pharo.quickInspectIt.title": "Inspection rapide",
+	"commands.pharo.inspector.back.title": "Revenir à l’objet précédent",
+	"commands.pharo.inspector.breadcrumb.title": "Revenir à un objet inspecté…",
+	"commands.pharo.inspector.selectView.title": "Afficher la vue…",
+	"commands.pharo.inspector.evaluate.title": "Évaluer dans le contexte de l’objet…",
+	"commands.pharo.inspector.refresh.title": "Actualiser l’inspecteur",
+	"commands.pharo.inspector.close.title": "Fermer l’inspecteur",
+	"commands.pharo.inspector.openText.title": "Ouvrir le texte dans un éditeur",
+	"commands.pharo.inspector.dive.title": "Inspecter",
+	"commands.pharo.inspector.copyPrintString.title": "Copier la représentation textuelle",
+	"commands.pharo.inspector.inspect.title": "Inspecter l’objet",
+	"commands.pharo.inspector.loadMore.title": "Afficher plus",
+	"viewsContainers.pharoInspector.title": "Inspecteur Pharo",
+	"views.pharoInspector.name": "Inspecteur",
+	"viewsWelcome.pharoInspector.contents": "Sélectionnez du code Pharo et lancez « Inspecter » pour inspecter son résultat ici, puis parcourez ses slots, ses éléments et ses vues."
 }

@@ -7,6 +7,7 @@
 - Navigate by messages: senders and references (`Shift+F12`), implementors (`Ctrl+F12`), call hierarchy and type hierarchy on entity editors and Tonel files, and from the context menus of the Projects view and the class panel. Results open in entity editors.
 - The critiques of Renraku show in the **Problems** panel on entity editors and Tonel files, as warnings and information apart from compilation errors. Quick fixes apply the transformation of the rule, or ignore the rule for the method, the class or the package (kept in the package manifest, as in Pharo). They are computed when a document opens or is saved; `pharo.critiques.enabled` turns them off.
 - Add a live **Playground** (**Pharo: New Playground**): pages bound to the active image and kept with it, Do it / Print it / Inspect it as Code Lens and with `Ctrl+D` / `Ctrl+P` / `Ctrl+I`, variables in the **Variables** view with reset, the image `Transcript` in the **Pharo Transcript** output channel, and **Debug** on evaluation errors.
+- Inspect objects of the image: **Inspect It** opens an **Inspector** view in the panel, which shows the Raw, Meta and textual or tabular inspections of the object, inspects its slots and rows page by page with a breadcrumb to go back, and evaluates code with `self` bound to the object. **Quick Inspect It** shows the result in a hover on the code. See [docs/inspector.md](docs/inspector.md).
 
 ## v2.3.0
 
