@@ -21,9 +21,4 @@ jobs:
         with:
           pat: ${{ secrets.OPEN_VSX_TOKEN }}
           preRelease: ${{ env.PRE_RELEASE == 'true' }}
-      - name: Publish to Visual Studio Marketplace
-        uses: HaaLeo/publish-vscode-extension@v1
-        with:
-          pat: ${{ secrets.VS_MARKETPLACE_TOKEN }}
-          registryUrl: https://marketplace.visualstudio.com
-          preRelease: ${{ env.PRE_RELEASE == 'true' }}
+      - run: npx @vscode/vsce publish --oidc
