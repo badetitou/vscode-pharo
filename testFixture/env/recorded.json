@@ -4,7 +4,8 @@
 			"version": 1,
 			"edit": true,
 			"didChange": true,
-			"search": true
+			"search": true,
+			"history": true
 		}
 	},
 	"projects": [
@@ -212,5 +213,34 @@
 			}
 		],
 		"reset": false
-	}
+	},
+	"history": {
+		"items": [
+			{ "source": "count\n\t^ 2", "protocol": "accessing", "stamp": "2026-11-01T18:05:59.044579+01:00" },
+			{ "source": "count\n\t^ 1", "protocol": "accessing", "stamp": "2026-11-01T18:05:59.042004+01:00" }
+		]
+	},
+	"lostChanges": {
+		"items": [
+			{
+				"oldSource": null,
+				"source": "Object << #PLSRecordedProbe\n\tslots: {};\n\tpackage: 'PLSRecordedProbePackage'",
+				"kind": "classAddition",
+				"ref": "1",
+				"id": "class:PLSRecordedProbe",
+				"label": "PLSRecordedProbe",
+				"time": null
+			},
+			{
+				"oldSource": "count\n\t^ 1",
+				"source": "count\n\t^ 2",
+				"kind": "methodModification",
+				"ref": "2",
+				"id": "method:PLSRecordedProbe>>count",
+				"label": "PLSRecordedProbe>>count",
+				"time": "2026-10-31T09:30:00+01:00"
+			}
+		]
+	},
+	"replayLostChanges": { "replayed": ["2"], "failures": [] }
 }

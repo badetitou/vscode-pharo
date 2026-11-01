@@ -12,7 +12,10 @@ import {
 	expectEnvCompileResult,
 	expectEnvDidChangeParams,
 	expectEnvEntity,
+	expectEnvHistory,
+	expectEnvLostChanges,
 	expectEnvNodes,
+	expectEnvReplayResult,
 	expectEnvSearchResult,
 	expectEnvSource,
 	isEnvUnknownEntityError,
@@ -60,14 +63,14 @@ function page(items: EnvNode[], offset = 0, limit = items.length): { items: EnvN
 	return { items: items.slice(offset, offset + limit), total: items.length };
 }
 
-const fullCapabilities = { version: 1, didChange: true, edit: true, search: true };
+const fullCapabilities = { version: 1, didChange: true, edit: true, search: true, history: true };
 
 suite('Pharo environment model contracts', () => {
 	test('reads the capabilities announced by the server', () => {
 		assert.deepStrictEqual(envCapabilitiesFrom(recorded['initialize-capabilities']), fullCapabilities);
 		assert.strictEqual(envCapabilitiesFrom(undefined), undefined);
 		assert.strictEqual(envCapabilitiesFrom({ 'pls-env': {} }), undefined);
-		assert.deepStrictEqual(envCapabilitiesFrom({ 'pls-env': { version: 1 } }), { version: 1, didChange: false, edit: false, search: false });
+		assert.deepStrictEqual(envCapabilitiesFrom({ 'pls-env': { version: 1 } }), { version: 1, didChange: false, edit: false, search: false, history: false });
 	});
 
 	test('accepts the recorded responses', () => {
@@ -121,6 +124,17 @@ suite('Pharo environment model contracts', () => {
 		assert.strictEqual(isEnvUnknownEntityError(recorded['error-conflict']), false);
 	});
 
+	test('reads the history and the lost changes of the image', () => {
+		const versions = expectEnvHistory(recorded.history, 'pls-env:history');
+		assert.deepStrictEqual(versions.map((version) => version.source), ['count\n\t^ 2', 'count\n\t^ 1']);
+		const lost = expectEnvLostChanges(recorded.lostChanges, 'pls-env:lostChanges');
+		assert.deepStrictEqual([lost[0].oldSource, lost[0].time, lost[1].id], [null, null, 'method:PLSRecordedProbe>>count']);
+		assert.deepStrictEqual(expectEnvReplayResult(recorded.replayLostChanges, 'pls-env:replayLostChanges'), { replayed: ['2'], failures: [] });
+		assert.throws(() => expectEnvHistory({ items: [{ source: 'a', stamp: null }] }, 'pls-env:history'), /pls-env:history\.items\.protocol/);
+		assert.throws(() => expectEnvLostChanges({ items: [{ ...recorded.lostChanges.items[1], source: 3 }] }, 'pls-env:lostChanges'), /pls-env:lostChanges\.items\.source/);
+		assert.throws(() => expectEnvReplayResult({ replayed: ['1'] }, 'pls-env:replayLostChanges'), /pls-env:replayLostChanges/);
+	});
+
 	test('parses entity ids', () => {
 		assert.deepStrictEqual(parseEnvId('method:Behavior>>>>'), { kind: 'method', path: 'Behavior>>>>' });
 		assert.deepStrictEqual(parseEnvId('side:Array class'), { kind: 'side', path: 'Array class' });
@@ -143,7 +157,7 @@ suite('Pharo environment model client', () => {
 
 	test('does not listen to changes the server does not send', () => {
 		const transport = new FakeTransport(() => undefined);
-		new PharoEnvironment('/images/A.image', { version: 1, didChange: false, edit: false, search: false }, transport).dispose();
+		new PharoEnvironment('/images/A.image', { version: 1, didChange: false, edit: false, search: false, history: false }, transport).dispose();
 		assert.strictEqual(transport.notificationHandler, undefined);
 	});
 
@@ -157,6 +171,25 @@ suite('Pharo environment model client', () => {
 		assert.strictEqual(transport.requestsFor('pls-env:search'), 2);
 		assert.strictEqual(transport.tokens[0], cancellation.token);
 		cancellation.dispose();
+	});
+
+	test('sends the requests of the history and of the lost changes', async () => {
+		const transport = new FakeTransport((method) => ({
+			'pls-env:history': recorded.history,
+			'pls-env:lostChanges': recorded.lostChanges,
+			'pls-env:replayLostChanges': recorded.replayLostChanges
+		} as Record<string, unknown>)[method]);
+		const environment = new PharoEnvironment('/images/A.image', fullCapabilities, transport);
+		assert.strictEqual((await environment.history('method:PLSRecordedProbe>>count')).length, 2);
+		assert.strictEqual((await environment.lostChanges()).length, 2);
+		assert.deepStrictEqual((await environment.replayLostChanges(['2'])).replayed, ['2']);
+		await environment.dismissLostChanges(['1']);
+		assert.deepStrictEqual(transport.requests.map((request) => [request.method, request.params]), [
+			['pls-env:history', { id: 'method:PLSRecordedProbe>>count' }],
+			['pls-env:lostChanges', undefined],
+			['pls-env:replayLostChanges', { refs: ['2'] }],
+			['pls-env:dismissLostChanges', { refs: ['1'] }]
+		]);
 	});
 
 	test('loads every page of children', async () => {

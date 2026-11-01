@@ -8,6 +8,7 @@
 - The critiques of Renraku show in the **Problems** panel on entity editors and Tonel files, as warnings and information apart from compilation errors. Quick fixes apply the transformation of the rule, or ignore the rule for the method, the class or the package (kept in the package manifest, as in Pharo). They are computed when a document opens or is saved; `pharo.critiques.enabled` turns them off.
 - Add a live **Playground** (**Pharo: New Playground**): pages bound to the active image and kept with it, Do it / Print it / Inspect it as Code Lens and with `Ctrl+D` / `Ctrl+P` / `Ctrl+I`, variables in the **Variables** view with reset, the image `Transcript` in the **Pharo Transcript** output channel, and **Debug** on evaluation errors.
 - Inspect objects of the image: **Inspect It** opens an **Inspector** view in the panel, which shows the Raw, Meta and textual or tabular inspections of the object, inspects its slots and rows page by page with a breadcrumb to go back, and evaluates code with `self` bound to the object. **Quick Inspect It** shows the result in a hover on the code. See [docs/inspector.md](docs/inspector.md).
+- **Show Method History** lists the versions of a method and compares each one with the method in the diff editor of VS Code; **Restore This Version** compiles it back. After a crash or a quit without saving, the changes Epicea kept appear in the Source Control view, where they can be compared, replayed or dismissed (**Recover Lost Changes**), and a notification offers to review them when the image starts.
 
 ## v2.3.0
 

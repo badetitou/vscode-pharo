@@ -6,17 +6,23 @@ import {
 	EnvDidChangeParams,
 	EnvEntity,
 	EnvKind,
+	EnvLostChange,
 	EnvNode,
+	EnvReplayResult,
 	EnvSearchKind,
 	EnvSearchResult,
 	EnvSource,
+	EnvVersion,
 	envCapabilitiesFrom,
 	expectEnvChildrenPage,
 	expectEnvClassification,
 	expectEnvCompileResult,
 	expectEnvDidChangeParams,
 	expectEnvEntity,
+	expectEnvHistory,
+	expectEnvLostChanges,
 	expectEnvNodes,
+	expectEnvReplayResult,
 	expectEnvSearchResult,
 	expectEnvSource,
 	parseEnvId
@@ -144,6 +150,28 @@ export class PharoEnvironment implements vscode.Disposable {
 	async remove(id: string, expectedVersion?: string): Promise<void> {
 		await this.transport.sendRequest('pls-env:remove', { id, expectedVersion });
 		this.forget(id);
+	}
+
+	/** Answer the versions of a method, newest first; the first is its current source. Never cached. */
+	async history(id: string): Promise<EnvVersion[]> {
+		return expectEnvHistory(await this.transport.sendRequest('pls-env:history', { id }), 'pls-env:history');
+	}
+
+	/** Answer the code changes of the last session of the image that it did not save, oldest first. */
+	async lostChanges(): Promise<EnvLostChange[]> {
+		return expectEnvLostChanges(await this.transport.sendRequest('pls-env:lostChanges'), 'pls-env:lostChanges');
+	}
+
+	/** Apply lost changes to the image, in the order of the log. The image notifies what they change. */
+	async replayLostChanges(refs: string[]): Promise<EnvReplayResult> {
+		return expectEnvReplayResult(
+			await this.transport.sendRequest('pls-env:replayLostChanges', { refs }),
+			'pls-env:replayLostChanges'
+		);
+	}
+
+	async dismissLostChanges(refs: string[]): Promise<void> {
+		await this.transport.sendRequest('pls-env:dismissLostChanges', { refs });
 	}
 
 	/** Drop what is cached about the entity id and the children of its parent. */

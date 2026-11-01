@@ -43,6 +43,8 @@ import { Playground, playgroundFeaturesFrom } from './playground/playground';
 import { PLAYGROUND_SCHEME, PlaygroundFileSystem } from './playground/playgroundPages';
 import { inspectorCapabilitiesFrom } from './inspector/inspectorContracts';
 import { registerInspector } from './inspector/inspectorView';
+import { registerMethodHistory } from './env/methodHistory';
+import { LostChanges, registerLostChanges } from './env/lostChanges';
 
 
 export let client: LanguageClient;
@@ -61,6 +63,7 @@ let entityFileSystem: PharoEntityFileSystem;
 let editorSession: EditorSession;
 let classPanel: ClassPanel;
 let playground: Playground;
+let lostChanges: LostChanges;
 /** The MCP server of the image of this window, declared to VS Code for the agents. */
 let pharoMcpServers: PharoMcpServers | undefined;
 
@@ -123,6 +126,8 @@ export async function activate(context: ExtensionContext) {
 	playground.register();
 	context.subscriptions.push(playgroundPages, playground);
 	registerInspector(context, () => inspectorAvailable ? (method, params) => client.sendRequest(method, params) : undefined);
+	registerMethodHistory(context, () => pharoEnvironment?.capabilities.history ? pharoEnvironment : undefined);
+	lostChanges = registerLostChanges(context, () => pharoEnvironment?.capabilities.history ? pharoEnvironment : undefined);
 	syncPharoImageWorkspaceFolder();
 	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration('pharo.imageWorkspace')) {
@@ -176,6 +181,7 @@ export async function activate(context: ExtensionContext) {
 		);
 		void commands.executeCommand('setContext', 'pharo.envEdit', pharoEnvironment?.capabilities.edit === true);
 		void commands.executeCommand('setContext', 'pharo.envSearch', pharoEnvironment?.capabilities.edit === true && pharoEnvironment.capabilities.search);
+		void commands.executeCommand('setContext', 'pharo.envHistory', pharoEnvironment?.capabilities.history === true);
 		if (pharoEnvironment) {
 			context.subscriptions.push(pharoEnvironment);
 		} else {
@@ -220,6 +226,10 @@ export async function activate(context: ExtensionContext) {
 		if (pharoEnvironment?.capabilities.edit) {
 			void editorSession.start(pharoEnvironment).catch((error) =>
 				outputChannel.appendLine(`Unable to restore the Pharo editor session: ${formatError(error)}`));
+		}
+		if (pharoEnvironment?.capabilities.history) {
+			void lostChanges.start().catch((error) =>
+				outputChannel.appendLine(`Unable to look for the lost changes of the image: ${formatError(error)}`));
 		}
 
 		// Create Tests

@@ -30,6 +30,8 @@ export function run(): Promise<void> {
 	mocha.addFile(path.resolve(__dirname, './navigationCommands.test.js'));
 	mocha.addFile(path.resolve(__dirname, './playground.test.js'));
 	mocha.addFile(path.resolve(__dirname, './inspector.test.js'));
+	mocha.addFile(path.resolve(__dirname, './methodHistory.test.js'));
+	mocha.addFile(path.resolve(__dirname, './lostChanges.test.js'));
 
 	return new Promise((resolve, reject) => {
 		try {
