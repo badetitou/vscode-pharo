@@ -136,10 +136,6 @@ The **Editor Stack** view lists the classes and methods visited, open or closed,
 
 ![Keep Variable state gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/keep-variable-state.gif)
 
-5. Explore variable state
-
-![Explore variable state gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/documentVariablesBrowser.gif)
-
 1. Show the current server version
 
 ![Show version gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/pharo-version.gif)

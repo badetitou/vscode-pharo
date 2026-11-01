@@ -40,13 +40,13 @@ const NEW_PAGE = 'New Page';
 
 /**
  * The playground of the active image: pages `pharo-playground:` evaluated in the image, whose variables survive between
- * evaluations and show in the Variables view, and the Transcript of the image in an output channel.
+ * evaluations, and the Transcript of the image in an output channel.
  * The pages are registered at activation, so that VS Code reopens them; the evaluations wait for the server.
  */
 export class Playground implements vscode.Disposable {
 	private server: PlaygroundServer | undefined;
 	private features: PlaygroundFeatures = { transcript: false, resetBindings: false, inspectIt: false };
-	private refreshVariables: () => void = () => undefined;
+	private inspector = false;
 	private evaluating = 0;
 	private readonly transcript: vscode.OutputChannel;
 	private readonly disposables: vscode.Disposable[] = [];
@@ -67,17 +67,15 @@ export class Playground implements vscode.Disposable {
 			vscode.commands.registerCommand('pharo.playground.printIt', (uri?: vscode.Uri, range?: vscode.Range) => this.evaluate('printIt', uri, range)),
 			vscode.commands.registerCommand('pharo.playground.inspectIt', (uri?: vscode.Uri, range?: vscode.Range) => this.evaluate('inspectIt', uri, range)),
 			vscode.commands.registerCommand('pharo.playground.resetBindings', (uri?: vscode.Uri) => this.resetBindings(uri)),
-			vscode.commands.registerCommand('pharo.transcript.show', () => this.transcript.show()),
-			// The Variables view shows the variables of the active editor
-			vscode.window.onDidChangeActiveTextEditor(() => this.refreshVariables())
+			vscode.commands.registerCommand('pharo.transcript.show', () => this.transcript.show())
 		);
 	}
 
-	/** Evaluate the pages in the image of a started server. */
-	attach(server: PlaygroundServer, features: PlaygroundFeatures, refreshVariables: () => void): void {
+	/** Evaluate the pages in the image of a started server; Inspect it opens the Pharo inspector when it provides one. */
+	attach(server: PlaygroundServer, features: PlaygroundFeatures, inspector: boolean): void {
 		this.server = server;
 		this.features = features;
-		this.refreshVariables = refreshVariables;
+		this.inspector = inspector;
 		void vscode.commands.executeCommand('setContext', 'pharo.playground.resetBindings', features.resetBindings);
 		if (features.transcript) {
 			this.disposables.push(server.onNotification('pls/transcript', (params) => this.showOnTranscript(params.text)));
@@ -149,8 +147,8 @@ export class Playground implements vscode.Disposable {
 
 	/**
 	 * Evaluate a range of a page, or the selection of the active editor, or else the line of its cursor.
-	 * Print it writes the result after the code, selected so that typing replaces it; Inspect it binds it to `it` and
-	 * shows the Variables view. An error offers to debug the code.
+	 * Print it writes the result after the code, selected so that typing replaces it; Inspect it opens it in the Pharo
+	 * inspector. An error offers to debug the code.
 	 */
 	async evaluate(evaluation: Evaluation, uri?: vscode.Uri, range?: vscode.Range): Promise<void> {
 		const editor = uri ? await vscode.window.showTextDocument(uri, { preserveFocus: true, preview: false }) : vscode.window.activeTextEditor;
@@ -167,6 +165,10 @@ export class Playground implements vscode.Disposable {
 		if (!server) {
 			return;
 		}
+		if (evaluation === 'inspectIt' && this.inspector) {
+			await vscode.commands.executeCommand('pharo.inspector.inspect', { expression: code, textDocumentURI: document.uri, label: code });
+			return;
+		}
 		const method = evaluation === 'inspectIt' && this.features.inspectIt ? 'pls:inspectIt' : 'command:printIt';
 		this.evaluating++;
 		let result: string;
@@ -177,7 +179,6 @@ export class Playground implements vscode.Disposable {
 			return;
 		} finally {
 			this.evaluating--;
-			this.refreshVariables();
 		}
 		if (evaluation === 'printIt') {
 			const printed = ` "${result.replace(/"/g, '""')}"`;
@@ -187,7 +188,6 @@ export class Playground implements vscode.Disposable {
 			}
 		} else if (evaluation === 'inspectIt') {
 			if (this.features.inspectIt) {
-				void vscode.commands.executeCommand('pharoBindingView.focus');
 				vscode.window.setStatusBarMessage(`it := ${result}`, 5000);
 			} else {
 				void vscode.window.showInformationMessage(result);
@@ -207,7 +207,6 @@ export class Playground implements vscode.Disposable {
 		} catch (error) {
 			void vscode.window.showErrorMessage(`Unable to reset the variables: ${messageOf(error)}`);
 		}
-		this.refreshVariables();
 	}
 
 	/** Append an entry of the Transcript, and show the Transcript when an evaluation writes on it. */

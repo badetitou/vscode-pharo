@@ -58,7 +58,6 @@
 	"commands.pharo.playground.inspectIt.title": "Inspect it",
 	"commands.pharo.playground.resetBindings.title": "Réinitialiser les variables",
 	"commands.pharo.transcript.show.title": "Afficher le Transcript",
-	"viewsWelcome.pharoBindingView.contents": "Les variables de la page de playground ou du script de l’éditeur actif apparaissent ici et survivent entre ses évaluations.\n[Nouveau playground](command:pharo.playground.new)",
 	"commands.pharo.history.show.title": "Afficher l’historique de la méthode",
 	"commands.pharo.history.restore.title": "Restaurer cette version",
 	"commands.pharo.lostChanges.show.title": "Récupérer les changements perdus",
