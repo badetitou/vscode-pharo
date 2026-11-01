@@ -102,6 +102,7 @@
 	"configuration.pharo.headless.description": "Whether the Pharo image should run in headless mode.",
 	"configuration.pharo.debugMode.description": "Run the image in debug mode (cannot be used in headless mode).",
 	"configuration.pharo.mcp.enabled.description": "Start the MCP server of evref-BL/MCP in the image, so that agents (Copilot, Claude Code, Codex, OpenCode) work on the same image. Applies when the language server restarts.",
+	"configuration.pharo.critiques.enabled.description": "Show the critiques of Renraku (the code critics of Pharo) on entity editors and Tonel files, in the Problems panel, with their quick fixes and the action to ignore a rule. They are computed when a document opens or is saved, not while typing.",
 	"configuration.pharo.quickInstall.imageName.description": "The image to download by default when using the install command.",
 	"configuration.pharo.quickInstall.serverVersion.description": "The server version to install by default.",
 	"configuration.pharo.quickInstall.serverVmVersion.description": "The VM version required by default for the selected server.",

@@ -5,6 +5,7 @@
 - Add a **Projects** view built on the Metacello baselines (project → package → tag → class), with pinning, a filter, Iceberg state, contextual actions and live update. It replaces the Image Browser view.
 - Agents work on the image of the window through the MCP server of [evref-BL/MCP](https://github.com/evref-BL/MCP), that the language server starts on a free port: Copilot sees its tools without configuration, the `@pharo` participant uses them, and **Pharo: Configure a CLI Agent…** connects Claude Code, Codex or OpenCode. The Language Model Tools it replaces are deprecated. See [docs/agents.md](docs/agents.md).
 - Navigate by messages: senders and references (`Shift+F12`), implementors (`Ctrl+F12`), call hierarchy and type hierarchy on entity editors and Tonel files, and from the context menus of the Projects view and the class panel. Results open in entity editors.
+- The critiques of Renraku show in the **Problems** panel on entity editors and Tonel files, as warnings and information apart from compilation errors. Quick fixes apply the transformation of the rule, or ignore the rule for the method, the class or the package (kept in the package manifest, as in Pharo). They are computed when a document opens or is saved; `pharo.critiques.enabled` turns them off.
 
 ## v2.3.0
 

@@ -437,6 +437,13 @@
 					"default": true,
 					"description": "%configuration.pharo.mcp.enabled.description%"
 				},
+				"pharo.critiques.enabled": {
+					"title": "Code critiques",
+					"scope": "window",
+					"type": "boolean",
+					"default": true,
+					"description": "%configuration.pharo.critiques.enabled.description%"
+				},
 				"pharo quick install.image name": {
 					"title": "Quick install image name",
 					"scope": "window",

@@ -69,6 +69,10 @@ The native Test Explorer integration requires Pharo Language Server **5.0.1 or l
 
 ![Diagnostics gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/diagnostics.gif)
 
+**Code critiques**
+
+The critiques of Renraku, the code critics of Pharo, show in the Problems panel when a document opens or is saved. Their quick fixes apply the transformation of the rule, or ignore the rule for the method, the class or the package, in the package manifest as in Pharo. The setting `pharo.critiques.enabled` turns them off.
+
 **Code Lens (Run Tests)**
 
 ![Run test gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/runTest.gif)

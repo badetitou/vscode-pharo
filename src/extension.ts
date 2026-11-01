@@ -934,8 +934,13 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 		initializationOptions: mcpInitializationOptions(workspace.getConfiguration('pharo').get<boolean>('mcp.enabled', true)),
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
-			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
+			fileEvents: workspace.createFileSystemWatcher('**/.clientrc'),
+			// pharo.critiques.enabled shows or hides the critiques of Renraku, through workspace/didChangeConfiguration
+			configurationSection: 'pharo.critiques'
 		},
+		// The server computes the critiques of a document when it is opened or saved, not while typing. Entity editors
+		// are not saved through didSave: the server asks for a refresh once it compiled them.
+		diagnosticPullOptions: { onSave: true },
 		middleware: {
 			// Saving an entity editor compiles it through its file system (pls-env:compile). The server would load a
 			// `.class.st` document a second time on didSave, without checking its version.
