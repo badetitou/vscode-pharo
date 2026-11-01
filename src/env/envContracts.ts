@@ -17,6 +17,7 @@ export interface EnvCapabilities {
 	didChange: boolean;
 	edit: boolean;
 	search: boolean;
+	history: boolean;
 }
 
 export interface EnvNode {
@@ -111,6 +112,34 @@ export interface EnvDidChangeParams {
 	reset: boolean;
 }
 
+/** One version of a method, as the changes file of the image holds it. */
+export interface EnvVersion {
+	source: string;
+	protocol: string;
+	/** When the version was compiled, as Pharo wrote it, or null when unknown. */
+	stamp: string | null;
+}
+
+/** A code change of the last session of the image that it did not save. */
+export interface EnvLostChange {
+	ref: string;
+	/** The Epicea event without its `Ep` prefix, such as `methodModification` or `classAddition`. */
+	kind: string;
+	label: string;
+	/** The entity the change touches, or null. */
+	id: string | null;
+	time: string | null;
+	/** The source of the entity before the change, or null, as for an addition. */
+	oldSource: string | null;
+	/** The source of the entity after the change, or null, as for a removal. */
+	source: string | null;
+}
+
+export interface EnvReplayResult {
+	replayed: string[];
+	failures: { ref: string; message: string }[];
+}
+
 export interface EnvConflict {
 	id: string;
 	currentVersion: string | null;
@@ -134,7 +163,13 @@ export function envCapabilitiesFrom(experimental: unknown): EnvCapabilities | un
 	if (typeof env.version !== 'number') {
 		return undefined;
 	}
-	return { version: env.version, didChange: env.didChange === true, edit: env.edit === true, search: env.search === true };
+	return {
+		version: env.version,
+		didChange: env.didChange === true,
+		edit: env.edit === true,
+		search: env.search === true,
+		history: env.history === true
+	};
 }
 
 export function expectEnvNode(value: unknown, method: string): EnvNode {
@@ -268,6 +303,60 @@ export function expectEnvDidChangeParams(value: unknown, method: string): EnvDid
 	return {
 		changes: value.changes.map((change) => expectEnvChange(change, `${method}.changes`)),
 		reset: value.reset === true
+	};
+}
+
+export function expectEnvHistory(value: unknown, method: string): EnvVersion[] {
+	if (!isObject(value) || !Array.isArray(value.items)) {
+		throw invalid(method, 'expected a list of versions');
+	}
+	return value.items.map((item) => {
+		if (!isObject(item)) {
+			throw invalid(`${method}.items`, 'expected a version');
+		}
+		return {
+			source: expectField(item, 'source', 'string', `${method}.items`),
+			protocol: expectField(item, 'protocol', 'string', `${method}.items`),
+			stamp: expectNullableString(item.stamp, `${method}.items.stamp`)
+		};
+	});
+}
+
+export function expectEnvLostChanges(value: unknown, method: string): EnvLostChange[] {
+	if (!isObject(value) || !Array.isArray(value.items)) {
+		throw invalid(method, 'expected a list of lost changes');
+	}
+	return value.items.map((item) => {
+		if (!isObject(item)) {
+			throw invalid(`${method}.items`, 'expected a lost change');
+		}
+		return {
+			ref: expectField(item, 'ref', 'string', `${method}.items`),
+			kind: expectField(item, 'kind', 'string', `${method}.items`),
+			label: expectField(item, 'label', 'string', `${method}.items`),
+			id: expectNullableString(item.id, `${method}.items.id`),
+			time: expectNullableString(item.time, `${method}.items.time`),
+			oldSource: expectNullableString(item.oldSource, `${method}.items.oldSource`),
+			source: expectNullableString(item.source, `${method}.items.source`)
+		};
+	});
+}
+
+export function expectEnvReplayResult(value: unknown, method: string): EnvReplayResult {
+	if (!isObject(value) || !Array.isArray(value.failures)) {
+		throw invalid(method, 'expected the replayed changes and the failures');
+	}
+	return {
+		replayed: expectStrings(value.replayed, `${method}.replayed`),
+		failures: value.failures.map((failure) => {
+			if (!isObject(failure)) {
+				throw invalid(`${method}.failures`, 'expected a failure');
+			}
+			return {
+				ref: expectField(failure, 'ref', 'string', `${method}.failures`),
+				message: expectField(failure, 'message', 'string', `${method}.failures`)
+			};
+		})
 	};
 }
 

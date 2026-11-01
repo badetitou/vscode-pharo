@@ -18,7 +18,7 @@ This document is the contract between both sides. Version: **1**.
 The server announces the model in the `initialize` result:
 
 ```json
-{ "capabilities": { "experimental": { "pls-env": { "version": 1, "didChange": true, "edit": true, "search": true } } } }
+{ "capabilities": { "experimental": { "pls-env": { "version": 1, "didChange": true, "edit": true, "search": true, "history": true } } } }
 ```
 
 | Field | Meaning |
@@ -27,6 +27,7 @@ The server announces the model in the `initialize` result:
 | `didChange` | The server sends `pls-env/didChange` notifications. |
 | `edit` | The server answers `pls-env:read`, `pls-env:compile`, `pls-env:classify` and `pls-env:remove`. |
 | `search` | The server answers `pls-env:search`. It then also announces `workspaceSymbolProvider`. |
+| `history` | The server answers `pls-env:history`, `pls-env:lostChanges`, `pls-env:replayLostChanges` and `pls-env:dismissLostChanges`. |
 
 Without `pls-env`, the server predates the model: the extension creates no `PharoEnvironment` and keeps using the older `pls:*` requests.
 
@@ -251,6 +252,55 @@ When `expectedVersion` is given and the entity is no longer at that version, or 
 ```
 
 `currentVersion` is `null` when the entity was removed. `envConflictOf` reads this error on the extension side.
+
+## History and lost changes
+
+### `pls-env:history`
+
+Parameter: `id` of a method. Answers the versions of the method that the changes file of the image holds, newest first, as the *Versions* browser of Pharo shows them:
+
+```json
+{ "items": [ { "source": "sum\n\t^ self inject: 0 into: [ :a :b | a + b ]", "protocol": "math", "stamp": "2026-10-30T11:09:50.43086+01:00" } ] }
+```
+
+- The first item is always the current source of the method.
+- `stamp` is when the version was compiled, as Pharo wrote it (an ISO 8601 time since Pharo 12, `author date time` before), or `null` when unknown.
+- Only methods have a history: another id fails as an unknown entity.
+
+### `pls-env:lostChanges`
+
+No parameters. Answers the code changes of the last session of the image that it did not save, oldest first: after a crash, or after quitting without saving, Epicea still logged them.
+
+```json
+{ "items": [ { "ref": "3", "kind": "methodModification", "label": "Array>>sum", "id": "method:Array>>sum", "time": "2026-10-30T11:09:50.43086+01:00", "oldSource": "…", "source": "…" } ] }
+```
+
+- `ref` names the change for the requests below.
+- `kind` is the Epicea event without its `Ep` prefix: `methodAddition`, `methodModification`, `methodRemoval`, `classAddition`, `classModification`, `classRemoval`, `behaviorCommentChange`, `protocolAddition`, `packageAddition`, and so on.
+- `id` is the entity the change touches, or `null`; `label` names it for the user.
+- `oldSource` and `source` are the source of the entity before and after the change, or `null` when there is none, as for an addition or a removal. A class is given by its definition, not in Tonel.
+- `time` is when the change was logged, or `null`.
+
+The image detects these changes as it starts, before Epicea opens the log of the new session (`PLSLostChanges`, which a headless image needs since Pharo's own detector skips it). The list holds until the image quits, but the changes replayed or dismissed since.
+
+### `pls-env:replayLostChanges`
+
+Parameter: `refs`. Applies these changes to the image, in the order of the log whatever the order of `refs`, and answers:
+
+```json
+{ "replayed": [ "3" ], "failures": [ { "ref": "4", "message": "Unknown class: 'Basket'" } ] }
+```
+
+A change that fails, such as a method of a class the image no longer holds, stays in the list. The image notifies what changed through `pls-env/didChange`, as for any other change.
+
+### `pls-env:dismissLostChanges`
+
+Parameter: `refs`. Removes these changes from the list without applying them, and answers `{ "dismissed": refs }`.
+
+### In the extension
+
+- **Method history** (`pharo.history.show`, in the title and context menu of a method editor, and on a method of the Projects view or the class panel) lists the versions in a Quick Pick. Moving through it previews each version in the diff editor of VS Code, against the editor of the method: the arrows of the diff copy a block of an old version into the method, which saving compiles. *Restore This Version* in the title of the diff compiles the whole old version. The Timeline of VS Code would be the natural place for these versions, but its API is still proposed, so published extensions cannot use it.
+- **Lost changes** appear in the Source Control view as an *Epicea* provider, only when there are some. Selecting a change opens it in the diff editor, before and after; inline actions replay or dismiss it, and the group replays or dismisses them all. When the server starts with lost changes, a notification offers to review them; *Recover Lost Changes* (`pharo.lostChanges.show`) shows them again.
 
 ## Changes: `pls-env/didChange`
 

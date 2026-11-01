@@ -976,6 +976,58 @@
 				"title": "%commands.pharo.nav.typeHierarchy.title%",
 				"category": "Pharo",
 				"icon": "$(type-hierarchy)"
+			},
+			{
+				"command": "pharo.history.show",
+				"title": "%commands.pharo.history.show.title%",
+				"category": "Pharo",
+				"icon": "$(history)"
+			},
+			{
+				"command": "pharo.history.restore",
+				"title": "%commands.pharo.history.restore.title%",
+				"category": "Pharo",
+				"icon": "$(discard)"
+			},
+			{
+				"command": "pharo.lostChanges.show",
+				"title": "%commands.pharo.lostChanges.show.title%",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.lostChanges.refresh",
+				"title": "%commands.pharo.lostChanges.refresh.title%",
+				"category": "Pharo",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "pharo.lostChanges.open",
+				"title": "%commands.pharo.lostChanges.open.title%",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.lostChanges.replay",
+				"title": "%commands.pharo.lostChanges.replay.title%",
+				"category": "Pharo",
+				"icon": "$(check)"
+			},
+			{
+				"command": "pharo.lostChanges.dismiss",
+				"title": "%commands.pharo.lostChanges.dismiss.title%",
+				"category": "Pharo",
+				"icon": "$(close)"
+			},
+			{
+				"command": "pharo.lostChanges.replayAll",
+				"title": "%commands.pharo.lostChanges.replayAll.title%",
+				"category": "Pharo",
+				"icon": "$(check-all)"
+			},
+			{
+				"command": "pharo.lostChanges.dismissAll",
+				"title": "%commands.pharo.lostChanges.dismissAll.title%",
+				"category": "Pharo",
+				"icon": "$(clear-all)"
 			}
 		],
 		"menus": {
@@ -1246,6 +1298,16 @@
 					"command": "pharo.editors.remove",
 					"when": "view == pharoEditorStack",
 					"group": "2_remove@0"
+				},
+				{
+					"command": "pharo.history.show",
+					"when": "view == pharoClassPanel && pharo.envHistory && viewItem =~ /^pharoClassPanel\\.method/",
+					"group": "4_history@0"
+				},
+				{
+					"command": "pharo.history.show",
+					"when": "view == pharoProjects && pharo.envHistory && viewItem =~ /^pharo\\.method\\b/",
+					"group": "4_history@0"
 				}
 			],
 			"editor/context": [
@@ -1263,6 +1325,11 @@
 					"command": "pharo.doIt",
 					"when": "editorLangId == pharo",
 					"group": "Pharo@1"
+				},
+				{
+					"command": "pharo.history.show",
+					"when": "pharo.envHistory && resourceScheme == pharo && resourcePath =~ /\\/(instance|class)\\/[^\\/]+\\.st$/ && !(resourceFilename == '(new method).st')",
+					"group": "Pharo@3"
 				}
 			],
 			"editor/title": [
@@ -1285,6 +1352,16 @@
 					"command": "extension.pharo-debug.debugEditorContents",
 					"when": "resourceLangId == pharo",
 					"group": "Pharo@2"
+				},
+				{
+					"command": "pharo.history.restore",
+					"when": "pharo.envHistory && pharo.history.diffActive",
+					"group": "navigation@0"
+				},
+				{
+					"command": "pharo.history.show",
+					"when": "pharo.envHistory && resourceScheme == pharo && resourcePath =~ /\\/(instance|class)\\/[^\\/]+\\.st$/ && !(resourceFilename == '(new method).st')",
+					"group": "1_history@0"
 				}
 			],
 			"commandPalette": [
@@ -1407,6 +1484,42 @@
 				{
 					"command": "pharo.editors.remove",
 					"when": "false"
+				},
+				{
+					"command": "pharo.history.show",
+					"when": "pharo.envHistory && resourceScheme == pharo && resourcePath =~ /\\/(instance|class)\\/[^\\/]+\\.st$/ && !(resourceFilename == '(new method).st')"
+				},
+				{
+					"command": "pharo.history.restore",
+					"when": "pharo.envHistory && pharo.history.diffActive"
+				},
+				{
+					"command": "pharo.lostChanges.show",
+					"when": "pharo.envHistory"
+				},
+				{
+					"command": "pharo.lostChanges.refresh",
+					"when": "false"
+				},
+				{
+					"command": "pharo.lostChanges.open",
+					"when": "false"
+				},
+				{
+					"command": "pharo.lostChanges.replay",
+					"when": "false"
+				},
+				{
+					"command": "pharo.lostChanges.dismiss",
+					"when": "false"
+				},
+				{
+					"command": "pharo.lostChanges.replayAll",
+					"when": "false"
+				},
+				{
+					"command": "pharo.lostChanges.dismissAll",
+					"when": "false"
 				}
 			],
 			"explorer/context": [
@@ -1446,6 +1559,50 @@
 					"command": "pharo.ice.refresh",
 					"when": "scmProvider == pharo-iceberg",
 					"group": "navigation@3"
+				},
+				{
+					"command": "pharo.lostChanges.replayAll",
+					"when": "scmProvider == pharo-epicea",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.lostChanges.refresh",
+					"when": "scmProvider == pharo-epicea",
+					"group": "navigation@2"
+				}
+			],
+			"scm/resourceGroup/context": [
+				{
+					"command": "pharo.lostChanges.replayAll",
+					"when": "scmProvider == pharo-epicea",
+					"group": "inline@1"
+				},
+				{
+					"command": "pharo.lostChanges.dismissAll",
+					"when": "scmProvider == pharo-epicea",
+					"group": "inline@2"
+				}
+			],
+			"scm/resourceState/context": [
+				{
+					"command": "pharo.lostChanges.replay",
+					"when": "scmProvider == pharo-epicea",
+					"group": "inline@1"
+				},
+				{
+					"command": "pharo.lostChanges.dismiss",
+					"when": "scmProvider == pharo-epicea",
+					"group": "inline@2"
+				},
+				{
+					"command": "pharo.lostChanges.replay",
+					"when": "scmProvider == pharo-epicea",
+					"group": "1_modification@1"
+				},
+				{
+					"command": "pharo.lostChanges.dismiss",
+					"when": "scmProvider == pharo-epicea",
+					"group": "1_modification@2"
 				}
 			]
 		},
