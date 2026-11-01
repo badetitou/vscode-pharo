@@ -15,14 +15,14 @@ jobs:
       # A tag with a suffix (2.4.0-alpha.1) publishes the version of package.json as a pre-release
       PRE_RELEASE: ${{ contains(github.ref_name, '-') }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           # vsce 4 needs Node 22
           node-version: 22
       - run: npm ci
       - name: Publish to Open VSX Registry
-        uses: HaaLeo/publish-vscode-extension@v1
+        uses: HaaLeo/publish-vscode-extension@v2
         with:
           pat: ${{ secrets.OPEN_VSX_TOKEN }}
           preRelease: ${{ env.PRE_RELEASE == 'true' }}
