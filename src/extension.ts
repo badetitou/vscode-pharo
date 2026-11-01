@@ -12,7 +12,6 @@ import * as child_process from 'child_process';
 import { activateDebug } from './activateDebug';
 import { DebugAdapterFactory } from './debugFactory';
 import { PharoImageExplorer } from './treeProvider/imageExplorer';
-import { PharoDocumentExplorer } from './treeProvider/documentBinding';
 import { MoosebookSerializer } from './moosebook/MoosebookSerializer';
 import { MoosebookController } from './moosebook/MoosebookController';
 import * as path from 'path';
@@ -54,7 +53,6 @@ export let pharoEnvironment: PharoEnvironment | undefined;
 let inspectorAvailable = false;
 /** Changes of the active image, grouped by burst, or undefined when the server does not notify them. */
 export let pharoChanges: EnvChangeBus | undefined;
-export let documentExplorer: PharoDocumentExplorer;
 let dls: child_process.ChildProcess | undefined;
 export let extensionContext: ExtensionContext;
 export let iceControlManager: IceControlManager;
@@ -200,11 +198,10 @@ export async function activate(context: ExtensionContext) {
 
 		pharoImageExplorer.refresh();
 		void classPanel.refresh().then(() => window.activeTextEditor && classPanel.follow(window.activeTextEditor.document.uri));
-		documentExplorer = new PharoDocumentExplorer(context);
 		playground.attach({
 			sendRequest: (method, params) => client.sendRequest(method, params),
 			onNotification: (method, handler) => client.onNotification(method, handler)
-		}, playgroundFeaturesFrom(client.initializeResult?.capabilities.experimental), () => documentExplorer.refresh());
+		}, playgroundFeaturesFrom(client.initializeResult?.capabilities.experimental), inspectorAvailable);
 
 		// Create debugguer
 		let factory = new DebugAdapterFactory();
@@ -606,9 +603,7 @@ function commandPharoDoIt() {
 	}
 	let selection = editor.selection;
 	client.sendRequest('command:printIt', { "line": editor.document.getText(selection), "textDocumentURI": editor.document.uri })
-		.then(() => {
-			documentExplorer.refresh();
-		}).catch((error) => window.showErrorMessage(error));
+		.catch((error) => window.showErrorMessage(error));
 
 }
 
@@ -624,7 +619,6 @@ function commandPharoPrintIt() {
 		editor.edit(editBuilder => {
 			editBuilder.replace(new Selection(selection.end, selection.end), ' "' + result + '" ');
 		});
-		documentExplorer.refresh();
 	}).catch((error) => window.showErrorMessage(error));
 }
 
@@ -636,7 +630,6 @@ function commandPharoShowIt() {
 	client.sendRequest('command:printIt', { "line": editor.document.getText(editor.selection), "textDocumentURI": editor.document.uri })
 	.then((result) => {
 		window.showInformationMessage(result as string);
-		documentExplorer.refresh();
 	}).catch((error) => window.showErrorMessage(error));
 }
 

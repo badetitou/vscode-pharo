@@ -1,7 +1,7 @@
 import {
 	notebooks, NotebookController, NotebookCell, NotebookDocument, NotebookCellExecution, NotebookCellOutput, NotebookCellOutputItem
 } from 'vscode';
-import { client, documentExplorer } from '../extension';
+import { client } from '../extension';
 import { executeCellsSequentially } from './execution';
 
 interface PharoResponse {
@@ -75,7 +75,6 @@ export class MoosebookController {
 				} finally {
 					cancellationRequested ||= execution.token.isCancellationRequested;
 					execution.end(succeeded, Date.now());
-					documentExplorer.refresh();
 				}
 			},
 			async (cell) => {

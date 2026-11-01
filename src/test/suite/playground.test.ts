@@ -79,9 +79,8 @@ suite('Pharo playground', () => {
 		assert.strictEqual(transcriptText('one\rtwo\r\n'), 'one\ntwo\n');
 	});
 
-	test('prints the result after the code, selected, and refreshes the variables', async () => {
+	test('prints the result after the code, selected, and resets the variables', async () => {
 		const requests: { method: string; params: unknown }[] = [];
-		let refreshes = 0;
 		const server: PlaygroundServer = {
 			sendRequest: async (method, params) => {
 				requests.push({ method, params });
@@ -91,7 +90,7 @@ suite('Pharo playground', () => {
 		};
 		const playground = new Playground(pages, vscode.Uri.joinPath(storage, 'debug'));
 		try {
-			playground.attach(server, playgroundFeaturesFrom({ 'pls-playground': { resetBindings: true } }), () => refreshes++);
+			playground.attach(server, playgroundFeaturesFrom({ 'pls-playground': { resetBindings: true } }), false);
 			const document = await vscode.workspace.openTextDocument({ content: 'x := 3.\n\nx printString', language: 'pharo' });
 			const [, last] = paragraphsOf(document);
 			await playground.evaluate('printIt', document.uri, last);
@@ -101,7 +100,6 @@ suite('Pharo playground', () => {
 			assert.strictEqual(document.getText(), 'x := 3.\n\nx printString "a ""quoted"" result"');
 			const editor = vscode.window.activeTextEditor;
 			assert.strictEqual(editor?.document.getText(editor.selection), ' "a ""quoted"" result"');
-			assert.strictEqual(refreshes, 1);
 
 			await playground.resetBindings(document.uri);
 			assert.strictEqual(requests[1].method, 'pls:resetBindings');

@@ -503,11 +503,6 @@
 					"name": "%views.editorStack.name%",
 					"icon": "media/pharo-bar.svg",
 					"when": "pharo.envEdit"
-				},
-				{
-					"id": "pharoBindingView",
-					"name": "Variables",
-					"icon": "media/pharo-bar.svg"
 				}
 			],
 			"pharoClass": [
@@ -542,10 +537,6 @@
 			}
 		},
 		"viewsWelcome": [
-			{
-				"view": "pharoBindingView",
-				"contents": "%viewsWelcome.pharoBindingView.contents%"
-			},
 			{
 				"view": "pharoClassPanel",
 				"contents": "%viewsWelcome.pharoClassPanel.contents%",
@@ -1324,11 +1315,6 @@
 					"command": "pharo.editors.clear",
 					"when": "view == pharoEditorStack",
 					"group": "navigation@3"
-				},
-				{
-					"command": "pharo.playground.resetBindings",
-					"when": "view == pharoBindingView && pharo.playground.resetBindings",
-					"group": "navigation@1"
 				},
 				{
 					"command": "pharo.inspector.back",
