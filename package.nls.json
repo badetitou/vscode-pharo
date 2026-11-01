@@ -122,5 +122,21 @@
 	"walkthrough.setup.description": "Set up Pharo Language Server",
 	"walkthrough.setup.steps.downloadImage.description": "In this step, you have to download the latest Pharo Language Server image from the [GitHub Release page](https://github.com/badetitou/Pharo-LanguageServer/releases)",
 	"walkthrough.setup.steps.downloadVM.description": "In this step, you have to download the latest [VM for your Pharo image](https://files.pharo.org/vm/pharo-spur64-headless/)",
-	"walkthrough.setup.steps.modifySetting.description": "Update the Pharo settings with the corresponding image and VM paths\n[Open Settings](command:workbench.action.openSettings)"
+	"walkthrough.setup.steps.modifySetting.description": "Update the Pharo settings with the corresponding image and VM paths\n[Open Settings](command:workbench.action.openSettings)",
+	"commands.pharo.inspectIt.title": "Inspect It",
+	"commands.pharo.quickInspectIt.title": "Quick Inspect It",
+	"commands.pharo.inspector.back.title": "Back to Previous Object",
+	"commands.pharo.inspector.breadcrumb.title": "Go Back to an Inspected Object…",
+	"commands.pharo.inspector.selectView.title": "Show View…",
+	"commands.pharo.inspector.evaluate.title": "Evaluate in the Context of the Object…",
+	"commands.pharo.inspector.refresh.title": "Refresh Inspector",
+	"commands.pharo.inspector.close.title": "Close Inspector",
+	"commands.pharo.inspector.openText.title": "Open Text in Editor",
+	"commands.pharo.inspector.dive.title": "Inspect",
+	"commands.pharo.inspector.copyPrintString.title": "Copy Print String",
+	"commands.pharo.inspector.inspect.title": "Inspect Object",
+	"commands.pharo.inspector.loadMore.title": "Show More",
+	"viewsContainers.pharoInspector.title": "Pharo Inspector",
+	"views.pharoInspector.name": "Inspector",
+	"viewsWelcome.pharoInspector.contents": "Select Pharo code and run Inspect It to inspect its result here, then inspect its slots, items and views."
 }

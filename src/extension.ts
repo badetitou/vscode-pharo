@@ -39,11 +39,14 @@ import { registerNavigationCommands } from './env/navigationCommands';
 import { PharoEntityFileSystem } from './env/entityFileSystem';
 import { ENTITY_SCHEME } from './env/entityUri';
 import { ClassPanel, registerClassPanel } from './env/classPanel';
+import { inspectorCapabilitiesFrom } from './inspector/inspectorContracts';
+import { registerInspector } from './inspector/inspectorView';
 
 
 export let client: LanguageClient;
 /** Environment model of the active image, or undefined while the server is not started or predates pls-env. */
 export let pharoEnvironment: PharoEnvironment | undefined;
+let inspectorAvailable = false;
 /** Changes of the active image, grouped by burst, or undefined when the server does not notify them. */
 export let pharoChanges: EnvChangeBus | undefined;
 export let documentExplorer: PharoDocumentExplorer;
@@ -111,6 +114,7 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(editorSession.registerView(projectsView), editorSession.registerView(classPanel));
 	registerSpotter(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
 	registerNavigationCommands(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined, () => classPanel.provider.className);
+	registerInspector(context, () => inspectorAvailable ? (method, params) => client.sendRequest(method, params) : undefined);
 	syncPharoImageWorkspaceFolder();
 	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration('pharo.imageWorkspace')) {
@@ -171,6 +175,12 @@ export async function activate(context: ExtensionContext) {
 		}
 
 		announceMcpServer(resolvedRequirements.pathToImage, client.initializeResult?.capabilities.experimental);
+
+		inspectorAvailable = inspectorCapabilitiesFrom(client.initializeResult?.capabilities.experimental) !== undefined;
+		void commands.executeCommand('setContext', 'pharo.inspector', inspectorAvailable);
+		if (!inspectorAvailable) {
+			outputChannel.appendLine('The Pharo Language Server does not provide the inspector (pls-inspector); update the server to use it.');
+		}
 
 		pharoImageExplorer.refresh();
 		void classPanel.refresh().then(() => window.activeTextEditor && classPanel.follow(window.activeTextEditor.document.uri));

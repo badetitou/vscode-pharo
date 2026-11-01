@@ -5,6 +5,7 @@
 - Add a **Projects** view built on the Metacello baselines (project → package → tag → class), with pinning, a filter, Iceberg state, contextual actions and live update. It replaces the Image Browser view.
 - Agents work on the image of the window through the MCP server of [evref-BL/MCP](https://github.com/evref-BL/MCP), that the language server starts on a free port: Copilot sees its tools without configuration, the `@pharo` participant uses them, and **Pharo: Configure a CLI Agent…** connects Claude Code, Codex or OpenCode. The Language Model Tools it replaces are deprecated. See [docs/agents.md](docs/agents.md).
 - Navigate by messages: senders and references (`Shift+F12`), implementors (`Ctrl+F12`), call hierarchy and type hierarchy on entity editors and Tonel files, and from the context menus of the Projects view and the class panel. Results open in entity editors.
+- Inspect objects of the image: **Inspect It** opens an **Inspector** view in the panel, which shows the Raw, Meta and textual or tabular inspections of the object, inspects its slots and rows page by page with a breadcrumb to go back, and evaluates code with `self` bound to the object. **Quick Inspect It** shows the result in a hover on the code. See [docs/inspector.md](docs/inspector.md).
 
 ## v2.3.0
 

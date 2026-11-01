@@ -501,6 +501,13 @@
 					"name": "%views.pharoClassPanel.name%",
 					"icon": "media/pharo-bar.svg"
 				}
+			],
+			"pharoInspectorPanel": [
+				{
+					"id": "pharoInspector",
+					"name": "%views.pharoInspector.name%",
+					"icon": "media/pharo-bar.svg"
+				}
 			]
 		},
 		"icons": {
@@ -537,6 +544,10 @@
 			{
 				"view": "pharoEditorStack",
 				"contents": "%viewsWelcome.editorStack.contents%"
+			},
+			{
+				"view": "pharoInspector",
+				"contents": "%viewsWelcome.pharoInspector.contents%"
 			}
 		],
 		"viewsContainers": {
@@ -551,6 +562,13 @@
 				{
 					"id": "pharoClass",
 					"title": "%viewsContainers.pharoClass.title%",
+					"icon": "media/pharo-bar.svg"
+				}
+			],
+			"panel": [
+				{
+					"id": "pharoInspectorPanel",
+					"title": "%viewsContainers.pharoInspector.title%",
 					"icon": "media/pharo-bar.svg"
 				}
 			]
@@ -976,6 +994,88 @@
 				"title": "%commands.pharo.nav.typeHierarchy.title%",
 				"category": "Pharo",
 				"icon": "$(type-hierarchy)"
+			},
+			{
+				"command": "pharo.inspectIt",
+				"title": "%commands.pharo.inspectIt.title%",
+				"category": "Pharo",
+				"enablement": "pharo.inspector"
+			},
+			{
+				"command": "pharo.quickInspectIt",
+				"title": "%commands.pharo.quickInspectIt.title%",
+				"category": "Pharo",
+				"enablement": "pharo.inspector"
+			},
+			{
+				"command": "pharo.inspector.back",
+				"title": "%commands.pharo.inspector.back.title%",
+				"category": "Pharo",
+				"icon": "$(arrow-left)",
+				"enablement": "pharo.inspector.canGoBack"
+			},
+			{
+				"command": "pharo.inspector.breadcrumb",
+				"title": "%commands.pharo.inspector.breadcrumb.title%",
+				"category": "Pharo",
+				"icon": "$(list-tree)",
+				"enablement": "pharo.inspector.hasPage"
+			},
+			{
+				"command": "pharo.inspector.selectView",
+				"title": "%commands.pharo.inspector.selectView.title%",
+				"category": "Pharo",
+				"icon": "$(layout)",
+				"enablement": "pharo.inspector.hasPage"
+			},
+			{
+				"command": "pharo.inspector.evaluate",
+				"title": "%commands.pharo.inspector.evaluate.title%",
+				"category": "Pharo",
+				"icon": "$(terminal)",
+				"enablement": "pharo.inspector.hasPage"
+			},
+			{
+				"command": "pharo.inspector.refresh",
+				"title": "%commands.pharo.inspector.refresh.title%",
+				"category": "Pharo",
+				"icon": "$(refresh)",
+				"enablement": "pharo.inspector.hasPage"
+			},
+			{
+				"command": "pharo.inspector.close",
+				"title": "%commands.pharo.inspector.close.title%",
+				"category": "Pharo",
+				"icon": "$(clear-all)",
+				"enablement": "pharo.inspector.hasPage"
+			},
+			{
+				"command": "pharo.inspector.openText",
+				"title": "%commands.pharo.inspector.openText.title%",
+				"category": "Pharo",
+				"icon": "$(go-to-file)",
+				"enablement": "pharo.inspector.isText"
+			},
+			{
+				"command": "pharo.inspector.dive",
+				"title": "%commands.pharo.inspector.dive.title%",
+				"category": "Pharo",
+				"icon": "$(arrow-right)"
+			},
+			{
+				"command": "pharo.inspector.copyPrintString",
+				"title": "%commands.pharo.inspector.copyPrintString.title%",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.inspector.inspect",
+				"title": "%commands.pharo.inspector.inspect.title%",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.inspector.loadMore",
+				"title": "%commands.pharo.inspector.loadMore.title%",
+				"category": "Pharo"
 			}
 		],
 		"menus": {
@@ -1084,6 +1184,41 @@
 					"command": "pharo.editors.clear",
 					"when": "view == pharoEditorStack",
 					"group": "navigation@3"
+				},
+				{
+					"command": "pharo.inspector.back",
+					"when": "view == pharoInspector",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.inspector.breadcrumb",
+					"when": "view == pharoInspector",
+					"group": "navigation@2"
+				},
+				{
+					"command": "pharo.inspector.selectView",
+					"when": "view == pharoInspector",
+					"group": "navigation@3"
+				},
+				{
+					"command": "pharo.inspector.evaluate",
+					"when": "view == pharoInspector",
+					"group": "navigation@4"
+				},
+				{
+					"command": "pharo.inspector.openText",
+					"when": "view == pharoInspector && pharo.inspector.isText",
+					"group": "navigation@5"
+				},
+				{
+					"command": "pharo.inspector.refresh",
+					"when": "view == pharoInspector",
+					"group": "navigation@6"
+				},
+				{
+					"command": "pharo.inspector.close",
+					"when": "view == pharoInspector",
+					"group": "navigation@7"
 				}
 			],
 			"view/item/context": [
@@ -1246,6 +1381,21 @@
 					"command": "pharo.editors.remove",
 					"when": "view == pharoEditorStack",
 					"group": "2_remove@0"
+				},
+				{
+					"command": "pharo.inspector.dive",
+					"when": "view == pharoInspector && viewItem == pharoInspectorItem",
+					"group": "inline"
+				},
+				{
+					"command": "pharo.inspector.dive",
+					"when": "view == pharoInspector && viewItem == pharoInspectorItem",
+					"group": "1_inspect@1"
+				},
+				{
+					"command": "pharo.inspector.copyPrintString",
+					"when": "view == pharoInspector && viewItem == pharoInspectorItem",
+					"group": "2_copy@1"
 				}
 			],
 			"editor/context": [
@@ -1262,6 +1412,16 @@
 				{
 					"command": "pharo.doIt",
 					"when": "editorLangId == pharo",
+					"group": "Pharo@1"
+				},
+				{
+					"command": "pharo.inspectIt",
+					"when": "editorLangId == pharo && pharo.inspector",
+					"group": "Pharo@1"
+				},
+				{
+					"command": "pharo.quickInspectIt",
+					"when": "editorLangId == pharo && pharo.inspector",
 					"group": "Pharo@1"
 				}
 			],
@@ -1406,6 +1566,22 @@
 				},
 				{
 					"command": "pharo.editors.remove",
+					"when": "false"
+				},
+				{
+					"command": "pharo.inspector.dive",
+					"when": "false"
+				},
+				{
+					"command": "pharo.inspector.copyPrintString",
+					"when": "false"
+				},
+				{
+					"command": "pharo.inspector.inspect",
+					"when": "false"
+				},
+				{
+					"command": "pharo.inspector.loadMore",
 					"when": "false"
 				}
 			],
