@@ -36,6 +36,7 @@
 		"onDebugResolve:pharodb",
 		"onFileSystem:pharoImage",
 		"onFileSystem:pharo",
+		"onFileSystem:pharo-playground",
 		"onNotebook:moosebook",
 		"onChatParticipant:pharo-language-server.pharo",
 		"onMcpCollection:pharo-language-server.mcp"
@@ -529,7 +530,7 @@
 		"viewsWelcome": [
 			{
 				"view": "pharoBindingView",
-				"contents": "Start by executing a selected piece of code with 'Ctrl + Alt + D'"
+				"contents": "%viewsWelcome.pharoBindingView.contents%"
 			},
 			{
 				"view": "pharoClassPanel",
@@ -872,6 +873,47 @@
 				"icon": "$(symbol-class)"
 			},
 			{
+				"command": "pharo.playground.new",
+				"title": "%commands.pharo.playground.new.title%",
+				"category": "Pharo",
+				"icon": "$(new-file)"
+			},
+			{
+				"command": "pharo.playground.open",
+				"title": "%commands.pharo.playground.open.title%",
+				"category": "Pharo",
+				"icon": "$(history)"
+			},
+			{
+				"command": "pharo.playground.doIt",
+				"title": "%commands.pharo.playground.doIt.title%",
+				"category": "Pharo",
+				"icon": "$(play)"
+			},
+			{
+				"command": "pharo.playground.printIt",
+				"title": "%commands.pharo.playground.printIt.title%",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.playground.inspectIt",
+				"title": "%commands.pharo.playground.inspectIt.title%",
+				"category": "Pharo",
+				"icon": "$(inspect)"
+			},
+			{
+				"command": "pharo.playground.resetBindings",
+				"title": "%commands.pharo.playground.resetBindings.title%",
+				"category": "Pharo",
+				"icon": "$(clear-all)"
+			},
+			{
+				"command": "pharo.transcript.show",
+				"title": "%commands.pharo.transcript.show.title%",
+				"category": "Pharo",
+				"icon": "$(output)"
+			},
+			{
 				"command": "pharo.printIt",
 				"title": "Print the result of selected lines",
 				"category": "Pharo"
@@ -1091,6 +1133,11 @@
 					"command": "pharo.editors.clear",
 					"when": "view == pharoEditorStack",
 					"group": "navigation@3"
+				},
+				{
+					"command": "pharo.playground.resetBindings",
+					"when": "view == pharoBindingView && pharo.playground.resetBindings",
+					"group": "navigation@1"
 				}
 			],
 			"view/item/context": [
@@ -1270,9 +1317,29 @@
 					"command": "pharo.doIt",
 					"when": "editorLangId == pharo",
 					"group": "Pharo@1"
+				},
+				{
+					"command": "pharo.playground.inspectIt",
+					"when": "resourceScheme == pharo-playground",
+					"group": "Pharo@1"
 				}
 			],
 			"editor/title": [
+				{
+					"command": "pharo.playground.doIt",
+					"when": "resourceScheme == pharo-playground",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.playground.new",
+					"when": "resourceScheme == pharo-playground",
+					"group": "navigation@2"
+				},
+				{
+					"command": "pharo.playground.open",
+					"when": "resourceScheme == pharo-playground",
+					"group": "navigation@3"
+				},
 				{
 					"command": "pharo.env.newMethod",
 					"when": "pharo.envEdit && resourceScheme == pharo",
@@ -1414,6 +1481,22 @@
 				{
 					"command": "pharo.editors.remove",
 					"when": "false"
+				},
+				{
+					"command": "pharo.playground.doIt",
+					"when": "editorLangId == pharo"
+				},
+				{
+					"command": "pharo.playground.printIt",
+					"when": "editorLangId == pharo"
+				},
+				{
+					"command": "pharo.playground.inspectIt",
+					"when": "editorLangId == pharo"
+				},
+				{
+					"command": "pharo.playground.resetBindings",
+					"when": "pharo.playground.resetBindings"
 				}
 			],
 			"explorer/context": [
@@ -1473,6 +1556,24 @@
 			{
 				"command": "pharo.doIt",
 				"key": "ctrl+alt+d"
+			},
+			{
+				"command": "pharo.playground.doIt",
+				"key": "ctrl+d",
+				"mac": "cmd+d",
+				"when": "editorTextFocus && resourceScheme == pharo-playground"
+			},
+			{
+				"command": "pharo.playground.printIt",
+				"key": "ctrl+p",
+				"mac": "cmd+p",
+				"when": "editorTextFocus && resourceScheme == pharo-playground"
+			},
+			{
+				"command": "pharo.playground.inspectIt",
+				"key": "ctrl+i",
+				"mac": "cmd+i",
+				"when": "editorTextFocus && resourceScheme == pharo-playground"
 			}
 		],
 		"debuggers": [
