@@ -7,6 +7,9 @@ name: Deploy Extension
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      # A tag with a suffix (2.4.0-alpha.1) publishes the version of package.json as a pre-release
+      PRE_RELEASE: ${{ contains(github.ref_name, '-') }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
@@ -17,8 +20,10 @@ jobs:
         uses: HaaLeo/publish-vscode-extension@v1
         with:
           pat: ${{ secrets.OPEN_VSX_TOKEN }}
+          preRelease: ${{ env.PRE_RELEASE == 'true' }}
       - name: Publish to Visual Studio Marketplace
         uses: HaaLeo/publish-vscode-extension@v1
         with:
           pat: ${{ secrets.VS_MARKETPLACE_TOKEN }}
           registryUrl: https://marketplace.visualstudio.com
+          preRelease: ${{ env.PRE_RELEASE == 'true' }}

@@ -8,7 +8,7 @@
 	"description": "%extension.description%",
 	"author": "Benoît Verhaeghe",
 	"license": "MIT",
-	"version": "2.3.0",
+	"version": "2.4.0",
 	"icon": "icon.png",
 	"repository": {
 		"type": "git",
@@ -449,21 +449,21 @@
 					"title": "Quick install image name",
 					"scope": "window",
 					"type": "string",
-					"default": "Moose64-12-PLS",
+					"default": "Moose64-13-PLS",
 					"description": "%configuration.pharo.quickInstall.imageName.description%"
 				},
 				"pharo quick install.server version": {
 					"title": "Quick install server version",
 					"scope": "window",
 					"type": "string",
-					"default": "5.2.0",
+					"default": "6.0.0-alpha.1",
 					"description": "%configuration.pharo.quickInstall.serverVersion.description%"
 				},
 				"pharo quick install.server VM version": {
 					"title": "Quick install server VM version",
 					"scope": "window",
 					"type": "string",
-					"default": "120",
+					"default": "130",
 					"description": "%configuration.pharo.quickInstall.serverVmVersion.description%"
 				},
 				"pharoLanguageServer.trace.server": {

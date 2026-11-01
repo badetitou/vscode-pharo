@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## v2.4.0 (alpha)
+
+Pre-release, published to the pre-release channel of the marketplaces. It works with the alpha 6.0.0-alpha.1 of the language server, on a Moose 13 image: run **Pharo: Install the last version of the language server** to get it.
 
 - Add a **Projects** view built on the Metacello baselines (project → package → tag → class), with pinning, a filter, Iceberg state, contextual actions and live update. It replaces the Image Browser view.
 - Agents work on the image of the window through the MCP server of [evref-BL/MCP](https://github.com/evref-BL/MCP), that the language server starts on a free port: Copilot sees its tools without configuration, the `@pharo` participant uses them, and **Pharo: Configure a CLI Agent…** connects Claude Code, Codex or OpenCode. The Language Model Tools it replaces are deprecated. See [docs/agents.md](docs/agents.md).
