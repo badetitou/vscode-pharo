@@ -10,6 +10,7 @@ import * as requirements from './requirements';
 import * as net from 'net';
 import * as child_process from 'child_process';
 import { activateDebug } from './activateDebug';
+import { activateLiveDebugging } from './debugLive';
 import { DebugAdapterFactory } from './debugFactory';
 import { PharoImageExplorer } from './treeProvider/imageExplorer';
 import { MoosebookSerializer } from './moosebook/MoosebookSerializer';
@@ -206,6 +207,7 @@ export async function activate(context: ExtensionContext) {
 		// Create debugguer
 		let factory = new DebugAdapterFactory();
 		activateDebug(context, factory);
+		activateLiveDebugging(context);
 		context.subscriptions.push(workspace.registerNotebookSerializer('moosebook', new MoosebookSerializer()));
 		context.subscriptions.push(new MoosebookController());
 
