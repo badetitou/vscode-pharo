@@ -109,7 +109,8 @@ export class InlineResults implements vscode.Disposable {
 
 	private find(uri?: string): InlineResult | undefined {
 		const key = uri ?? vscode.window.activeTextEditor?.document.uri.toString();
-		return key ? this.results.get(key) : undefined;
+		// A hover link may not hand its argument over: then the last result shown is the one hovered
+		return (key ? this.results.get(key) : undefined) ?? [...this.results.values()].pop();
 	}
 
 	private render(uri: vscode.Uri): void {
@@ -148,12 +149,11 @@ function hoverOf(shown: InlineResult): vscode.MarkdownString {
 	const markdown = new vscode.MarkdownString(undefined, true);
 	markdown.isTrusted = { enabledCommands: ['pharo.inspector.inspect', 'pharo.inlineResult.copy', 'pharo.inlineResult.insert'] };
 	markdown.appendCodeblock(shown.result, 'pharo');
-	const uri = encodeURIComponent(JSON.stringify([shown.uri.toString()]));
 	const inspect = encodeURIComponent(JSON.stringify([{ expression: shown.code, textDocumentURI: shown.uri, label: shown.code }]));
 	markdown.appendMarkdown(
 		`[$(search) Inspect](command:pharo.inspector.inspect?${inspect}) | ` +
-		`[$(copy) Copy](command:pharo.inlineResult.copy?${uri}) | ` +
-		`[$(insert) Insert](command:pharo.inlineResult.insert?${uri})`
+		`[$(copy) Copy](command:pharo.inlineResult.copy) | ` +
+		`[$(insert) Insert](command:pharo.inlineResult.insert)`
 	);
 	return markdown;
 }
