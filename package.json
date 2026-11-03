@@ -402,6 +402,13 @@
 					"description": "%configuration.pharo.pathToVM.description%",
 					"ignoreSync": true
 				},
+				"pharo.printIt.insertResult": {
+					"title": "Insert the result of Print it",
+					"scope": "window",
+					"type": "boolean",
+					"default": false,
+					"description": "%configuration.pharo.printIt.insertResult.description%"
+				},
 				"pharo.editorProfile": {
 					"title": "Pharo Editor Profile",
 					"scope": "window",
@@ -1939,6 +1946,11 @@
 			]
 		},
 		"keybindings": [
+			{
+				"command": "pharo.inlineResult.clear",
+				"key": "escape",
+				"when": "editorTextFocus && pharo.inlineResultVisible && !suggestWidgetVisible && !editorHasSelection && !findWidgetVisible && !inSnippetMode"
+			},
 			{
 				"command": "pharo.env.spotter",
 				"key": "ctrl+alt+o",

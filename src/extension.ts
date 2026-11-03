@@ -1,4 +1,4 @@
-import { workspace, ExtensionContext, commands, window, Uri, Selection, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel, FileSystemError, ConfigurationTarget, TextDocument, lm, env } from 'vscode';
+import { workspace, ExtensionContext, commands, window, Uri, Selection, Range, CancellationTokenSource, scm, StatusBarAlignment, StatusBarItem, FileType, OutputChannel, FileSystemError, ConfigurationTarget, TextDocument, lm, env } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
@@ -42,6 +42,7 @@ import { ClassPanel, registerClassPanel } from './env/classPanel';
 import { Playground, playgroundFeaturesFrom } from './playground/playground';
 import { PLAYGROUND_SCHEME, PlaygroundFileSystem } from './playground/playgroundPages';
 import { inspectorCapabilitiesFrom } from './inspector/inspectorContracts';
+import { InlineResults, insertResult, insertsPrintResult } from './inlineResult';
 import { registerInspector } from './inspector/inspectorView';
 import { registerMethodHistory } from './env/methodHistory';
 import { LostChanges, registerLostChanges } from './env/lostChanges';
@@ -51,6 +52,7 @@ export let client: LanguageClient;
 /** Environment model of the active image, or undefined while the server is not started or predates pls-env. */
 export let pharoEnvironment: PharoEnvironment | undefined;
 let inspectorAvailable = false;
+let inlineResults: InlineResults;
 /** Changes of the active image, grouped by burst, or undefined when the server does not notify them. */
 export let pharoChanges: EnvChangeBus | undefined;
 let dls: child_process.ChildProcess | undefined;
@@ -122,7 +124,9 @@ export async function activate(context: ExtensionContext) {
 	registerNavigationCommands(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined, () => classPanel.provider.className);
 	// The pages are registered before the server starts, so that VS Code reopens them
 	const playgroundPages = new PlaygroundFileSystem(context.globalStorageUri, configuredImagePath);
-	playground = new Playground(playgroundPages, Uri.joinPath(context.globalStorageUri, 'playgrounds', 'debug'));
+	inlineResults = new InlineResults();
+	context.subscriptions.push(inlineResults);
+	playground = new Playground(playgroundPages, Uri.joinPath(context.globalStorageUri, 'playgrounds', 'debug'), inlineResults);
 	playground.register();
 	context.subscriptions.push(playgroundPages, playground);
 	registerInspector(context, () => inspectorAvailable ? (method, params) => client.sendRequest(method, params) : undefined);
@@ -614,11 +618,14 @@ function commandPharoPrintIt() {
 		return;
 	}
 	let selection = editor.selection;
-	client.sendRequest('command:printIt', { "line": editor.document.getText(selection), "textDocumentURI": editor.document.uri })
-	.then((result) => {
-		editor.edit(editBuilder => {
-			editBuilder.replace(new Selection(selection.end, selection.end), ' "' + result + '" ');
-		});
+	const code = editor.document.getText(selection);
+	client.sendRequest('command:printIt', { "line": code, "textDocumentURI": editor.document.uri })
+	.then(async (result) => {
+		if (insertsPrintResult()) {
+			await insertResult(editor, new Range(selection.end, selection.end), String(result));
+		} else {
+			inlineResults.show(editor, new Range(selection.start, selection.end), code, String(result));
+		}
 	}).catch((error) => window.showErrorMessage(error));
 }
 
