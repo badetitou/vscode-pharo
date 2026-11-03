@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { PLAYGROUND_SCHEME } from './playground/playgroundPages';
 
 const MAX_DISPLAY_LENGTH = 100;
 
@@ -40,6 +41,7 @@ export class InlineResults implements vscode.Disposable {
 	constructor() {
 		this.disposables.push(
 			this.decoration,
+			vscode.languages.registerHoverProvider([{ language: 'pharo' }, { scheme: PLAYGROUND_SCHEME }], { provideHover: (document, position) => this.hoverAt(document, position) }),
 			vscode.workspace.onDidChangeTextDocument((event) => event.contentChanges.forEach((change) => this.forget(event.document.uri, change))),
 			vscode.workspace.onDidCloseTextDocument((document) => this.clear(document.uri)),
 			vscode.commands.registerCommand('pharo.inlineResult.clear', () => this.clearActive()),
@@ -81,6 +83,16 @@ export class InlineResults implements vscode.Disposable {
 		}
 	}
 
+	/** The hover of the result: over its code or after it on its line. */
+	hoverAt(document: vscode.TextDocument, position: vscode.Position): vscode.Hover | undefined {
+		const shown = this.results.get(document.uri.toString());
+		if (!shown) {
+			return undefined;
+		}
+		const after = position.line === shown.range.end.line && position.character >= shown.range.end.character;
+		return shown.range.contains(position) || after ? new vscode.Hover(hoverOf(shown), shown.range) : undefined;
+	}
+
 	private clearActive(): void {
 		const editor = vscode.window.activeTextEditor;
 		if (editor) {
@@ -109,7 +121,8 @@ export class InlineResults implements vscode.Disposable {
 
 	private find(uri?: string): InlineResult | undefined {
 		const key = uri ?? vscode.window.activeTextEditor?.document.uri.toString();
-		return key ? this.results.get(key) : undefined;
+		// A hover link may not hand its argument over: then the last result shown is the one hovered
+		return (key ? this.results.get(key) : undefined) ?? [...this.results.values()].pop();
 	}
 
 	private render(uri: vscode.Uri): void {
@@ -124,7 +137,6 @@ export class InlineResults implements vscode.Disposable {
 	private optionsOf(shown: InlineResult): vscode.DecorationOptions {
 		return {
 			range: shown.range,
-			hoverMessage: hoverOf(shown),
 			renderOptions: {
 				after: {
 					contentText: `  ⇒ ${displayedResult(shown.result)}`,
@@ -141,6 +153,8 @@ export async function insertResult(editor: vscode.TextEditor, range: vscode.Rang
 	const printed = insertedResultText(result);
 	if (await editor.edit((builder) => builder.insert(range.end, printed))) {
 		editor.selection = new vscode.Selection(range.end, range.end.translate(0, printed.length));
+	} else {
+		void vscode.window.showErrorMessage(`Unable to insert the result in ${editor.document.uri.toString()}.`);
 	}
 }
 
@@ -148,12 +162,11 @@ function hoverOf(shown: InlineResult): vscode.MarkdownString {
 	const markdown = new vscode.MarkdownString(undefined, true);
 	markdown.isTrusted = { enabledCommands: ['pharo.inspector.inspect', 'pharo.inlineResult.copy', 'pharo.inlineResult.insert'] };
 	markdown.appendCodeblock(shown.result, 'pharo');
-	const uri = encodeURIComponent(JSON.stringify([shown.uri.toString()]));
 	const inspect = encodeURIComponent(JSON.stringify([{ expression: shown.code, textDocumentURI: shown.uri, label: shown.code }]));
 	markdown.appendMarkdown(
 		`[$(search) Inspect](command:pharo.inspector.inspect?${inspect}) | ` +
-		`[$(copy) Copy](command:pharo.inlineResult.copy?${uri}) | ` +
-		`[$(insert) Insert](command:pharo.inlineResult.insert?${uri})`
+		`[$(copy) Copy](command:pharo.inlineResult.copy) | ` +
+		`[$(insert) Insert](command:pharo.inlineResult.insert)`
 	);
 	return markdown;
 }
