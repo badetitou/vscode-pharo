@@ -1013,6 +1013,20 @@
 				"icon": "$(debug-alt)"
 			},
 			{
+				"command": "pharo.debug.createMethod",
+				"title": "Create Method",
+				"category": "Pharo Debug",
+				"icon": "$(add)",
+				"enablement": "inDebugMode && debugType == pharodb"
+			},
+			{
+				"command": "pharo.debug.restarts",
+				"title": "Restarts of the Exception",
+				"category": "Pharo Debug",
+				"icon": "$(debug-restart-frame)",
+				"enablement": "inDebugMode && debugType == pharodb"
+			},
+			{
 				"command": "pharo.openLog",
 				"title": "Open Log",
 				"category": "Pharo Developer"
@@ -1357,6 +1371,30 @@
 					"command": "pharo.inspector.close",
 					"when": "view == pharoInspector",
 					"group": "navigation@7"
+				}
+			],
+			"debug/toolBar": [
+				{
+					"command": "pharo.debug.createMethod",
+					"when": "debugType == pharodb",
+					"group": "navigation@9"
+				},
+				{
+					"command": "pharo.debug.restarts",
+					"when": "debugType == pharodb",
+					"group": "navigation@10"
+				}
+			],
+			"debug/callstack/context": [
+				{
+					"command": "pharo.debug.createMethod",
+					"when": "debugType == pharodb",
+					"group": "pharo@1"
+				},
+				{
+					"command": "pharo.debug.restarts",
+					"when": "debugType == pharodb",
+					"group": "pharo@2"
 				}
 			],
 			"view/item/context": [
