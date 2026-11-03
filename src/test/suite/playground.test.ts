@@ -80,6 +80,27 @@ suite('Pharo playground', () => {
 		assert.strictEqual(transcriptText('one\rtwo\r\n'), 'one\ntwo\n');
 	});
 
+	test('Insert writes the result in a page of the playground, without argument', async () => {
+		const server: PlaygroundServer = { sendRequest: async () => '7', onNotification: () => new vscode.Disposable(() => undefined) };
+		const results = new InlineResults();
+		const playground = new Playground(pages, vscode.Uri.joinPath(storage, 'debug'), results);
+		try {
+			playground.register();
+			playground.attach(server, playgroundFeaturesFrom(undefined), false);
+			const page = await pages.newPage();
+			await pages.writeFile(page, new TextEncoder().encode('3 + 4'), { create: false, overwrite: true });
+			const document = await vscode.workspace.openTextDocument(page);
+			await playground.evaluate('printIt', page, new vscode.Range(0, 0, 0, 5));
+			assert.ok(results.has(page));
+			await vscode.commands.executeCommand('pharo.inlineResult.insert');
+			assert.strictEqual(document.getText(), '3 + 4 "7"');
+		} finally {
+			await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+			playground.dispose();
+			results.dispose();
+		}
+	});
+
 	test('formats the inline result', () => {
 		assert.strictEqual(insertedResultText('a "quoted" result'), ' "a ""quoted"" result"');
 		assert.strictEqual(displayedResult('one\n  two'), 'one two');
