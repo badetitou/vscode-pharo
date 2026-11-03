@@ -7,6 +7,7 @@ import {
 	paragraphsOf,
 	transcriptText
 } from './playgroundPages';
+import { InlineResults, insertResult, insertsPrintResult } from '../inlineResult';
 
 /** What the playground needs from the language client, so that tests can use a fake server. */
 export interface PlaygroundServer {
@@ -51,7 +52,7 @@ export class Playground implements vscode.Disposable {
 	private readonly transcript: vscode.OutputChannel;
 	private readonly disposables: vscode.Disposable[] = [];
 
-	constructor(private readonly pages: PlaygroundFileSystem, private readonly debugDirectory: vscode.Uri) {
+	constructor(private readonly pages: PlaygroundFileSystem, private readonly debugDirectory: vscode.Uri, private readonly results: InlineResults) {
 		this.transcript = vscode.window.createOutputChannel('Pharo Transcript', 'pharo');
 		this.disposables.push(this.transcript);
 	}
@@ -147,7 +148,7 @@ export class Playground implements vscode.Disposable {
 
 	/**
 	 * Evaluate a range of a page, or the selection of the active editor, or else the line of its cursor.
-	 * Print it writes the result after the code, selected so that typing replaces it; Inspect it opens it in the Pharo
+	 * Print it shows the result after the code without editing the page (or inserts it, selected, when the setting asks); Inspect it opens it in the Pharo
 	 * inspector. An error offers to debug the code.
 	 */
 	async evaluate(evaluation: Evaluation, uri?: vscode.Uri, range?: vscode.Range): Promise<void> {
@@ -181,10 +182,10 @@ export class Playground implements vscode.Disposable {
 			this.evaluating--;
 		}
 		if (evaluation === 'printIt') {
-			const printed = ` "${result.replace(/"/g, '""')}"`;
-			const inserted = await editor.edit((builder) => builder.insert(target.end, printed));
-			if (inserted) {
-				editor.selection = new vscode.Selection(target.end, target.end.translate(0, printed.length));
+			if (insertsPrintResult()) {
+				await insertResult(editor, target, result);
+			} else {
+				this.results.show(editor, target, code, result);
 			}
 		} else if (evaluation === 'inspectIt') {
 			if (this.features.inspectIt) {

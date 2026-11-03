@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { InlineResults, displayedResult, insertedResultText } from '../../inlineResult';
 import { Playground, PlaygroundServer, playgroundFeaturesFrom } from '../../playground/playground';
 import {
 	PlaygroundFileSystem,
@@ -79,7 +80,13 @@ suite('Pharo playground', () => {
 		assert.strictEqual(transcriptText('one\rtwo\r\n'), 'one\ntwo\n');
 	});
 
-	test('prints the result after the code, selected, and resets the variables', async () => {
+	test('formats the inline result', () => {
+		assert.strictEqual(insertedResultText('a "quoted" result'), ' "a ""quoted"" result"');
+		assert.strictEqual(displayedResult('one\n  two'), 'one two');
+		assert.strictEqual(displayedResult('x'.repeat(300)).length, 100);
+	});
+
+	test('prints the result over the code, without editing, until the next edit or Escape; Insert writes it; resets the variables', async () => {
 		const requests: { method: string; params: unknown }[] = [];
 		const server: PlaygroundServer = {
 			sendRequest: async (method, params) => {
@@ -88,25 +95,56 @@ suite('Pharo playground', () => {
 			},
 			onNotification: () => new vscode.Disposable(() => undefined)
 		};
-		const playground = new Playground(pages, vscode.Uri.joinPath(storage, 'debug'));
+		const results = new InlineResults();
+		const playground = new Playground(pages, vscode.Uri.joinPath(storage, 'debug'), results);
 		try {
 			playground.attach(server, playgroundFeaturesFrom({ 'pls-playground': { resetBindings: true } }), false);
-			const document = await vscode.workspace.openTextDocument({ content: 'x := 3.\n\nx printString', language: 'pharo' });
-			const [, last] = paragraphsOf(document);
-			await playground.evaluate('printIt', document.uri, last);
+			const document = await vscode.workspace.openTextDocument({ content: 'x := 3.\n\nx printString\n\nnext', language: 'pharo' });
+			await playground.evaluate('printIt', document.uri, new vscode.Range(2, 0, 2, 13));
 
 			assert.deepStrictEqual(requests.map(({ method }) => method), ['command:printIt']);
 			assert.strictEqual((requests[0].params as { line: string }).line, 'x printString');
-			assert.strictEqual(document.getText(), 'x := 3.\n\nx printString "a ""quoted"" result"');
-			const editor = vscode.window.activeTextEditor;
-			assert.strictEqual(editor?.document.getText(editor.selection), ' "a ""quoted"" result"');
+			assert.strictEqual(document.getText(), 'x := 3.\n\nx printString\n\nnext');
+			assert.ok(results.has(document.uri));
+
+			// An edit below keeps the result, Escape removes it
+			const editor = vscode.window.activeTextEditor!;
+			await editor.edit((builder) => builder.insert(new vscode.Position(4, 4), '!'));
+			assert.ok(results.has(document.uri));
+			await vscode.commands.executeCommand('pharo.inlineResult.clear');
+			assert.ok(!results.has(document.uri));
+
+			// An edit of the line removes it
+			await playground.evaluate('printIt', document.uri, new vscode.Range(2, 0, 2, 13));
+			assert.ok(results.has(document.uri));
+			await editor.edit((builder) => builder.insert(new vscode.Position(2, 0), ' '));
+			assert.ok(!results.has(document.uri));
+
+			// Insert writes the result after the code, selected
+			await playground.evaluate('printIt', document.uri, new vscode.Range(2, 1, 2, 14));
+			await vscode.commands.executeCommand('pharo.inlineResult.insert', document.uri.toString());
+			assert.strictEqual(document.lineAt(2).text, ' x printString "a ""quoted"" result"');
+			assert.strictEqual(editor.document.getText(editor.selection), ' "a ""quoted"" result"');
+			assert.ok(!results.has(document.uri));
+
+			// The setting inserts the result at once
+			const configuration = vscode.workspace.getConfiguration('pharo');
+			await configuration.update('printIt.insertResult', true, vscode.ConfigurationTarget.Global);
+			try {
+				await playground.evaluate('printIt', document.uri, new vscode.Range(0, 0, 0, 7));
+				assert.strictEqual(document.lineAt(0).text, 'x := 3. "a ""quoted"" result"');
+				assert.ok(!results.has(document.uri));
+			} finally {
+				await configuration.update('printIt.insertResult', undefined, vscode.ConfigurationTarget.Global);
+			}
 
 			await playground.resetBindings(document.uri);
-			assert.strictEqual(requests[1].method, 'pls:resetBindings');
-			assert.deepStrictEqual(requests[1].params, { textDocument: { uri: document.uri } });
+			assert.strictEqual(requests[requests.length - 1].method, 'pls:resetBindings');
+			assert.deepStrictEqual(requests[requests.length - 1].params, { textDocument: { uri: document.uri } });
 		} finally {
 			await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
 			playground.dispose();
+			results.dispose();
 		}
 	});
 });

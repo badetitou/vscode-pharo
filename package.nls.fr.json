@@ -145,6 +145,7 @@
 	"walkthrough.setup.steps.downloadVM.description": "Dans cette étape, vous devez télécharger la dernière [VM pour votre image Pharo](https://files.pharo.org/vm/pharo-spur64-headless/)",
 	"walkthrough.setup.steps.modifySetting.description": "Mettez à jour les paramètres Pharo avec les chemins de l'image et de la VM correspondants\n[Ouvrir les paramètres](command:workbench.action.openSettings)",
 	"commands.pharo.profile.setup.title": "Configurer le profil d'éditeur Pharo",
+	"configuration.pharo.printIt.insertResult.description": "Insère le résultat de Print it après le code au lieu de l'afficher par-dessus. Survoler le résultat permet de l'inspecter, le copier ou l'insérer.",
 	"configuration.pharo.editorProfile.description": "Défini par le profil d'éditeur Pharo créé avec `Pharo: Configurer le profil d'éditeur Pharo`. Ne pas modifier.",
 	"walkthrough.setup.steps.setupProfile.title": "Configurer le profil d'éditeur Pharo",
 	"walkthrough.setup.steps.setupProfile.description": "Optionnellement, travaillez sur votre image dans un profil VS Code dédié qui n'affiche que les vues Pharo. Votre profil actuel n'est pas modifié.\n[Configurer le profil d'éditeur Pharo](command:pharo.profile.setup)",
