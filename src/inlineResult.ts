@@ -142,6 +142,8 @@ export async function insertResult(editor: vscode.TextEditor, range: vscode.Rang
 	const printed = insertedResultText(result);
 	if (await editor.edit((builder) => builder.insert(range.end, printed))) {
 		editor.selection = new vscode.Selection(range.end, range.end.translate(0, printed.length));
+	} else {
+		void vscode.window.showErrorMessage(`Unable to insert the result in ${editor.document.uri.toString()}.`);
 	}
 }
 
