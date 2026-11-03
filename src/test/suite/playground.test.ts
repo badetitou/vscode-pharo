@@ -92,6 +92,10 @@ suite('Pharo playground', () => {
 			const document = await vscode.workspace.openTextDocument(page);
 			await playground.evaluate('printIt', page, new vscode.Range(0, 0, 0, 5));
 			assert.ok(results.has(page));
+			const hover = results.hoverAt(document, new vscode.Position(0, 5));
+			const markdown = (hover?.contents[0] as vscode.MarkdownString).value;
+			assert.ok(markdown.includes('command:pharo.inlineResult.insert') && markdown.includes('command:pharo.inlineResult.copy'));
+			assert.strictEqual(results.hoverAt(document, new vscode.Position(1, 0)), undefined);
 			await vscode.commands.executeCommand('pharo.inlineResult.insert');
 			assert.strictEqual(document.getText(), '3 + 4 "7"');
 		} finally {

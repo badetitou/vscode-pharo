@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { PLAYGROUND_SCHEME } from './playground/playgroundPages';
 
 const MAX_DISPLAY_LENGTH = 100;
 
@@ -40,6 +41,7 @@ export class InlineResults implements vscode.Disposable {
 	constructor() {
 		this.disposables.push(
 			this.decoration,
+			vscode.languages.registerHoverProvider([{ language: 'pharo' }, { scheme: PLAYGROUND_SCHEME }], { provideHover: (document, position) => this.hoverAt(document, position) }),
 			vscode.workspace.onDidChangeTextDocument((event) => event.contentChanges.forEach((change) => this.forget(event.document.uri, change))),
 			vscode.workspace.onDidCloseTextDocument((document) => this.clear(document.uri)),
 			vscode.commands.registerCommand('pharo.inlineResult.clear', () => this.clearActive()),
@@ -79,6 +81,16 @@ export class InlineResults implements vscode.Disposable {
 		if (shown && change.range.start.line <= shown.range.end.line) {
 			this.clear(uri);
 		}
+	}
+
+	/** The hover of the result: over its code or after it on its line. */
+	hoverAt(document: vscode.TextDocument, position: vscode.Position): vscode.Hover | undefined {
+		const shown = this.results.get(document.uri.toString());
+		if (!shown) {
+			return undefined;
+		}
+		const after = position.line === shown.range.end.line && position.character >= shown.range.end.character;
+		return shown.range.contains(position) || after ? new vscode.Hover(hoverOf(shown), shown.range) : undefined;
 	}
 
 	private clearActive(): void {
@@ -125,7 +137,6 @@ export class InlineResults implements vscode.Disposable {
 	private optionsOf(shown: InlineResult): vscode.DecorationOptions {
 		return {
 			range: shown.range,
-			hoverMessage: hoverOf(shown),
 			renderOptions: {
 				after: {
 					contentText: `  ⇒ ${displayedResult(shown.result)}`,
