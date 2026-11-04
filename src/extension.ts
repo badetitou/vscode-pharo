@@ -49,12 +49,20 @@ import { registerInspector } from './inspector/inspectorView';
 import { registerMethodHistory } from './env/methodHistory';
 import { LostChanges, registerLostChanges } from './env/lostChanges';
 import { UI_INITIALIZATION_OPTIONS, registerImageUi } from './ui/imageUi';
+import { SystemCapabilities, systemCapabilitiesFrom } from './system/systemContracts';
+import { ProcessesProvider, SystemRequest, registerProcessesView } from './system/processesView';
+import { ChestProvider, registerChestView } from './system/chestView';
+import { registerProfiler } from './system/profiler';
 
 
 export let client: LanguageClient;
 /** Environment model of the active image, or undefined while the server is not started or predates pls-env. */
 export let pharoEnvironment: PharoEnvironment | undefined;
 let inspectorAvailable = false;
+/** The system tools of the image (pls-system): processes, profiler and chests, or undefined for an older server. */
+let systemCapabilities: SystemCapabilities | undefined;
+let processesView: ProcessesProvider;
+let chestView: ChestProvider;
 let inlineResults: InlineResults;
 /** Changes of the active image, grouped by burst, or undefined when the server does not notify them. */
 export let pharoChanges: EnvChangeBus | undefined;
@@ -135,6 +143,11 @@ export async function activate(context: ExtensionContext) {
 	registerInspector(context, () => inspectorAvailable ? (method, params) => client.sendRequest(method, params) : undefined);
 	registerMethodHistory(context, () => pharoEnvironment?.capabilities.history ? pharoEnvironment : undefined);
 	lostChanges = registerLostChanges(context, () => pharoEnvironment?.capabilities.history ? pharoEnvironment : undefined);
+	const systemRequest = (tool: 'processes' | 'profile' | 'chest') => (): SystemRequest | undefined =>
+		systemCapabilities?.[tool] ? (method, params) => client.sendRequest(method, params) : undefined;
+	processesView = registerProcessesView(context, systemRequest('processes'));
+	chestView = registerChestView(context, systemRequest('chest'));
+	registerProfiler(context, systemRequest('profile'));
 	syncPharoImageWorkspaceFolder();
 	context.subscriptions.push(workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration('pharo.imageWorkspace')) {
@@ -208,6 +221,16 @@ export async function activate(context: ExtensionContext) {
 		if (!inspectorAvailable) {
 			outputChannel.appendLine('The Pharo Language Server does not provide the inspector (pls-inspector); update the server to use it.');
 		}
+
+		systemCapabilities = systemCapabilitiesFrom(client.initializeResult?.capabilities.experimental);
+		void commands.executeCommand('setContext', 'pharo.system.processes', systemCapabilities?.processes === true);
+		void commands.executeCommand('setContext', 'pharo.system.profile', systemCapabilities?.profile === true);
+		void commands.executeCommand('setContext', 'pharo.system.chest', systemCapabilities?.chest === true);
+		if (!systemCapabilities) {
+			outputChannel.appendLine('The Pharo Language Server does not provide the system tools (pls-system); update the server to use them.');
+		}
+		processesView.refresh();
+		chestView.refresh();
 
 		pharoImageExplorer.refresh();
 		void classPanel.refresh().then(() => window.activeTextEditor && classPanel.follow(window.activeTextEditor.document.uri));

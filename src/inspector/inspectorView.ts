@@ -406,6 +406,15 @@ export function registerInspector(context: vscode.ExtensionContext, request: () 
 			if (node?.kind === 'item') {
 				await vscode.env.clipboard.writeText(node.item.printString);
 			}
+		}),
+		// The item of the view, or else the object of the page, goes in a chest of the Chest view
+		vscode.commands.registerCommand('pharo.inspector.storeInChest', async (node?: InspectorNode) => {
+			const target = node?.kind === 'item'
+				? { ref: node.item.ref, label: node.item.name }
+				: session.current && { ref: session.current.object.ref, label: session.current.label };
+			if (target) {
+				await vscode.commands.executeCommand('pharo.chest.store', target);
+			}
 		})
 	);
 

@@ -168,5 +168,22 @@
 	"commands.pharo.inspector.loadMore.title": "Afficher plus",
 	"viewsContainers.pharoInspector.title": "Inspecteur Pharo",
 	"views.pharoInspector.name": "Inspecteur",
-	"viewsWelcome.pharoInspector.contents": "Sélectionnez du code Pharo et lancez « Inspecter » pour inspecter son résultat ici, puis parcourez ses slots, ses éléments et ses vues."
+	"viewsWelcome.pharoInspector.contents": "Sélectionnez du code Pharo et lancez « Inspecter » pour inspecter son résultat ici, puis parcourez ses slots, ses éléments et ses vues.",
+	"commands.pharo.processes.refresh.title": "Actualiser les processus",
+	"commands.pharo.processes.terminate.title": "Terminer le processus",
+	"commands.pharo.processes.debug.title": "Déboguer le processus",
+	"commands.pharo.processes.openMethod.title": "Ouvrir la méthode en cours",
+	"commands.pharo.profileIt.title": "Profiler",
+	"commands.pharo.chest.refresh.title": "Actualiser le Chest",
+	"commands.pharo.chest.inspect.title": "Inspecter",
+	"commands.pharo.chest.copyCode.title": "Copier le code d’accès",
+	"commands.pharo.chest.insertCode.title": "Insérer le code d’accès",
+	"commands.pharo.chest.remove.title": "Retirer du Chest",
+	"commands.pharo.chest.store.title": "Ranger dans le Chest",
+	"commands.pharo.chest.copyLoadScript.title": "Copier le script qui charge Chest",
+	"commands.pharo.inspector.storeInChest.title": "Ranger dans le Chest",
+	"views.pharoProcesses.name": "Processus",
+	"views.pharoChest.name": "Chest",
+	"viewsWelcome.pharoChest.contents": "[Chest](https://github.com/pharo-spec/Chest) garde des objets par nom, pour les réutiliser depuis le playground, l’inspecteur et le débogueur. Il n’est pas chargé dans cette image.\n[Copier le script qui charge Chest](command:pharo.chest.copyLoadScript)\nÉvaluez-le dans un playground, puis actualisez cette vue.",
+	"viewsWelcome.pharoChest.empty": "Les chests sont vides. Inspectez un objet, puis lancez « Ranger dans le Chest » pour le garder ici."
 }
