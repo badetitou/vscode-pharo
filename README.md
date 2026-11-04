@@ -100,6 +100,8 @@ The critiques of Renraku, the code critics of Pharo, show in the Problems panel 
    3. **Open in Inspector**, in the context menu of a variable, opens its object in the **Inspector**.
    4. Each process stopped on an exception is a debug session of its own; **Terminate Thread** in the context menu of the Call Stack ends the process without resuming it.
 
+4. Breakpoints are debug points of the image: set them in method editors, with a condition, a hit count or a log message (logpoints write on the **Pharo Transcript**), or as function breakpoints (`Class>>selector`). They stay installed when no debug session runs, and a process that hits one opens the debugger. The exception filters of the **Breakpoints** view choose which unhandled exceptions of the image stop: errors (of some classes), messages not understood, halts, deprecations. See [docs/debug-points.md](docs/debug-points.md).
+
 
 ### Agents
 

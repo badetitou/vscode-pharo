@@ -11,6 +11,7 @@ import * as net from 'net';
 import * as child_process from 'child_process';
 import { activateDebug } from './activateDebug';
 import { activateLiveDebugging } from './debugLive';
+import { activateDebugPoints } from './debugPoints';
 import { DebugAdapterFactory } from './debugFactory';
 import { PharoImageExplorer } from './treeProvider/imageExplorer';
 import { MoosebookSerializer } from './moosebook/MoosebookSerializer';
@@ -215,6 +216,7 @@ export async function activate(context: ExtensionContext) {
 			onNotification: (method, handler) => client.onNotification(method, handler),
 			sendRequest: (method, params) => client.sendRequest(method, params)
 		});
+		activateDebugPoints(context, { sendRequest: (method, params) => client.sendRequest(method, params) }, (message) => outputChannel.appendLine(message));
 		context.subscriptions.push(workspace.registerNotebookSerializer('moosebook', new MoosebookSerializer()));
 		context.subscriptions.push(new MoosebookController());
 

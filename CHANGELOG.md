@@ -4,6 +4,7 @@
 
 Pre-release, published to the pre-release channel of the marketplaces. It works with the alpha 6.0.0-alpha.1 of the language server, on a Moose 13 image: run **Pharo: Install the last version of the language server** to get it.
 
+- Breakpoints are debug points of the image (#94): line breakpoints in method editors with conditions, hit counts and log messages, function breakpoints on `Class>>selector`, and exception filters (unhandled errors, messages not understood, halts, deprecations). They stay installed without a debug session, the debug points set in Pharo show in VS Code, and a process that hits one opens the debugger. See [docs/debug-points.md](docs/debug-points.md).
 - The debugger shows the values of the variables at the end of the lines while stopped, opens a variable in the **Inspector** (**Open in Inspector**), separates the **Context** and **Receiver** scopes, and terminates a stopped process with **Terminate Thread** (#93).
 - Add a **Projects** view built on the Metacello baselines (project → package → tag → class), with pinning, a filter, Iceberg state, contextual actions and live update. It replaces the Image Browser view.
 - Agents work on the image of the window through the MCP server of [evref-BL/MCP](https://github.com/evref-BL/MCP), that the language server starts on a free port: Copilot sees its tools without configuration, the `@pharo` participant uses them, and **Pharo: Configure a CLI Agent…** connects Claude Code, Codex or OpenCode. The Language Model Tools it replaces are deprecated. See [docs/agents.md](docs/agents.md).

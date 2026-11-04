@@ -373,6 +373,8 @@ export interface StoppedProcess {
 	receiverClass?: string;
 	doesNotUnderstand?: boolean;
 	subclassResponsibility?: boolean;
+	/** The process stopped on a breakpoint: the user asked for the debugger, so it opens at once. */
+	breakpoint?: boolean;
 	frames?: string[];
 }
 
@@ -398,7 +400,8 @@ export function stoppedProcessMessage(process: StoppedProcess): string {
 
 /**
  * Offer a debugger on every process of the image that stops on an exception, like the debugger of Pharo does: a light
- * notification with Debug, Create method (on a missing method) and Dismiss, or the debugger at once by setting.
+ * notification with Debug, Create method (on a missing method) and Dismiss, or the debugger at once by setting. A
+ * process stopped on a breakpoint always opens the debugger at once.
  */
 export function attachOnStop(
 	server: DebugStoppedServer,
@@ -413,7 +416,7 @@ export function attachOnStop(
 		const process = params as StoppedProcess;
 		const attach = () =>
 			start({ type: DEBUG_TYPE, request: 'attach', name: process.name ?? 'Pharo', debugSessionId: process.id });
-		if (ui.mode() === 'debug') {
+		if (ui.mode() === 'debug' || process.breakpoint) {
 			await attach();
 			return;
 		}

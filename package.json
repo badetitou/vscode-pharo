@@ -2053,6 +2053,11 @@
 				"when": "editorTextFocus && resourceScheme == pharo-playground"
 			}
 		],
+		"breakpoints": [
+			{
+				"language": "pharo"
+			}
+		],
 		"debuggers": [
 			{
 				"type": "pharodb",
