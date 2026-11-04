@@ -6,13 +6,13 @@ argument-hint: Repository name and what to do (review, commit, discard)
 
 # Review and commit Pharo changes with Iceberg
 
-Iceberg compares the packages of the image with the commit of each repository: a change exists in the image before it exists in files. Use the repository tools of the Pharo MCP server (find them with `tool_search` and run them with `tool_call` when they are not in your list) and the Iceberg tools of the Pharo extension.
+Iceberg compares the packages of the image with the commit of each repository: a change exists in the image before it exists in files. Use the repository tools of the Pharo MCP server (find them with `tool_search` and run them with `tool_call` when they are not in your list).
 
 ## Review
 
 1. `repository_search` lists the repositories of the image and which ones are modified.
-2. `pharo-ice-list-changes` lists, per repository, the changes of the image, the Iceberg index, and the **editors of VS Code that are not saved**. Unsaved editors are not in the image yet: tell the user, and do not commit before they are saved or discarded.
-3. `pharo-ice-show-diff` answers the diff of one changed resource and opens it in the diff editor, so that the user sees it. `repository_change_list` gives the same changes from the image side, class by class and method by method.
+2. `repository_change_list` lists the changes of a repository, class by class and method by method, with their diff.
+3. Editors of VS Code that are not saved are not in the image yet, so Iceberg does not see them: when the user edited Pharo code by hand, ask them to save or discard their editors before a commit.
 
 ## Commit
 

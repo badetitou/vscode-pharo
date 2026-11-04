@@ -37,7 +37,7 @@ The request `pls:mcpEndpoint` answers the same object, or `null` when the MCP se
 
 - The extension declares the server of the image of the window to VS Code (`vscode.lm.registerMcpServerDefinitionProvider`, as **Pharo (*image name*)**), so Copilot in agent mode sees its tools without configuration. Two windows on two images each declare the server of their image.
 - The extension contributes the **Pharo skills** and the **Pharo** custom agent, offered while the image runs the MCP server (see below).
-- The `@pharo` chat participant is deprecated: VS Code no longer supports chat participants in the Copilot harness. Its slash commands still call the tools of the MCP server (`/readClass` calls `class_get`, `/eval` `image_evaluate`, `/runClassTests` `test_run`...), and each of its answers says to use the Pharo agent instead. It will be removed.
+- The extension has no chat participant and no Language Model Tool of its own: VS Code no longer supports chat participants in the Copilot harness, and every tool the agents need comes from the MCP server of the image. An image without the MCP server gives no tool to the agents.
 - **Pharo: Configure a CLI Agent…** connects Claude Code, Codex or OpenCode to the image. In a folder without their configuration, it runs `npx @evref-bl/pharo-mcp install --host <host>`, which installs the guides, skills and MCP configuration of the agent; it then points the `pharo` server of that configuration at the port of the image.
 - The port changes at each start of the image: at each start, the extension moves the `pharo` server of `.mcp.json`, `.codex/config.toml` and `opencode.json` in the workspace folders to the new port, when it names a server of this machine.
 - The changes an agent makes go through the image: they reach the views and the editors through `pls-env/didChange` (see [the environment model](environment-model.md)).
@@ -56,13 +56,3 @@ VS Code recommends skills and an MCP server rather than a chat participant. The 
 Copilot loads a skill when the request matches its description; the user can also call it as a slash command (`/pharo-verify`). The **Pharo** custom agent (`agents/pharo.agent.md`) works on the image with these skills. It does not list its tools, because the name of the MCP server changes with the image (**Pharo (*image name*)**): it uses the tools enabled in the tools picker.
 
 The skills are for agents in VS Code. CLI agents get their own guides and skills from `npx @evref-bl/pharo-mcp install` (see **Pharo: Configure a CLI Agent…**).
-
-## Language Model Tools
-
-The extension only keeps the Language Model Tools that the MCP server does not provide:
-
-- `pharo-create-package` creates a package (the MCP server creates packages only with a class);
-- `pharo-ice-list-changes` also reports the editors of VS Code that are not saved, which the image does not know;
-- `pharo-ice-show-diff` opens the diff editor of VS Code on a change, and answers its unified diff.
-
-The tools that the MCP server replaces (`pharo-create-class`, `pharo-read-class`, `pharo-list-packages`, `pharo-list-classes`, `pharo-eval`, `pharo-run-class-tests`, `pharo-run-test-method`) are removed: an image without the MCP server gives no tool to the agents.

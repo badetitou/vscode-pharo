@@ -38,7 +38,6 @@
 		"onFileSystem:pharo",
 		"onFileSystem:pharo-playground",
 		"onNotebook:moosebook",
-		"onChatParticipant:pharo-language-server.pharo",
 		"onMcpCollection:pharo-language-server.mcp"
 	],
 	"extensionDependencies": [
@@ -53,64 +52,6 @@
 				"/*/*/*/class/*.st": "${dirname(1)} class>>${filename}"
 			}
 		},
-		"chatParticipants": [
-			{
-				"id": "pharo-language-server.pharo",
-				"name": "pharo",
-				"fullName": "Pharo",
-				"description": "%chatParticipant.pharo.description%",
-				"isSticky": true,
-				"disambiguation": [
-					{
-						"category": "pharo",
-						"description": "%chatParticipant.pharo.disambiguation.description%",
-						"examples": [
-							"%chatParticipant.pharo.disambiguation.example.createClass%",
-							"%chatParticipant.pharo.disambiguation.example.readClass%",
-							"%chatParticipant.pharo.disambiguation.example.runTests%"
-						]
-					}
-				],
-				"commands": [
-					{
-						"name": "help",
-						"description": "%chatParticipant.pharo.command.help.description%"
-					},
-					{
-						"name": "createPackage",
-						"description": "%chatParticipant.pharo.command.createPackage.description%"
-					},
-					{
-						"name": "createClass",
-						"description": "%chatParticipant.pharo.command.createClass.description%"
-					},
-					{
-						"name": "readClass",
-						"description": "%chatParticipant.pharo.command.readClass.description%"
-					},
-					{
-						"name": "listPackages",
-						"description": "%chatParticipant.pharo.command.listPackages.description%"
-					},
-					{
-						"name": "listClasses",
-						"description": "%chatParticipant.pharo.command.listClasses.description%"
-					},
-					{
-						"name": "eval",
-						"description": "%chatParticipant.pharo.command.eval.description%"
-					},
-					{
-						"name": "runClassTests",
-						"description": "%chatParticipant.pharo.command.runClassTests.description%"
-					},
-					{
-						"name": "runTest",
-						"description": "%chatParticipant.pharo.command.runTest.description%"
-					}
-				]
-			}
-		],
 		"chatSkills": [
 			{
 				"path": "./skills/pharo-live-image/SKILL.md",
@@ -129,94 +70,6 @@
 			{
 				"path": "./agents/pharo.agent.md",
 				"when": "pharo.mcp.available"
-			}
-		],
-		"languageModelTools": [
-			{
-				"name": "pharo-create-package",
-				"displayName": "Pharo: créer un package",
-				"modelDescription": "%lmTool.createPackage.modelDescription%",
-				"userDescription": "%lmTool.createPackage.userDescription%",
-				"toolReferenceName": "pharoCreatePackage",
-				"canBeReferencedInPrompt": true,
-				"tags": [
-					"pharo",
-					"smalltalk",
-					"workspace",
-					"create"
-				],
-				"inputSchema": {
-					"type": "object",
-					"properties": {
-						"packageName": {
-							"type": "string",
-							"description": "%lmTool.createPackage.input.packageName.description%"
-						}
-					},
-					"required": [
-						"packageName"
-					]
-				}
-			},
-			{
-				"name": "pharo-ice-list-changes",
-				"displayName": "Pharo Iceberg: lister les modifications",
-				"modelDescription": "%lmTool.iceListChanges.modelDescription%",
-				"userDescription": "%lmTool.iceListChanges.userDescription%",
-				"toolReferenceName": "pharoIceListChanges",
-				"canBeReferencedInPrompt": true,
-				"tags": [
-					"pharo",
-					"smalltalk",
-					"iceberg",
-					"git",
-					"diff"
-				],
-				"inputSchema": {
-					"type": "object",
-					"properties": {
-						"repositoryName": {
-							"type": "string",
-							"description": "%lmTool.iceListChanges.input.repositoryName.description%"
-						}
-					}
-				}
-			},
-			{
-				"name": "pharo-ice-show-diff",
-				"displayName": "Pharo Iceberg: afficher le diff",
-				"modelDescription": "%lmTool.iceShowDiff.modelDescription%",
-				"userDescription": "%lmTool.iceShowDiff.userDescription%",
-				"toolReferenceName": "pharoIceShowDiff",
-				"canBeReferencedInPrompt": true,
-				"tags": [
-					"pharo",
-					"smalltalk",
-					"iceberg",
-					"git",
-					"diff"
-				],
-				"inputSchema": {
-					"type": "object",
-					"properties": {
-						"uri": {
-							"type": "string",
-							"description": "%lmTool.iceShowDiff.input.uri.description%"
-						},
-						"repositoryName": {
-							"type": "string",
-							"description": "%lmTool.iceShowDiff.input.repositoryName.description%"
-						},
-						"openEditor": {
-							"type": "boolean",
-							"description": "%lmTool.iceShowDiff.input.openEditor.description%",
-							"default": true
-						}
-					},
-					"required": [
-						"uri"
-					]
-				}
 			}
 		],
 		"mcpServerDefinitionProviders": [
@@ -1913,7 +1766,6 @@
 	"dependencies": {
 		"@microsoft/vscode-file-downloader-api": "^1.0.1",
 		"@vscode/debugprotocol": "^1.68.0",
-		"diff": "^9.0.0",
 		"jsonc-parser": "^3.3.1",
 		"vscode-languageclient": "^10.1.0",
 		"vscode-languageserver-protocol": "3.18.2"

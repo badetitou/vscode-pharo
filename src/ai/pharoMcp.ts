@@ -82,23 +82,6 @@ export class PharoMcpServers implements vscode.McpServerDefinitionProvider<vscod
 	}
 }
 
-/** Whether a tool of vscode.lm.tools comes from the MCP server of a Pharo image. */
-export function isPharoMcpTool(name: string): boolean {
-	return PHARO_MCP_TOOL_PREFIX.test(name);
-}
-
-/** The tool of the MCP server of the image named toolName (class_get, image_evaluate...), preferring the first server. */
-export function findPharoMcpTool<T extends { name: string }>(tools: readonly T[], toolName: string): T | undefined {
-	const candidates = tools.filter((tool) => isPharoMcpTool(tool.name) && tool.name.endsWith(`_${toolName}`));
-	return candidates.sort((left, right) => left.name.length - right.name.length)[0];
-}
-
-/**
- * VS Code names the tools of an MCP server `mcp_<its name, sanitized and cut>_<tool>`, numbering the prefix of a
- * second server of the same name: mcp_mcp_pharo_class_get, then mcp_mcp_pharo2_class_get.
- */
-const PHARO_MCP_TOOL_PREFIX = new RegExp(`^mcp_${MCP_SERVER_NAME.toLowerCase().replace(/[^a-z0-9_.-]+/g, '_').slice(0, 13)}\\d*_`);
-
 // ---------------------------------------------------------------------------
 // CLI agents: Claude Code, Codex and OpenCode read the MCP server from a configuration file of the workspace.
 // The installer of @evref-bl/pharo-mcp writes it with port 4000; the image listens on a free port that changes
