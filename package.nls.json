@@ -168,5 +168,22 @@
 	"commands.pharo.inspector.loadMore.title": "Show More",
 	"viewsContainers.pharoInspector.title": "Pharo Inspector",
 	"views.pharoInspector.name": "Inspector",
-	"viewsWelcome.pharoInspector.contents": "Select Pharo code and run Inspect It to inspect its result here, then inspect its slots, items and views."
+	"viewsWelcome.pharoInspector.contents": "Select Pharo code and run Inspect It to inspect its result here, then inspect its slots, items and views.",
+	"commands.pharo.processes.refresh.title": "Refresh Processes",
+	"commands.pharo.processes.terminate.title": "Terminate Process",
+	"commands.pharo.processes.debug.title": "Debug Process",
+	"commands.pharo.processes.openMethod.title": "Open Running Method",
+	"commands.pharo.profileIt.title": "Profile It",
+	"commands.pharo.chest.refresh.title": "Refresh Chest",
+	"commands.pharo.chest.inspect.title": "Inspect",
+	"commands.pharo.chest.copyCode.title": "Copy Access Code",
+	"commands.pharo.chest.insertCode.title": "Insert Access Code",
+	"commands.pharo.chest.remove.title": "Remove from Chest",
+	"commands.pharo.chest.store.title": "Store in Chest",
+	"commands.pharo.chest.copyLoadScript.title": "Copy the Script that Loads Chest",
+	"commands.pharo.inspector.storeInChest.title": "Store in Chest",
+	"views.pharoProcesses.name": "Processes",
+	"views.pharoChest.name": "Chest",
+	"viewsWelcome.pharoChest.contents": "[Chest](https://github.com/pharo-spec/Chest) keeps objects by name, to use them again from the playground, the inspector and the debugger. It is not loaded in this image.\n[Copy the Script that Loads Chest](command:pharo.chest.copyLoadScript)\nEvaluate it in a playground, then refresh this view.",
+	"viewsWelcome.pharoChest.empty": "The chests are empty. Inspect an object, then run Store in Chest to keep it here."
 }

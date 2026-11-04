@@ -111,6 +111,14 @@ Copilot (agent mode), Claude Code, Codex and OpenCode work on the image of the w
 
 The tools of the image show in VS Code: `anObject inspect`, run anywhere (playground, test, agent), opens the **Inspector** view, and `aClass browse` or `aMethod browse` the editor of the class or method. The questions Pharo asks (`confirm:`, `request:`, `chooseFrom:`, the file choosers) open the dialogs, input boxes and Quick Picks of VS Code instead of a window nobody sees, and the jobs of the image show their progress. With `pharo.debugMode`, they stay in Pharo. The language server needs the `pls-ui` capability; see [docs/ui.md](docs/ui.md).
 
+### System tools
+
+- The **Processes** view, in the Pharo sidebar, lists the processes of the image with their priority, their state and the method they run; expand a process to see its stack and open its methods. **Terminate Process** stops a stuck process, after a confirmation that warns for the processes of the system and of the user interface, and **Debug Process** suspends it in the debugger.
+- **Profile It** (context menu of the editors and of the playground) evaluates the selection, or the line of the cursor, while the profiler of the image samples it, and shows the calls as a flame graph with the methods that cost the most. Click a call or a method to open it.
+- The **Chest** view, next to the inspector, shows the objects kept by name in the chests of [Chest](https://github.com/pharo-spec/Chest). **Store in Chest** in the inspector keeps the inspected object; an object of the chest can be inspected, removed, or its access code (`(Chest named: 'Default') at: 'cart'`) inserted in an editor. Chest must be loaded in the image: the view gives the script that loads it.
+
+The language server needs the `pls-system` capability; see [docs/system.md](docs/system.md).
+
 ### Playground
 
 **Pharo: New Playground** opens a page `pharo-playground:` evaluated in the active image.

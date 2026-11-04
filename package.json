@@ -524,6 +524,13 @@
 					"name": "%views.editorStack.name%",
 					"icon": "media/pharo-bar.svg",
 					"when": "pharo.envEdit"
+				},
+				{
+					"id": "pharoProcesses",
+					"name": "%views.pharoProcesses.name%",
+					"icon": "media/pharo-bar.svg",
+					"visibility": "collapsed",
+					"when": "pharo.system.processes"
 				}
 			],
 			"pharoClass": [
@@ -538,6 +545,12 @@
 					"id": "pharoInspector",
 					"name": "%views.pharoInspector.name%",
 					"icon": "media/pharo-bar.svg"
+				},
+				{
+					"id": "pharoChest",
+					"name": "%views.pharoChest.name%",
+					"icon": "media/pharo-bar.svg",
+					"when": "pharo.system.chest"
 				}
 			]
 		},
@@ -575,6 +588,16 @@
 			{
 				"view": "pharoInspector",
 				"contents": "%viewsWelcome.pharoInspector.contents%"
+			},
+			{
+				"view": "pharoChest",
+				"contents": "%viewsWelcome.pharoChest.contents%",
+				"when": "!pharo.chest.available"
+			},
+			{
+				"view": "pharoChest",
+				"contents": "%viewsWelcome.pharoChest.empty%",
+				"when": "pharo.chest.available"
 			}
 		],
 		"viewsContainers": {
@@ -1244,6 +1267,85 @@
 				"title": "%commands.pharo.lostChanges.dismissAll.title%",
 				"category": "Pharo",
 				"icon": "$(clear-all)"
+			},
+			{
+				"command": "pharo.processes.refresh",
+				"title": "%commands.pharo.processes.refresh.title%",
+				"category": "Pharo",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "pharo.processes.terminate",
+				"title": "%commands.pharo.processes.terminate.title%",
+				"category": "Pharo",
+				"icon": "$(debug-stop)"
+			},
+			{
+				"command": "pharo.processes.debug",
+				"title": "%commands.pharo.processes.debug.title%",
+				"category": "Pharo",
+				"icon": "$(debug-alt)"
+			},
+			{
+				"command": "pharo.processes.openMethod",
+				"title": "%commands.pharo.processes.openMethod.title%",
+				"category": "Pharo",
+				"icon": "$(go-to-file)"
+			},
+			{
+				"command": "pharo.profileIt",
+				"title": "%commands.pharo.profileIt.title%",
+				"category": "Pharo",
+				"icon": "$(flame)",
+				"enablement": "pharo.system.profile"
+			},
+			{
+				"command": "pharo.chest.refresh",
+				"title": "%commands.pharo.chest.refresh.title%",
+				"category": "Pharo",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "pharo.chest.inspect",
+				"title": "%commands.pharo.chest.inspect.title%",
+				"category": "Pharo",
+				"icon": "$(inspect)"
+			},
+			{
+				"command": "pharo.chest.copyCode",
+				"title": "%commands.pharo.chest.copyCode.title%",
+				"category": "Pharo",
+				"icon": "$(copy)"
+			},
+			{
+				"command": "pharo.chest.insertCode",
+				"title": "%commands.pharo.chest.insertCode.title%",
+				"category": "Pharo",
+				"icon": "$(insert)"
+			},
+			{
+				"command": "pharo.chest.remove",
+				"title": "%commands.pharo.chest.remove.title%",
+				"category": "Pharo",
+				"icon": "$(trash)"
+			},
+			{
+				"command": "pharo.chest.store",
+				"title": "%commands.pharo.chest.store.title%",
+				"category": "Pharo",
+				"icon": "$(archive)"
+			},
+			{
+				"command": "pharo.chest.copyLoadScript",
+				"title": "%commands.pharo.chest.copyLoadScript.title%",
+				"category": "Pharo"
+			},
+			{
+				"command": "pharo.inspector.storeInChest",
+				"title": "%commands.pharo.inspector.storeInChest.title%",
+				"category": "Pharo",
+				"icon": "$(archive)",
+				"enablement": "pharo.system.chest"
 			}
 		],
 		"menus": {
@@ -1392,6 +1494,21 @@
 					"command": "pharo.inspector.close",
 					"when": "view == pharoInspector",
 					"group": "navigation@7"
+				},
+				{
+					"command": "pharo.processes.refresh",
+					"when": "view == pharoProcesses",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.chest.refresh",
+					"when": "view == pharoChest",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pharo.inspector.storeInChest",
+					"when": "view == pharoInspector && pharo.system.chest",
+					"group": "navigation@8"
 				}
 			],
 			"debug/toolBar": [
@@ -1635,6 +1752,66 @@
 					"command": "pharo.history.show",
 					"when": "view == pharoProjects && pharo.envHistory && viewItem =~ /^pharo\\.method\\b/",
 					"group": "4_history@0"
+				},
+				{
+					"command": "pharo.processes.debug",
+					"when": "view == pharoProcesses && viewItem == pharoProcess",
+					"group": "inline@1"
+				},
+				{
+					"command": "pharo.processes.terminate",
+					"when": "view == pharoProcesses && viewItem == pharoProcess",
+					"group": "inline@2"
+				},
+				{
+					"command": "pharo.processes.openMethod",
+					"when": "view == pharoProcesses && viewItem =~ /^pharoProcess/",
+					"group": "1_open@1"
+				},
+				{
+					"command": "pharo.processes.debug",
+					"when": "view == pharoProcesses && viewItem == pharoProcess",
+					"group": "2_process@1"
+				},
+				{
+					"command": "pharo.processes.terminate",
+					"when": "view == pharoProcesses && viewItem == pharoProcess",
+					"group": "2_process@2"
+				},
+				{
+					"command": "pharo.chest.inspect",
+					"when": "view == pharoChest && viewItem == pharoChestItem",
+					"group": "inline@1"
+				},
+				{
+					"command": "pharo.chest.insertCode",
+					"when": "view == pharoChest && viewItem == pharoChestItem",
+					"group": "inline@2"
+				},
+				{
+					"command": "pharo.chest.inspect",
+					"when": "view == pharoChest && viewItem == pharoChestItem",
+					"group": "1_inspect@1"
+				},
+				{
+					"command": "pharo.chest.insertCode",
+					"when": "view == pharoChest && viewItem == pharoChestItem",
+					"group": "2_code@1"
+				},
+				{
+					"command": "pharo.chest.copyCode",
+					"when": "view == pharoChest && viewItem == pharoChestItem",
+					"group": "2_code@2"
+				},
+				{
+					"command": "pharo.chest.remove",
+					"when": "view == pharoChest && viewItem == pharoChestItem",
+					"group": "3_remove@1"
+				},
+				{
+					"command": "pharo.inspector.storeInChest",
+					"when": "view == pharoInspector && viewItem == pharoInspectorItem && pharo.system.chest",
+					"group": "1_inspect@2"
 				}
 			],
 			"editor/context": [
@@ -1672,6 +1849,11 @@
 					"command": "pharo.history.show",
 					"when": "pharo.envHistory && resourceScheme == pharo && resourcePath =~ /\\/(instance|class)\\/[^\\/]+\\.st$/ && !(resourceFilename == '(new method).st')",
 					"group": "Pharo@3"
+				},
+				{
+					"command": "pharo.profileIt",
+					"when": "(editorLangId == pharo || resourceScheme == pharo-playground) && pharo.system.profile",
+					"group": "Pharo@2"
 				}
 			],
 			"editor/title": [
@@ -1925,6 +2107,58 @@
 				{
 					"command": "pharo.lostChanges.dismissAll",
 					"when": "false"
+				},
+				{
+					"command": "pharo.processes.refresh",
+					"when": "pharo.system.processes"
+				},
+				{
+					"command": "pharo.processes.terminate",
+					"when": "false"
+				},
+				{
+					"command": "pharo.processes.debug",
+					"when": "false"
+				},
+				{
+					"command": "pharo.processes.openMethod",
+					"when": "false"
+				},
+				{
+					"command": "pharo.chest.refresh",
+					"when": "pharo.system.chest"
+				},
+				{
+					"command": "pharo.chest.inspect",
+					"when": "false"
+				},
+				{
+					"command": "pharo.chest.copyCode",
+					"when": "false"
+				},
+				{
+					"command": "pharo.chest.insertCode",
+					"when": "false"
+				},
+				{
+					"command": "pharo.chest.remove",
+					"when": "false"
+				},
+				{
+					"command": "pharo.chest.store",
+					"when": "false"
+				},
+				{
+					"command": "pharo.chest.copyLoadScript",
+					"when": "pharo.system.chest"
+				},
+				{
+					"command": "pharo.profileIt",
+					"when": "pharo.system.profile"
+				},
+				{
+					"command": "pharo.inspector.storeInChest",
+					"when": "pharo.system.chest && pharo.inspector.hasPage"
 				}
 			],
 			"explorer/context": [
