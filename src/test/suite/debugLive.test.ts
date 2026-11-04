@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { DebugSessionLike, DebugStoppedServer, DebugUi, attachOnStop, createMissingMethod, pickRestart, restartFrameOfSavedMethod } from '../../debugLive';
+import { DebugSessionLike, DebugStoppedServer, DebugUi, attachOnStop, createMissingMethod, inspectVariable, pickRestart, restartFrameOfSavedMethod, variableOccurrences } from '../../debugLive';
 
 class FakeSession implements DebugSessionLike {
 	readonly calls: { command: string; args?: any }[] = [];
@@ -168,5 +168,49 @@ suite('Debug sessions of the stopped processes', () => {
 		const result = await run({ name: 'ZeroDivide' }, 'Debug');
 		assert.strictEqual(result.started.length, 0);
 		assert.strictEqual(result.offered.length, 0);
+	});
+});
+
+suite('Debugger context', () => {
+	const names = (text: string, first = 0, last = 100) => variableOccurrences(text, first, last).map(({ line, name }) => `${line}:${name}`);
+
+	test('finds the temporaries and arguments of a method, not its selectors, globals or pseudo-variables', () => {
+		const method = ['sum: x', '\t| a b |', '\ta := 3 + x.', '\tb := a size max: OrderedCollection new size.', '\t^ self total: a + b'].join('\n');
+		assert.deepStrictEqual(names(method), ['0:x', '2:a', '2:x', '3:b', '3:a', '4:a', '4:b']);
+	});
+
+	test('reads a unary method with its temporaries', () => {
+		assert.deepStrictEqual(names('sum\n\t| a |\n\ta := count.\n\t^ a'), ['0:sum', '2:a', '2:count', '3:a']);
+	});
+
+	test('skips comments, strings, symbols, characters and literal arrays', () => {
+		const method = "foo\n\t\"a comment with x\"\n\ty := 'it''s x' , #x , #(x y) , $x asString , #'x' , z";
+		assert.deepStrictEqual(names(method), ['0:foo', '2:y', '2:z']);
+	});
+
+	test('reads block parameters and temporaries, and cascades', () => {
+		const method = 'foo\n\titems do: [ :each | | t | t := each. t printOn: stream ]; yourself';
+		assert.deepStrictEqual(names(method), ['0:foo', '1:items', '1:each', '1:t', '1:stream']);
+	});
+
+	test('keeps the lines of the view port, once per line', () => {
+		assert.deepStrictEqual(names('foo\n\ta := a + a.\n\tb := a', 1, 1), ['1:a']);
+	});
+
+	test('inspects the object of a variable in the inspector', async () => {
+		const session = new FakeSession({ pharoInspectVariable: { ref: '12' } });
+		const inspected: { ref: string; label: string }[] = [];
+		const ok = await inspectVariable(session, { container: { variablesReference: 4 }, variable: { name: 'count', value: '7' } }, async (target) => { inspected.push(target); }, () => assert.fail());
+		assert.strictEqual(ok, true);
+		assert.deepStrictEqual(session.calls[0], { command: 'pharoInspectVariable', args: { variablesReference: 4, name: 'count' } });
+		assert.deepStrictEqual(inspected, [{ ref: '12', label: 'count: 7' }]);
+	});
+
+	test('reports a variable the debugger no longer shows', async () => {
+		const session = new FakeSession({ pharoInspectVariable: new Error('This variable is no longer shown by the debugger.') });
+		const errors: string[] = [];
+		const ok = await inspectVariable(session, { container: { variablesReference: 4 }, variable: { name: 'count' } }, async () => assert.fail(), (message) => errors.push(message));
+		assert.strictEqual(ok, false);
+		assert.match(errors[0], /no longer shown/);
 	});
 });

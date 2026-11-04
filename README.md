@@ -94,6 +94,12 @@ The critiques of Renraku, the code critics of Pharo, show in the Problems panel 
 
 ![Step the stack gif](https://raw.githubusercontent.com/badetitou/vscode-pharo/main/docs/img/debugSteps.gif)
 
+3. Look at the stopped frame
+   1. The **Variables** view shows the **Context** of the frame (`thisContext`, arguments and temporaries) apart from its **Receiver** (`self` and its slots).
+   2. While stopped, the values of the variables show at the end of the lines of the method, up to the stop (`debug.inlineValues`).
+   3. **Open in Inspector**, in the context menu of a variable, opens its object in the **Inspector**.
+   4. Each process stopped on an exception is a debug session of its own; **Terminate Thread** in the context menu of the Call Stack ends the process without resuming it.
+
 
 ### Agents
 

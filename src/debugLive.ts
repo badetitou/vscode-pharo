@@ -3,7 +3,8 @@ import { ENTITY_SCHEME } from './env/entityUri';
 
 // Debugger-driven development in the `pharodb` debugger: Create the missing method, edit-and-continue and the restarts
 // of the exception. They talk to the custom requests of the DAP server of the image (`pharoMissingMethod`,
-// `pharoCreateMissingMethod`, `restartFrame`, `pharoRestarts` and `pharoRestart`).
+// `pharoCreateMissingMethod`, `restartFrame`, `pharoRestarts` and `pharoRestart`). And the context of a stopped frame:
+// the values of its variables at the end of the lines, and Open in Inspector on a variable (`pharoInspectVariable`).
 
 export const DEBUG_TYPE = 'pharodb';
 
@@ -147,6 +148,177 @@ export async function restartFrameOfSavedMethod(session: DebugSessionLike, uri: 
 	return true;
 }
 
+/** A variable of a line that the debugger can show at its end. */
+export interface VariableOccurrence {
+	line: number;
+	character: number;
+	name: string;
+}
+
+const PSEUDO_VARIABLES = new Set(['self', 'super', 'thisContext', 'true', 'false', 'nil']);
+
+/**
+ * Answer the variables of the Smalltalk `text` read on lines `firstLine` to `lastLine`, once per line: the identifiers
+ * that are neither a selector, a pseudo-variable, a global, a declaration of temporaries nor in a comment, a string or a
+ * literal. VS Code looks each name up in the scopes of the stopped frame.
+ */
+export function variableOccurrences(text: string, firstLine: number, lastLine: number): VariableOccurrence[] {
+	const occurrences: VariableOccurrence[] = [];
+	const seen = new Set<string>();
+	let line = 0;
+	let lineStart = 0;
+	// After an operand the next identifier is a unary selector; after a cascade too.
+	let afterOperand = false;
+	let inTemporaries = false;
+	let i = 0;
+	const skipTo = (end: number) => {
+		for (; i < end && i < text.length; i++) {
+			if (text[i] === '\n') {
+				line++;
+				lineStart = i + 1;
+			}
+		}
+	};
+	const skipDelimited = (open: number, close: string) => {
+		// From the opening quote, skip to after the closing one; a doubled quote stays in the literal
+		let end = open + 1;
+		while (end < text.length) {
+			if (text[end] === close) {
+				if (text[end + 1] !== close) {
+					break;
+				}
+				end++;
+			}
+			end++;
+		}
+		skipTo(end + 1);
+	};
+	while (i < text.length && line <= lastLine) {
+		const char = text[i];
+		if (char === '\n' || /\s/.test(char)) {
+			skipTo(i + 1);
+		} else if (char === '"') {
+			skipDelimited(i, '"');
+		} else if (char === '\'') {
+			skipDelimited(i, '\'');
+			afterOperand = true;
+		} else if (char === '$') {
+			skipTo(i + 2);
+			afterOperand = true;
+		} else if (char === '#') {
+			if (text[i + 1] === '(' || text[i + 1] === '[') {
+				// A literal array: skip to its balanced end
+				let depth = 0;
+				let end = i + 1;
+				for (; end < text.length; end++) {
+					if (text[end] === '(' || text[end] === '[') {
+						depth++;
+					} else if ((text[end] === ')' || text[end] === ']') && --depth === 0) {
+						break;
+					}
+				}
+				skipTo(end + 1);
+			} else if (text[i + 1] === '\'') {
+				skipTo(i + 1);
+				skipDelimited(i, '\'');
+			} else {
+				const symbol = /^#[A-Za-z0-9_:]*|^#[-+*/\\<>=~@%&?,|]+/.exec(text.slice(i))![0];
+				skipTo(i + Math.max(symbol.length, 1));
+			}
+			afterOperand = true;
+		} else if (/[0-9]/.test(char)) {
+			const number = /^[0-9]+(r[0-9A-Z]+)?(\.[0-9]+)?(e-?[0-9]+)?/.exec(text.slice(i))![0];
+			skipTo(i + number.length);
+			afterOperand = true;
+		} else if (/[A-Za-z_]/.test(char)) {
+			const name = /^[A-Za-z_][A-Za-z0-9_]*/.exec(text.slice(i))![0];
+			const isKeyword = text[i + name.length] === ':' && text[i + name.length + 1] !== '=';
+			const character = i - lineStart;
+			skipTo(i + name.length);
+			if (isKeyword) {
+				skipTo(i + 1);
+				afterOperand = false;
+				continue;
+			}
+			// The first identifier of a line is looked up even after an operand: it starts the statement after the
+			// selector of a unary method, and a unary selector that continues a cascade on its line only shows nothing
+			const startsLine = text.slice(lineStart, character + lineStart).trim() === '';
+			const isVariable = (!afterOperand || startsLine) && !PSEUDO_VARIABLES.has(name) && !/^[A-Z]/.test(name);
+			if (isVariable && !inTemporaries && line >= firstLine && !seen.has(`${line}:${name}`)) {
+				seen.add(`${line}:${name}`);
+				occurrences.push({ line, character, name });
+			}
+			afterOperand = !inTemporaries;
+		} else if (char === '|') {
+			// A bar opens or closes a declaration of temporaries, unless it is the binary message | between operands; a
+			// bar that starts its line opens one, after the selector of a unary method
+			if (inTemporaries || !afterOperand || text.slice(lineStart, i).trim() === '') {
+				inTemporaries = !inTemporaries;
+			}
+			afterOperand = false;
+			skipTo(i + 1);
+		} else if (char === ')' || char === ']' || char === '}') {
+			afterOperand = true;
+			skipTo(i + 1);
+		} else if (char === ';') {
+			afterOperand = true;
+			skipTo(i + 1);
+		} else {
+			// Parentheses, brackets, block parameters, statement ends, returns, assignments and binary selectors
+			afterOperand = false;
+			skipTo(i + 1);
+		}
+	}
+	return occurrences;
+}
+
+/** The values of the variables of the method of a stopped frame, at the end of its lines up to the stop. */
+export class PharoInlineValuesProvider implements vscode.InlineValuesProvider {
+	provideInlineValues(document: vscode.TextDocument, viewPort: vscode.Range, context: vscode.InlineValueContext): vscode.InlineValue[] {
+		const lastLine = Math.min(viewPort.end.line, context.stoppedLocation.end.line);
+		return variableOccurrences(document.getText(), viewPort.start.line, lastLine).map(
+			({ line, character, name }) =>
+				new vscode.InlineValueVariableLookup(new vscode.Range(line, character, line, character + name.length), name, true)
+		);
+	}
+}
+
+/** What VS Code gives to a command of the context menu of the Variables view. */
+export interface VariableMenuContext {
+	sessionId?: string;
+	container?: { variablesReference?: number };
+	variable?: { name?: string; value?: string };
+}
+
+/**
+ * Open the Inspector on the object of a variable of the Variables view: the server registers it in the inspector of the
+ * language server and answers its reference, that the Inspector view takes over.
+ */
+export async function inspectVariable(
+	session: DebugSessionLike,
+	context: VariableMenuContext,
+	inspect: (target: { ref: string; label: string }) => PromiseLike<unknown>,
+	error: (message: string) => void
+): Promise<boolean> {
+	const reference = context.container?.variablesReference;
+	const name = context.variable?.name;
+	if (reference === undefined || name === undefined) {
+		return false;
+	}
+	try {
+		const body = await session.customRequest('pharoInspectVariable', { variablesReference: reference, name });
+		if (typeof body?.ref !== 'string') {
+			error(`Could not inspect ${name}.`);
+			return false;
+		}
+		await inspect({ ref: body.ref, label: context.variable?.value ? `${name}: ${context.variable.value}` : name });
+		return true;
+	} catch (failure) {
+		error(`Could not inspect ${name}: ${(failure as Error).message}`);
+		return false;
+	}
+}
+
 const vscodeUi: DebugUi = {
 	pick: (items, placeHolder) => vscode.window.showQuickPick(items, { placeHolder, matchOnDetail: true }),
 	input: (prompt) => vscode.window.showInputBox({ prompt }),
@@ -288,6 +460,19 @@ export function activateLiveDebugging(context: vscode.ExtensionContext, server?:
 			const session = pharoSession();
 			return session && pickRestart(session, vscodeUi);
 		}),
+		vscode.commands.registerCommand('pharo.debug.inspectVariable', (menuContext: VariableMenuContext) => {
+			const session = pharoSession();
+			return (
+				session &&
+				inspectVariable(
+					session,
+					menuContext,
+					(target) => vscode.commands.executeCommand('pharo.inspector.inspect', target),
+					vscodeUi.error
+				)
+			);
+		}),
+		vscode.languages.registerInlineValuesProvider({ language: 'pharo' }, new PharoInlineValuesProvider()),
 		vscode.workspace.onDidSaveTextDocument((document) => {
 			const session = pharoSession();
 			if (session && document.uri.scheme === ENTITY_SCHEME) {

@@ -1034,6 +1034,13 @@
 				"enablement": "inDebugMode && debugType == pharodb"
 			},
 			{
+				"command": "pharo.debug.inspectVariable",
+				"title": "Open in Inspector",
+				"category": "Pharo Debug",
+				"icon": "$(inspect)",
+				"enablement": "inDebugMode && debugType == pharodb"
+			},
+			{
 				"command": "pharo.debug.restarts",
 				"title": "Restarts of the Exception",
 				"category": "Pharo Debug",
@@ -1397,6 +1404,13 @@
 					"command": "pharo.debug.restarts",
 					"when": "debugType == pharodb",
 					"group": "navigation@10"
+				}
+			],
+			"debug/variables/context": [
+				{
+					"command": "pharo.debug.inspectVariable",
+					"when": "debugType == pharodb",
+					"group": "pharo@1"
 				}
 			],
 			"debug/callstack/context": [
@@ -2163,7 +2177,7 @@
 		"@types/vscode": "^1.125.0",
 		"@typescript-eslint/parser": "^8.63.0",
 		"@vscode/test-cli": "^0.0.15",
-		"@vscode/test-electron": "^3.0.0",
+		"@vscode/test-electron": "^3.1.0",
 		"eslint": "^10.6.0",
 		"mocha": "^11.7.6",
 		"ts-loader": "^9.6.2",
