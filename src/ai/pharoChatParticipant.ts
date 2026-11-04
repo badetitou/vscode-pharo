@@ -22,15 +22,22 @@ export function getPharoChatTools(tools: readonly vscode.LanguageModelToolInform
 	return tools.filter((tool) => isPharoMcpTool(tool.name) || tool.name.startsWith('pharo-')).map(toolInfoToChatTool);
 }
 
+/** The tools of the extension that the slash commands still call: no tool of the MCP server of the image does what they do. */
+const EXTENSION_TOOLS = new Set(['pharo-create-package']);
+
 /**
- * The tool of the MCP server of the image that does what a deprecated pharo-* tool did, with its input,
- * or the pharo-* tool itself when the image does not run the MCP server or the server has no such tool.
+ * The tool of the MCP server of the image that does what a removed pharo-* tool did, with its input;
+ * the tool itself when the extension still provides it; undefined when the image does not run the MCP server
+ * or the server has no such tool.
  */
 export function pharoToolCall(
 	legacyTool: string,
 	input: Record<string, any>,
 	tools: readonly { name: string }[] = vscode.lm.tools
-): { name: string; input: object } {
+): { name: string; input: object } | undefined {
+	if (EXTENSION_TOOLS.has(legacyTool)) {
+		return { name: legacyTool, input };
+	}
 	const mcp = (toolName: string, mcpInput: object) => {
 		const tool = findPharoMcpTool(tools, toolName);
 		return tool ? { name: tool.name, input: mcpInput } : undefined;
@@ -48,6 +55,9 @@ export function pharoToolCall(
 		case 'pharo-read-class':
 			call = mcp('class_get', { name: input.className, includeComment: true });
 			break;
+		case 'pharo-list-packages':
+			call = mcp('package_search', {});
+			break;
 		case 'pharo-list-classes':
 			call = mcp('class_search', { scope: { packages: [input.packageName] } });
 			break;
@@ -61,8 +71,12 @@ export function pharoToolCall(
 			call = mcp('test_run', { methods: [`${input.className}>>#${input.testMethod}`] });
 			break;
 	}
-	return call ?? { name: legacyTool, input };
+	return call;
 }
+
+/** What answers the `@pharo` participant, which VS Code deprecated, starts with. */
+export const DEPRECATION_NOTICE = 'The `@pharo` participant is deprecated and will be removed: VS Code no longer supports chat participants in the Copilot harness. '
+	+ 'Ask the **Pharo** agent, or Copilot in agent mode, instead: they use the tools of the MCP server of the image and the Pharo skills of the extension (`/pharo-live-image`, `/pharo-verify`, `/pharo-iceberg`).\n\n';
 
 export function trimCodeFence(value: string): string {
 	const trimmed = value.trim();
@@ -111,7 +125,12 @@ async function invokeAndRenderTool(
 	stream: vscode.ChatResponseStream,
 	token: vscode.CancellationToken
 ): Promise<void> {
-	const { name: toolName, input } = pharoToolCall(legacyTool, legacyInput);
+	const call = pharoToolCall(legacyTool, legacyInput);
+	if (!call) {
+		stream.markdown(NO_MCP_SERVER);
+		return;
+	}
+	const { name: toolName, input } = call;
 	try {
 		const result = await vscode.lm.invokeTool(toolName, {
 			toolInvocationToken: request.toolInvocationToken,
@@ -119,10 +138,6 @@ async function invokeAndRenderTool(
 		}, token);
 
 		const text = asPlainText(result);
-		if (toolName === 'pharo-read-class') {
-			stream.markdown(`\n\n\`\`\`smalltalk\n${text}\n\`\`\`\n`);
-			return;
-		}
 		stream.markdown(text ? `\n\n${text}\n` : '\n\n(no result)\n');
 	} catch (e) {
 		stream.markdown(`\n\nErreur tool **${toolName}**: ${String((e as any)?.message ?? e)}\n`);
@@ -217,22 +232,18 @@ async function handleExplicitCommand(
 	}
 }
 
+const NO_MCP_SERVER = '\n\nThe image does not run the Pharo MCP server: start the Pharo language server, and check that `pharo.mcp.enabled` is not `false`.\n';
+
 const BASE_PROMPT = [
 	'You are a Pharo assistant integrated into VS Code.',
-	'Goal: manipulate the Pharo image using the available tools (package/class creation, class reading, execution, tests).',
+	'Goal: read, change, run and test the code of the Pharo image of this window with the available tools.',
 	'The tools whose name starts with `mcp_` come from the MCP server running in the image: search, read, compile, refactor, test, critiques, Iceberg, history.',
 	'Rules:',
 	'- When an action is needed, prefer calling a tool rather than inventing.',
+	'- Work on classes and methods with the tools of the MCP server (`class_get`, `method_compile`...), not by editing `.st` files.',
+	'- Tools the MCP server does not list can be found with `tool_search` and run with `tool_call`.',
 	'- Ask for clarification if information is missing (package name, class name, etc.).',
 	'- Return concise answers',
-	'- Virtual file systems with scheme `pharoImage` are registered as workspace folders.',
-	'  Use VS Code built-in file tools (list_directory, read_file) on `pharoImage://` URIs to browse packages and classes.',
-	'  Structure: `pharoImage:/` → root lists packages (directories); `pharoImage:/PackageName/` → lists class files (*.class.st).',
-	'  A `pharoImage:/?iceRepository=RepoName` URI scopes the view to a specific Iceberg repository.',
-	'- Prefer VFS navigation for exploration; use the tools for actions (create, eval, test).',
-	'- To EDIT a Pharo class: use VS Code built-in edit_file on its `pharoImage:/PackageName/ClassName.class.st` URI.',
-	'  Saving the file (after editing) automatically propagates the change to the Pharo image via the language server (textDocument/didSave).',
-	'  Do NOT evaluate code to rewrite entire class definitions; prefer direct file editing on the pharoImage:// URI.',
 ].join('\n');
 
 function buildWorkspaceFoldersContextMessage(): vscode.LanguageModelChatMessage {
@@ -306,13 +317,14 @@ function chatContextToModelMessages(chatContext: vscode.ChatContext, maxTurns: n
 
 export function registerPharoChatParticipant(context: vscode.ExtensionContext): void {
 	const handler: vscode.ChatRequestHandler = async (request, chatContext, stream, token) => {
+		stream.markdown(DEPRECATION_NOTICE);
 		if (await handleExplicitCommand(request, stream, token)) {
 			return;
 		}
 
 		const tools = getPharoChatTools();
 		if (tools.length === 0) {
-			stream.markdown('Aucun outil Pharo n\'est disponible : démarre le serveur de langage Pharo, qui fournit le serveur MCP de l\'image.');
+			stream.markdown(NO_MCP_SERVER);
 			return;
 		}
 

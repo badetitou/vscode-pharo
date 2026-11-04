@@ -266,7 +266,7 @@ export async function activate(context: ExtensionContext) {
 function announceMcpServer(pathToImage: string, experimental: unknown): void {
 	const endpoint = mcpEndpointFrom(experimental);
 	pharoMcpServers?.setEndpoint(endpoint, path.basename(pathToImage, '.image'));
-	// The Language Model Tools that the MCP server replaces are only offered without it
+	// The Pharo skills and agent are only offered with it
 	void commands.executeCommand('setContext', 'pharo.mcp.available', endpoint !== undefined);
 	if (!endpoint) {
 		if (workspace.getConfiguration('pharo').get<boolean>('mcp.enabled', true)) {

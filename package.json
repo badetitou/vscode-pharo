@@ -111,6 +111,26 @@
 				]
 			}
 		],
+		"chatSkills": [
+			{
+				"path": "./skills/pharo-live-image/SKILL.md",
+				"when": "pharo.mcp.available"
+			},
+			{
+				"path": "./skills/pharo-verify/SKILL.md",
+				"when": "pharo.mcp.available"
+			},
+			{
+				"path": "./skills/pharo-iceberg/SKILL.md",
+				"when": "pharo.mcp.available"
+			}
+		],
+		"chatAgents": [
+			{
+				"path": "./agents/pharo.agent.md",
+				"when": "pharo.mcp.available"
+			}
+		],
 		"languageModelTools": [
 			{
 				"name": "pharo-create-package",
@@ -137,191 +157,6 @@
 						"packageName"
 					]
 				}
-			},
-			{
-				"name": "pharo-create-class",
-				"displayName": "Pharo: créer une classe",
-				"modelDescription": "%lmTool.createClass.modelDescription%",
-				"userDescription": "%lmTool.createClass.userDescription%",
-				"toolReferenceName": "pharoCreateClass",
-				"canBeReferencedInPrompt": true,
-				"tags": [
-					"pharo",
-					"smalltalk",
-					"create"
-				],
-				"inputSchema": {
-					"type": "object",
-					"properties": {
-						"packageName": {
-							"type": "string"
-						},
-						"className": {
-							"type": "string"
-						},
-						"superclassName": {
-							"type": "string",
-							"default": "Object"
-						},
-						"instanceVariables": {
-							"type": "string",
-							"description": "%lmTool.createClass.input.instanceVariables.description%"
-						}
-					},
-					"required": [
-						"packageName",
-						"className"
-					]
-				},
-				"when": "!pharo.mcp.available"
-			},
-			{
-				"name": "pharo-read-class",
-				"displayName": "Pharo: lire une classe",
-				"modelDescription": "%lmTool.readClass.modelDescription%",
-				"userDescription": "%lmTool.readClass.userDescription%",
-				"toolReferenceName": "pharoReadClass",
-				"canBeReferencedInPrompt": true,
-				"tags": [
-					"pharo",
-					"smalltalk",
-					"read"
-				],
-				"inputSchema": {
-					"type": "object",
-					"properties": {
-						"className": {
-							"type": "string"
-						}
-					},
-					"required": [
-						"className"
-					]
-				},
-				"when": "!pharo.mcp.available"
-			},
-			{
-				"name": "pharo-list-packages",
-				"displayName": "Pharo: lister les packages",
-				"modelDescription": "%lmTool.listPackages.modelDescription%",
-				"userDescription": "%lmTool.listPackages.userDescription%",
-				"toolReferenceName": "pharoListPackages",
-				"canBeReferencedInPrompt": true,
-				"tags": [
-					"pharo",
-					"smalltalk",
-					"read",
-					"list"
-				],
-				"inputSchema": {
-					"type": "object",
-					"properties": {}
-				}
-			},
-			{
-				"name": "pharo-list-classes",
-				"displayName": "Pharo: lister les classes",
-				"modelDescription": "%lmTool.listClasses.modelDescription%",
-				"userDescription": "%lmTool.listClasses.userDescription%",
-				"toolReferenceName": "pharoListClasses",
-				"canBeReferencedInPrompt": true,
-				"tags": [
-					"pharo",
-					"smalltalk",
-					"read",
-					"list"
-				],
-				"inputSchema": {
-					"type": "object",
-					"properties": {
-						"packageName": {
-							"type": "string"
-						}
-					},
-					"required": [
-						"packageName"
-					]
-				},
-				"when": "!pharo.mcp.available"
-			},
-			{
-				"name": "pharo-eval",
-				"displayName": "Pharo: exécuter du code",
-				"modelDescription": "%lmTool.eval.modelDescription%",
-				"userDescription": "%lmTool.eval.userDescription%",
-				"toolReferenceName": "pharoEval",
-				"canBeReferencedInPrompt": true,
-				"tags": [
-					"pharo",
-					"smalltalk",
-					"execute"
-				],
-				"inputSchema": {
-					"type": "object",
-					"properties": {
-						"code": {
-							"type": "string"
-						}
-					},
-					"required": [
-						"code"
-					]
-				},
-				"when": "!pharo.mcp.available"
-			},
-			{
-				"name": "pharo-run-class-tests",
-				"displayName": "Pharo: exécuter tests de classe",
-				"modelDescription": "%lmTool.runClassTests.modelDescription%",
-				"userDescription": "%lmTool.runClassTests.userDescription%",
-				"toolReferenceName": "pharoRunClassTests",
-				"canBeReferencedInPrompt": true,
-				"tags": [
-					"pharo",
-					"smalltalk",
-					"test"
-				],
-				"inputSchema": {
-					"type": "object",
-					"properties": {
-						"className": {
-							"type": "string"
-						}
-					},
-					"required": [
-						"className"
-					]
-				},
-				"when": "!pharo.mcp.available"
-			},
-			{
-				"name": "pharo-run-test-method",
-				"displayName": "Pharo: exécuter un test",
-				"modelDescription": "%lmTool.runTestMethod.modelDescription%",
-				"userDescription": "%lmTool.runTestMethod.userDescription%",
-				"toolReferenceName": "pharoRunTestMethod",
-				"canBeReferencedInPrompt": true,
-				"tags": [
-					"pharo",
-					"smalltalk",
-					"test"
-				],
-				"inputSchema": {
-					"type": "object",
-					"properties": {
-						"className": {
-							"type": "string"
-						},
-						"testMethod": {
-							"type": "string"
-						}
-					},
-					"required": [
-						"className",
-						"testMethod"
-					]
-				},
-				"when": "!pharo.mcp.available"
 			},
 			{
 				"name": "pharo-ice-list-changes",
@@ -2078,6 +1913,7 @@
 	"dependencies": {
 		"@microsoft/vscode-file-downloader-api": "^1.0.1",
 		"@vscode/debugprotocol": "^1.68.0",
+		"diff": "^9.0.0",
 		"jsonc-parser": "^3.3.1",
 		"vscode-languageclient": "^10.1.0",
 		"vscode-languageserver-protocol": "3.18.2"
