@@ -5,7 +5,8 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { envCapabilitiesFrom } from '../../env/envContracts';
 import { EnvTransport, PharoEnvironment } from '../../env/pharoEnvironment';
-import { baselinesOf, gitUrlOf, repositoryNameOf, sourceDirectoryOf } from '../../env/projectLoading';
+import { baselinesOf, gitUrlOf, repositoryNameOf, sourceDirectoryOf, writeProject } from '../../env/projectLoading';
+import { projectFiles, projectNameProblem } from '../../env/projectTemplate';
 
 const project = { id: 'project:Shop', kind: 'project', name: 'Shop', parent: null, hasChildren: true, flags: { volatile: false } };
 
@@ -50,6 +51,32 @@ suite('Loading Pharo projects', () => {
 		assert.strictEqual(await sourceDirectoryOf(workingCopy), workingCopy);
 		assert.deepStrictEqual(await baselinesOf(workingCopy), ['Shop']);
 		assert.deepStrictEqual(await baselinesOf(path.join(workingCopy, 'missing')), []);
+	});
+
+	test('accepts project names that can name a baseline', () => {
+		assert.strictEqual(projectNameProblem('Shop'), undefined);
+		assert.strictEqual(projectNameProblem('Shop2'), undefined);
+		assert.ok(projectNameProblem(''));
+		assert.ok(projectNameProblem('shop'));
+		assert.ok(projectNameProblem('My-Shop'));
+		assert.ok(projectNameProblem('My Shop'));
+	});
+
+	test('writes a new project whose baseline loads its package and its tests', async () => {
+		await writeProject(workingCopy, 'Shop');
+		assert.deepStrictEqual(await baselinesOf(workingCopy), ['Shop']);
+		const baseline = await fs.readFile(path.join(workingCopy, 'src', 'BaselineOfShop', 'BaselineOfShop.class.st'), 'utf8');
+		assert.match(baseline, /package: 'Shop';/);
+		assert.match(baseline, /package: 'Shop-Tests' with: \[ spec requires: #\( 'Shop' \) \]/);
+		const test = await fs.readFile(path.join(workingCopy, 'src', 'Shop-Tests', 'ShopTest.class.st'), 'utf8');
+		assert.match(test, /#superclass : 'TestCase'/);
+		assert.match(await fs.readFile(path.join(workingCopy, '.smalltalk.ston'), 'utf8'), /#baseline : 'Shop'/);
+		assert.match(await fs.readFile(path.join(workingCopy, '.github', 'workflows', 'ci.yml'), 'utf8'), /smalltalkci -s \$\{\{ matrix.smalltalk \}\}/);
+		assert.deepStrictEqual(Object.keys(projectFiles('Shop')).sort(), [
+			'.github/workflows/ci.yml', '.gitignore', '.project', '.smalltalk.ston', 'README.md', 'src/.properties',
+			'src/BaselineOfShop/BaselineOfShop.class.st', 'src/BaselineOfShop/package.st',
+			'src/Shop-Tests/ShopTest.class.st', 'src/Shop-Tests/package.st', 'src/Shop/package.st'
+		]);
 	});
 
 	test('reads the loadProject capability', () => {

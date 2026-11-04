@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import { EnvNode } from './envContracts';
 import { reportErrors, requireEnvironment } from './entityCommands';
 import { PharoEnvironment } from './pharoEnvironment';
+import { projectFiles, projectNameProblem } from './projectTemplate';
 
 const BASELINE_PREFIX = 'BaselineOf';
 
@@ -70,6 +71,14 @@ export function registerProjectLoading(
 				}
 			})
 		),
+		vscode.commands.registerCommand('pharo.env.newProject', () =>
+			reportErrors(async () => {
+				const project = await newProject(load);
+				if (project) {
+					await afterLoad(project, revealProject);
+				}
+			})
+		),
 		vscode.commands.registerCommand('pharo.env.loadProjectFromFolder', (folder?: unknown) =>
 			reportErrors(async () => {
 				const workingCopy = folder instanceof vscode.Uri ? folder.fsPath : await askFolder('Load Pharo Project', 'Load');
@@ -116,6 +125,44 @@ async function cloneAndLoad(givenUrl: string | undefined, load: Loader): Promise
 		return token.isCancellationRequested ? undefined : load(workingCopy, token, progress);
 	});
 	return project ? { ...project, workingCopy } : undefined;
+}
+
+async function newProject(load: Loader): Promise<LoadedProject | undefined> {
+	const name = (await vscode.window.showInputBox({
+		title: 'New Pharo Project',
+		prompt: 'The name of the project, which names its baseline and its packages',
+		placeHolder: 'MyProject',
+		ignoreFocusOut: true,
+		validateInput: (value) => value.trim() === '' ? undefined : projectNameProblem(value.trim())
+	}))?.trim();
+	if (!name) {
+		return undefined;
+	}
+	const parent = await askFolder('Folder to Create the Project In', 'Create Here');
+	if (!parent) {
+		return undefined;
+	}
+	const workingCopy = path.join(parent, name);
+	if (await exists(workingCopy) && (await fs.readdir(workingCopy)).length > 0) {
+		throw new Error(`${workingCopy} already exists and is not empty.`);
+	}
+	const project = await withLoadProgress(`Creating ${name}`, async (progress, token) => {
+		await writeProject(workingCopy, name);
+		await runGit(['-c', 'init.defaultBranch=main', 'init'], workingCopy, token);
+		await runGit(['add', '--all'], workingCopy, token);
+		await runGit(['commit', '--message', `Create the ${name} project`], workingCopy, token);
+		return token.isCancellationRequested ? undefined : load(workingCopy, token, progress);
+	});
+	return project ? { ...project, workingCopy } : undefined;
+}
+
+/** Write the files of a new project named name in the folder workingCopy. */
+export async function writeProject(workingCopy: string, name: string): Promise<void> {
+	for (const [file, contents] of Object.entries(projectFiles(name))) {
+		const target = path.join(workingCopy, ...file.split('/'));
+		await fs.mkdir(path.dirname(target), { recursive: true });
+		await fs.writeFile(target, contents);
+	}
 }
 
 /** Load the baseline of a working copy, asking which one when it holds several. */
@@ -181,18 +228,25 @@ async function askFolder(title: string, openLabel: string): Promise<string | und
 }
 
 /** Clone url into target with the git of the machine, so that its credentials and configuration apply. */
-function gitClone(url: string, target: string, token: vscode.CancellationToken): Promise<void> {
+async function gitClone(url: string, target: string, token: vscode.CancellationToken): Promise<void> {
+	await runGit(['clone', '--', url, target], undefined, token);
+	if (token.isCancellationRequested) {
+		await fs.rm(target, { recursive: true, force: true });
+	}
+}
+
+/** Run git with args in the folder cwd; cancelling token stops it. */
+function runGit(args: string[], cwd: string | undefined, token: vscode.CancellationToken): Promise<void> {
 	return new Promise((resolve, reject) => {
-		const child = execFile('git', ['clone', '--', url, target], (error, _stdout, stderr) => {
-			if (token.isCancellationRequested) {
-				void fs.rm(target, { recursive: true, force: true }).finally(() => resolve());
-			} else if (error) {
-				reject(new Error(`git clone ${url} failed: ${(stderr || error.message).trim()}`));
+		const child = execFile('git', args, { cwd }, (error, _stdout, stderr) => {
+			if (error && !token.isCancellationRequested) {
+				reject(new Error(`git ${args[0] === '-c' ? args[2] : args[0]} failed: ${(stderr || error.message).trim()}`));
 			} else {
 				resolve();
 			}
 		});
-		token.onCancellationRequested(() => child.kill());
+		const cancellation = token.onCancellationRequested(() => child.kill());
+		child.on('exit', () => cancellation.dispose());
 	});
 }
 

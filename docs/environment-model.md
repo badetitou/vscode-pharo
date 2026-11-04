@@ -360,9 +360,10 @@ When the folder does not hold the baseline, or Metacello fails (a missing depend
 ### In the extension
 
 - **Pharo: Clone and Load Project…** (`pharo.env.cloneAndLoadProject`, also in the title menu of the Projects view) asks for a git URL, or `owner/repository` for GitHub, and a parent folder, clones the project with the `git` of the machine, then loads it.
+- **Pharo: New Pharo Project…** (`pharo.env.newProject`, also in the title menu of the Projects view) asks for a name and a parent folder, writes a project in a new folder (`.project`, Tonel sources under `src` with `BaselineOf<Name>`, the packages `<Name>` and `<Name>-Tests` and a first test class, a smalltalkCI configuration `.smalltalk.ston`, a GitHub Actions workflow, a README and a `.gitignore`; see `src/env/projectTemplate.ts`), creates its git repository with a first commit on `main`, then loads it.
 - **Pharo: Load Project from Folder…** (`pharo.env.loadProjectFromFolder`, also on folders in the Explorer) loads a working copy already on disk.
 
-Both look for the `BaselineOf*` folders of the sources, ask which baseline to load when there are several, select the project in the Projects view, and offer to add the working copy to the workspace or to open it. The code is in `src/env/projectLoading.ts`.
+Clone and Load Project and Load Project from Folder look for the `BaselineOf*` folders of the sources and ask which baseline to load when there are several. The three commands then select the project in the Projects view, and offer to add the working copy to the workspace or to open it. The code is in `src/env/projectLoading.ts`.
 
 ## The Projects view
 

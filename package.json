@@ -331,6 +331,12 @@
 				"icon": "$(hubot)"
 			},
 			{
+				"command": "pharo.env.newProject",
+				"title": "%commands.pharo.env.newProject.title%",
+				"category": "Pharo",
+				"icon": "$(new-folder)"
+			},
+			{
 				"command": "pharo.env.cloneAndLoadProject",
 				"title": "%commands.pharo.env.cloneAndLoadProject.title%",
 				"category": "Pharo",
@@ -1210,14 +1216,19 @@
 					"group": "navigation@8"
 				},
 				{
-					"command": "pharo.env.cloneAndLoadProject",
+					"command": "pharo.env.newProject",
 					"when": "view == pharoProjects && pharo.envLoadProject",
 					"group": "load@0"
 				},
 				{
-					"command": "pharo.env.loadProjectFromFolder",
+					"command": "pharo.env.cloneAndLoadProject",
 					"when": "view == pharoProjects && pharo.envLoadProject",
 					"group": "load@1"
+				},
+				{
+					"command": "pharo.env.loadProjectFromFolder",
+					"when": "view == pharoProjects && pharo.envLoadProject",
+					"group": "load@2"
 				}
 			],
 			"debug/toolBar": [
@@ -1628,6 +1639,10 @@
 				{
 					"command": "pharo.images.copyPath",
 					"when": "false"
+				},
+				{
+					"command": "pharo.env.newProject",
+					"when": "pharo.envLoadProject"
 				},
 				{
 					"command": "pharo.env.cloneAndLoadProject",
