@@ -2,11 +2,10 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import {
 	PharoMcpServers,
-	findPharoMcpTool,
 	isLocalMcpUrl,
-	isPharoMcpTool,
 	mcpEndpointFrom,
 	mcpInitializationOptions,
 	pharoMcpUrlIn,
@@ -54,16 +53,6 @@ suite('Pharo MCP server', () => {
 		assert.deepStrictEqual(servers.provideMcpServerDefinitions(), []);
 		assert.throws(() => servers.resolveMcpServerDefinition(definition), /does not run an MCP server/);
 		servers.dispose();
-	});
-
-	test('recognizes the tools VS Code names after the server', () => {
-		assert.ok(isPharoMcpTool('mcp_mcp_pharo_class_get'));
-		assert.ok(isPharoMcpTool('mcp_mcp_pharo2_class_get'));
-		assert.ok(!isPharoMcpTool('mcp_github_class_get'));
-		assert.ok(!isPharoMcpTool('pharo-eval'));
-		const tools = [{ name: 'mcp_mcp_pharo2_test_run' }, { name: 'mcp_mcp_pharo_test_run' }, { name: 'mcp_mcp_pharo_class_get' }];
-		assert.strictEqual(findPharoMcpTool(tools, 'test_run')?.name, 'mcp_mcp_pharo_test_run');
-		assert.strictEqual(findPharoMcpTool(tools, 'image_evaluate'), undefined);
 	});
 });
 
@@ -125,3 +114,42 @@ suite('Pharo MCP configuration of the CLI agents', () => {
 		}
 	});
 });
+
+suite('Pharo agent customizations', () => {
+	const extension = vscode.extensions.getExtension('badetitou.pharo-language-server')!;
+	const contributes = extension.packageJSON.contributes;
+
+	test('each skill is named after its directory and describes when to use it', () => {
+		const paths: string[] = contributes.chatSkills.map((skill: { path: string }) => skill.path);
+		assert.deepStrictEqual(paths.map((skillPath) => path.basename(path.dirname(skillPath))), ['pharo-live-image', 'pharo-verify', 'pharo-iceberg']);
+		for (const skillPath of paths) {
+			const frontmatter = frontmatterOf(path.join(extension.extensionPath, skillPath));
+			assert.strictEqual(frontmatter.name, path.basename(path.dirname(skillPath)), skillPath);
+			assert.ok(frontmatter.description && frontmatter.description.length <= 1024, skillPath);
+		}
+	});
+
+	test('the Pharo agent has a name', () => {
+		const [agent] = contributes.chatAgents;
+		assert.strictEqual(frontmatterOf(path.join(extension.extensionPath, agent.path)).name, 'Pharo');
+	});
+
+	test('agents only get the tools of the MCP server', () => {
+		assert.strictEqual(contributes.chatParticipants, undefined);
+		assert.strictEqual(contributes.languageModelTools, undefined);
+	});
+});
+
+/** The keys of the YAML frontmatter of a Markdown file whose values are on one line. */
+function frontmatterOf(file: string): Record<string, string> {
+	const match = /^---\n([\s\S]*?)\n---/.exec(fs.readFileSync(file, 'utf8'));
+	assert.ok(match, `${file} has no frontmatter`);
+	const fields: Record<string, string> = {};
+	for (const line of match[1].split('\n')) {
+		const colon = line.indexOf(':');
+		if (colon > 0) {
+			fields[line.slice(0, colon).trim()] = line.slice(colon + 1).trim();
+		}
+	}
+	return fields;
+}

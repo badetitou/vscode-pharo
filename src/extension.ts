@@ -23,8 +23,6 @@ import { getApi, FileDownloader } from "@microsoft/vscode-file-downloader-api";
 import { IceControlManager } from './ice/IceControlManager';
 import { initTestController } from './testController/testController';
 import { PharoImagesExplorer, PharoImagesNode, createWorkspaceForImage } from './treeProvider/pharoImages';
-import { registerPharoLanguageModelTools } from './ai/pharoLmTools';
-import { registerPharoChatParticipant } from './ai/pharoChatParticipant';
 import { MCP_PROVIDER_ID, PharoMcpServers, mcpEndpointFrom, mcpInitializationOptions, registerConfigureAgentCommand, updateAgentConfigurations } from './ai/pharoMcp';
 import { buildPharoUri, ICE_REPOSITORY_QUERY_KEY, repositoryNameFromPharoUri } from './treeProvider/pharoUri';
 import { expectString, expectStringArray } from './rpcContracts';
@@ -101,9 +99,6 @@ export async function activate(context: ExtensionContext) {
 	isDeactivating = false;
 	serverStarted = false;
 	serverLifecycleStatus = 'Starting up';
-	// AI entrypoints: @pharo participant + tool-calls (pharo.*)
-	registerPharoLanguageModelTools(context);
-	registerPharoChatParticipant(context);
 	pharoMcpServers = new PharoMcpServers();
 	context.subscriptions.push(
 		pharoMcpServers,
@@ -307,7 +302,7 @@ export async function activate(context: ExtensionContext) {
 function announceMcpServer(pathToImage: string, experimental: unknown): void {
 	const endpoint = mcpEndpointFrom(experimental);
 	pharoMcpServers?.setEndpoint(endpoint, path.basename(pathToImage, '.image'));
-	// The Language Model Tools that the MCP server replaces are only offered without it
+	// The Pharo skills and agent are only offered with it
 	void commands.executeCommand('setContext', 'pharo.mcp.available', endpoint !== undefined);
 	if (!endpoint) {
 		if (workspace.getConfiguration('pharo').get<boolean>('mcp.enabled', true)) {

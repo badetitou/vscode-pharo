@@ -105,7 +105,7 @@ The critiques of Renraku, the code critics of Pharo, show in the Problems panel 
 
 ### Agents
 
-Copilot (agent mode), Claude Code, Codex and OpenCode work on the image of the window through the MCP server of [evref-BL/MCP](https://github.com/evref-BL/MCP), that the language server starts in the image. Copilot sees its tools without configuration; **Pharo: Configure a CLI Agent…** connects a CLI agent to it. Set `pharo.mcp.enabled` to `false` to not start it. See [docs/agents.md](docs/agents.md).
+Copilot (agent mode), Claude Code, Codex and OpenCode work on the image of the window through the MCP server of [evref-BL/MCP](https://github.com/evref-BL/MCP), that the language server starts in the image. Copilot sees its tools without configuration, with the Pharo skills of the extension (`/pharo-live-image`, `/pharo-verify`, `/pharo-iceberg`) and a **Pharo** agent; **Pharo: Configure a CLI Agent…** connects a CLI agent to it. Set `pharo.mcp.enabled` to `false` to not start it. See [docs/agents.md](docs/agents.md).
 
 ### Tools and questions of the image
 
