@@ -99,6 +99,10 @@ The critiques of Renraku, the code critics of Pharo, show in the Problems panel 
 
 Copilot (agent mode), Claude Code, Codex and OpenCode work on the image of the window through the MCP server of [evref-BL/MCP](https://github.com/evref-BL/MCP), that the language server starts in the image. Copilot sees its tools without configuration; **Pharo: Configure a CLI Agent…** connects a CLI agent to it. Set `pharo.mcp.enabled` to `false` to not start it. See [docs/agents.md](docs/agents.md).
 
+### Tools and questions of the image
+
+The tools of the image show in VS Code: `anObject inspect`, run anywhere (playground, test, agent), opens the **Inspector** view, and `aClass browse` or `aMethod browse` the editor of the class or method. The questions Pharo asks (`confirm:`, `request:`, `chooseFrom:`, the file choosers) open the dialogs, input boxes and Quick Picks of VS Code instead of a window nobody sees, and the jobs of the image show their progress. With `pharo.debugMode`, they stay in Pharo. The language server needs the `pls-ui` capability; see [docs/ui.md](docs/ui.md).
+
 ### Playground
 
 **Pharo: New Playground** opens a page `pharo-playground:` evaluated in the active image.

@@ -45,6 +45,7 @@ import { inspectorCapabilitiesFrom } from './inspector/inspectorContracts';
 import { registerInspector } from './inspector/inspectorView';
 import { registerMethodHistory } from './env/methodHistory';
 import { LostChanges, registerLostChanges } from './env/lostChanges';
+import { UI_INITIALIZATION_OPTIONS, registerImageUi } from './ui/imageUi';
 
 
 export let client: LanguageClient;
@@ -166,6 +167,12 @@ export async function activate(context: ExtensionContext) {
 
 	// Create the pharo language server client
 	client = createPharoLanguageServer(resolvedRequirements, context);
+	// The tools and the questions of the image (inspect, browse, confirm:, request:...), registered before the server
+	// starts since it may ask during its start
+	context.subscriptions.push(registerImageUi({
+		onRequest: (method, handler) => client.onRequest(method, (params: unknown) => handler(params as never)),
+		onNotification: (method, handler) => client.onNotification(method, (params: unknown) => handler(params as never))
+	}, undefined, (message) => outputChannel.appendLine(message)));
 
 	try {
 		// Start the client. This will also launch the server
@@ -981,7 +988,10 @@ function createPharoLanguageServer(requirements: requirements.RequirementsData, 
 			{ scheme: PLAYGROUND_SCHEME, language: 'pharo' },
 			{ notebook: 'moosebook', language: 'pharo' }
 		],
-		initializationOptions: mcpInitializationOptions(workspace.getConfiguration('pharo').get<boolean>('mcp.enabled', true)),
+		initializationOptions: {
+			...mcpInitializationOptions(workspace.getConfiguration('pharo').get<boolean>('mcp.enabled', true)),
+			...UI_INITIALIZATION_OPTIONS
+		},
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/.clientrc'),
