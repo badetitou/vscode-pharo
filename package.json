@@ -1034,6 +1034,13 @@
 				"enablement": "inDebugMode && debugType == pharodb"
 			},
 			{
+				"command": "pharo.debug.inspectVariable",
+				"title": "Open in Inspector",
+				"category": "Pharo Debug",
+				"icon": "$(inspect)",
+				"enablement": "inDebugMode && debugType == pharodb"
+			},
+			{
 				"command": "pharo.debug.restarts",
 				"title": "Restarts of the Exception",
 				"category": "Pharo Debug",
@@ -1397,6 +1404,13 @@
 					"command": "pharo.debug.restarts",
 					"when": "debugType == pharodb",
 					"group": "navigation@10"
+				}
+			],
+			"debug/variables/context": [
+				{
+					"command": "pharo.debug.inspectVariable",
+					"when": "debugType == pharodb",
+					"group": "pharo@1"
 				}
 			],
 			"debug/callstack/context": [
