@@ -189,7 +189,35 @@ async function offerCreate(session: vscode.DebugSession): Promise<void> {
 	}
 }
 
-export function activateLiveDebugging(context: vscode.ExtensionContext): void {
+/** The notification of the server when a process of the image stopped on an exception that nobody handled. */
+export const DEBUG_STOPPED_NOTIFICATION = 'pls-debug/stopped';
+
+export interface DebugStoppedServer {
+	onNotification(method: string, handler: (params: { id?: unknown; name?: unknown }) => void): vscode.Disposable;
+}
+
+/** Open a debug session on every process of the image that stops on an exception, like the debugger of Pharo does. */
+export function attachOnStop(
+	server: DebugStoppedServer,
+	start: (configuration: vscode.DebugConfiguration) => PromiseLike<unknown>
+): vscode.Disposable {
+	return server.onNotification(DEBUG_STOPPED_NOTIFICATION, (params) => {
+		if (typeof params?.id !== 'number') {
+			return;
+		}
+		void start({
+			type: DEBUG_TYPE,
+			request: 'attach',
+			name: typeof params.name === 'string' ? params.name : 'Pharo',
+			debugSessionId: params.id
+		});
+	});
+}
+
+export function activateLiveDebugging(context: vscode.ExtensionContext, server?: DebugStoppedServer): void {
+	if (server) {
+		context.subscriptions.push(attachOnStop(server, (configuration) => vscode.debug.startDebugging(undefined, configuration)));
+	}
 	context.subscriptions.push(
 		vscode.debug.registerDebugAdapterTrackerFactory(DEBUG_TYPE, new PharoDebugTracker()),
 		vscode.commands.registerCommand('pharo.debug.createMethod', () => {

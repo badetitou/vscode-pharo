@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { DebugSessionLike, DebugUi, createMissingMethod, pickRestart, restartFrameOfSavedMethod } from '../../debugLive';
+import { DebugSessionLike, DebugStoppedServer, DebugUi, attachOnStop, createMissingMethod, pickRestart, restartFrameOfSavedMethod } from '../../debugLive';
 
 class FakeSession implements DebugSessionLike {
 	readonly calls: { command: string; args?: any }[] = [];
@@ -99,5 +99,31 @@ suite('Debugger-driven development', () => {
 		const session = new FakeSession({ threads: { threads: [{ id: 1 }] }, stackTrace: { stackFrames: [] } });
 		assert.strictEqual(await restartFrameOfSavedMethod(session, vscode.Uri.parse(methodUri)), false);
 		assert.ok(!session.calls.some((call) => call.command === 'restartFrame'));
+	});
+});
+
+suite('Debug sessions of the stopped processes', () => {
+	function serverWith(): { server: DebugStoppedServer; notify(params: unknown): void } {
+		let handler: ((params: any) => void) | undefined;
+		return {
+			server: { onNotification: (_method, h) => { handler = h; return new vscode.Disposable(() => undefined); } },
+			notify: (params) => handler?.(params)
+		};
+	}
+
+	test('attaches a Pharo debug session to a process that stopped on an exception', () => {
+		const { server, notify } = serverWith();
+		const started: vscode.DebugConfiguration[] = [];
+		attachOnStop(server, async (configuration) => started.push(configuration));
+		notify({ id: 3, name: 'ZeroDivide', exception: 'ZeroDivide' });
+		assert.deepStrictEqual(started, [{ type: 'pharodb', request: 'attach', name: 'ZeroDivide', debugSessionId: 3 }]);
+	});
+
+	test('ignores a notification without a session id', () => {
+		const { server, notify } = serverWith();
+		const started: vscode.DebugConfiguration[] = [];
+		attachOnStop(server, async (configuration) => started.push(configuration));
+		notify({ name: 'ZeroDivide' });
+		assert.strictEqual(started.length, 0);
 	});
 });
