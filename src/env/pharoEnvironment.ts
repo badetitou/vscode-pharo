@@ -21,6 +21,7 @@ import {
 	expectEnvEntity,
 	expectEnvHistory,
 	expectEnvLostChanges,
+	expectEnvNode,
 	expectEnvNodes,
 	expectEnvReplayResult,
 	expectEnvSearchResult,
@@ -172,6 +173,17 @@ export class PharoEnvironment implements vscode.Disposable {
 
 	async dismissLostChanges(refs: string[]): Promise<void> {
 		await this.transport.sendRequest('pls-env:dismissLostChanges', { refs });
+	}
+
+	/**
+	 * Load the baseline from the git working copy at path, so that Iceberg works in that working copy, and answer its project.
+	 * groups, when given, are loaded instead of the default group. Projects are loaded again on the next request.
+	 */
+	async loadProject(path: string, baseline: string, groups?: string[]): Promise<EnvNode> {
+		const project = expectEnvNode(await this.transport.sendRequest('pls-env:loadProject', { path, baseline, groups }), 'pls-env:loadProject');
+		this.clear();
+		this.remember([project]);
+		return project;
 	}
 
 	/** Drop what is cached about the entity id and the children of its parent. */

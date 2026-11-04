@@ -37,6 +37,7 @@ export function run(): Promise<void> {
 	mocha.addFile(path.resolve(__dirname, './debugPoints.test.js'));
 	mocha.addFile(path.resolve(__dirname, './imageUi.test.js'));
 	mocha.addFile(path.resolve(__dirname, './system.test.js'));
+	mocha.addFile(path.resolve(__dirname, './projectLoading.test.js'));
 
 	return new Promise((resolve, reject) => {
 		try {

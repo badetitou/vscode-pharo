@@ -331,6 +331,23 @@
 				"icon": "$(hubot)"
 			},
 			{
+				"command": "pharo.env.newProject",
+				"title": "%commands.pharo.env.newProject.title%",
+				"category": "Pharo",
+				"icon": "$(new-folder)"
+			},
+			{
+				"command": "pharo.env.cloneAndLoadProject",
+				"title": "%commands.pharo.env.cloneAndLoadProject.title%",
+				"category": "Pharo",
+				"icon": "$(repo-clone)"
+			},
+			{
+				"command": "pharo.env.loadProjectFromFolder",
+				"title": "%commands.pharo.env.loadProjectFromFolder.title%",
+				"category": "Pharo"
+			},
+			{
 				"command": "pharo.env.spotter",
 				"title": "%commands.pharo.env.spotter.title%",
 				"category": "Pharo",
@@ -1197,6 +1214,21 @@
 					"command": "pharo.inspector.storeInChest",
 					"when": "view == pharoInspector && pharo.system.chest",
 					"group": "navigation@8"
+				},
+				{
+					"command": "pharo.env.newProject",
+					"when": "view == pharoProjects && pharo.envLoadProject",
+					"group": "load@0"
+				},
+				{
+					"command": "pharo.env.cloneAndLoadProject",
+					"when": "view == pharoProjects && pharo.envLoadProject",
+					"group": "load@1"
+				},
+				{
+					"command": "pharo.env.loadProjectFromFolder",
+					"when": "view == pharoProjects && pharo.envLoadProject",
+					"group": "load@2"
 				}
 			],
 			"debug/toolBar": [
@@ -1609,6 +1641,18 @@
 					"when": "false"
 				},
 				{
+					"command": "pharo.env.newProject",
+					"when": "pharo.envLoadProject"
+				},
+				{
+					"command": "pharo.env.cloneAndLoadProject",
+					"when": "pharo.envLoadProject"
+				},
+				{
+					"command": "pharo.env.loadProjectFromFolder",
+					"when": "pharo.envLoadProject"
+				},
+				{
 					"command": "pharo.env.spotter",
 					"when": "pharo.envSearch"
 				},
@@ -1869,6 +1913,11 @@
 					"command": "pharo.createClass",
 					"when": "resourceScheme == pharoImage && explorerResourceIsFolder && resourcePath =~ /^\\/[^\\/]+$/",
 					"group": "navigation@2"
+				},
+				{
+					"command": "pharo.env.loadProjectFromFolder",
+					"when": "explorerResourceIsFolder && pharo.envLoadProject",
+					"group": "pharo@9"
 				}
 			],
 			"scm/title": [

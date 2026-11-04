@@ -18,6 +18,8 @@ export interface EnvCapabilities {
 	edit: boolean;
 	search: boolean;
 	history: boolean;
+	/** The server answers pls-env:loadProject. */
+	loadProject: boolean;
 }
 
 export interface EnvNode {
@@ -168,7 +170,8 @@ export function envCapabilitiesFrom(experimental: unknown): EnvCapabilities | un
 		didChange: env.didChange === true,
 		edit: env.edit === true,
 		search: env.search === true,
-		history: env.history === true
+		history: env.history === true,
+		loadProject: env.loadProject === true
 	};
 }
 
