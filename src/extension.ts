@@ -33,6 +33,7 @@ import { PharoEnvironment, createPharoEnvironment } from './env/pharoEnvironment
 import { EnvChangeBus, EnvChangeSummary } from './env/environmentChanges';
 import { ProjectsView } from './env/projectsView';
 import { registerEntityEditors } from './env/entityCommands';
+import { registerProjectLoading } from './env/projectLoading';
 import { EditorSession, registerEditorSession } from './env/editorSession';
 import { registerSpotter } from './env/spotter';
 import { registerNavigationCommands } from './env/navigationCommands';
@@ -123,6 +124,7 @@ export async function activate(context: ExtensionContext) {
 	projectsView = new ProjectsView(context, (method, params) => client.sendRequest(method, params));
 	context.subscriptions.push(projectsView);
 	entityFileSystem = registerEntityEditors(context, () => pharoEnvironment?.capabilities.edit ? pharoEnvironment : undefined);
+	registerProjectLoading(context, () => pharoEnvironment, (project) => projectsView.revealProject(project));
 	editorSession = registerEditorSession(context);
 	classPanel = registerClassPanel(context, () => pharoEnvironment, entityFileSystem);
 	context.subscriptions.push(editorSession.registerView(projectsView), editorSession.registerView(classPanel));
@@ -203,6 +205,7 @@ export async function activate(context: ExtensionContext) {
 		void commands.executeCommand('setContext', 'pharo.envEdit', pharoEnvironment?.capabilities.edit === true);
 		void commands.executeCommand('setContext', 'pharo.envSearch', pharoEnvironment?.capabilities.edit === true && pharoEnvironment.capabilities.search);
 		void commands.executeCommand('setContext', 'pharo.envHistory', pharoEnvironment?.capabilities.history === true);
+		void commands.executeCommand('setContext', 'pharo.envLoadProject', pharoEnvironment?.capabilities.loadProject === true);
 		if (pharoEnvironment) {
 			context.subscriptions.push(pharoEnvironment);
 		} else {

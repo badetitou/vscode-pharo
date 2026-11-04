@@ -63,14 +63,14 @@ function page(items: EnvNode[], offset = 0, limit = items.length): { items: EnvN
 	return { items: items.slice(offset, offset + limit), total: items.length };
 }
 
-const fullCapabilities = { version: 1, didChange: true, edit: true, search: true, history: true };
+const fullCapabilities = { version: 1, didChange: true, edit: true, search: true, history: true, loadProject: false };
 
 suite('Pharo environment model contracts', () => {
 	test('reads the capabilities announced by the server', () => {
 		assert.deepStrictEqual(envCapabilitiesFrom(recorded['initialize-capabilities']), fullCapabilities);
 		assert.strictEqual(envCapabilitiesFrom(undefined), undefined);
 		assert.strictEqual(envCapabilitiesFrom({ 'pls-env': {} }), undefined);
-		assert.deepStrictEqual(envCapabilitiesFrom({ 'pls-env': { version: 1 } }), { version: 1, didChange: false, edit: false, search: false, history: false });
+		assert.deepStrictEqual(envCapabilitiesFrom({ 'pls-env': { version: 1 } }), { version: 1, didChange: false, edit: false, search: false, history: false, loadProject: false });
 	});
 
 	test('accepts the recorded responses', () => {
@@ -157,7 +157,7 @@ suite('Pharo environment model client', () => {
 
 	test('does not listen to changes the server does not send', () => {
 		const transport = new FakeTransport(() => undefined);
-		new PharoEnvironment('/images/A.image', { version: 1, didChange: false, edit: false, search: false, history: false }, transport).dispose();
+		new PharoEnvironment('/images/A.image', { version: 1, didChange: false, edit: false, search: false, history: false, loadProject: false }, transport).dispose();
 		assert.strictEqual(transport.notificationHandler, undefined);
 	});
 

@@ -18,7 +18,7 @@ This document is the contract between both sides. Version: **1**.
 The server announces the model in the `initialize` result:
 
 ```json
-{ "capabilities": { "experimental": { "pls-env": { "version": 1, "didChange": true, "edit": true, "search": true, "history": true } } } }
+{ "capabilities": { "experimental": { "pls-env": { "version": 1, "didChange": true, "edit": true, "search": true, "history": true, "loadProject": true } } } }
 ```
 
 | Field | Meaning |
@@ -28,6 +28,7 @@ The server announces the model in the `initialize` result:
 | `edit` | The server answers `pls-env:read`, `pls-env:compile`, `pls-env:classify` and `pls-env:remove`. |
 | `search` | The server answers `pls-env:search`. It then also announces `workspaceSymbolProvider`. |
 | `history` | The server answers `pls-env:history`, `pls-env:lostChanges`, `pls-env:replayLostChanges` and `pls-env:dismissLostChanges`. |
+| `loadProject` | The server answers `pls-env:loadProject`. |
 
 Without `pls-env`, the server predates the model: the extension creates no `PharoEnvironment` and keeps using the older `pls:*` requests.
 
@@ -345,6 +346,23 @@ On each summary:
 - Iceberg refreshes the state of its repositories.
 
 Refreshing a view only reads the image, so it produces no new notification.
+
+## Loading projects
+
+### `pls-env:loadProject`
+
+Parameters: `path`, the folder of a git working copy; `baseline`, the name of a baseline, with or without its `BaselineOf` prefix; and optionally `groups`, the groups to load instead of the default one.
+
+The server reads the `srcDirectory` of the `.project` file of the working copy, as Iceberg does (the working copy itself without it), and loads the baseline with Metacello from `gitlocal://<sources>`: Iceberg then works in that working copy, and a project already loaded from another repository is replaced by it. It answers the node of the project, such as `project:Shop`, and notifies the classes it loads through `pls-env/didChange`.
+
+When the folder does not hold the baseline, or Metacello fails (a missing dependency, a network error), it answers an *Internal error* whose message is the reason.
+
+### In the extension
+
+- **Pharo: Clone and Load Project…** (`pharo.env.cloneAndLoadProject`, also in the title menu of the Projects view) asks for a git URL, or `owner/repository` for GitHub, and a parent folder, clones the project with the `git` of the machine, then loads it.
+- **Pharo: Load Project from Folder…** (`pharo.env.loadProjectFromFolder`, also on folders in the Explorer) loads a working copy already on disk.
+
+Both look for the `BaselineOf*` folders of the sources, ask which baseline to load when there are several, select the project in the Projects view, and offer to add the working copy to the workspace or to open it. The code is in `src/env/projectLoading.ts`.
 
 ## The Projects view
 

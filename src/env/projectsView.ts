@@ -323,6 +323,16 @@ export class ProjectsView implements vscode.Disposable, SessionView {
 		this.provider.refresh();
 	}
 
+	/** Redraw the projects and select the project node, such as a project just loaded. */
+	async revealProject(project: EnvNode): Promise<void> {
+		this.refresh();
+		try {
+			await this.treeView.reveal(project, { select: true, focus: true, expand: true });
+		} catch {
+			// The filter or the hidden projects keep it out of the view.
+		}
+	}
+
 	dispose(): void {
 		this.changesSubscription?.dispose();
 		this.disposables.forEach((disposable) => disposable.dispose());

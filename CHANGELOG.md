@@ -4,6 +4,7 @@
 
 Pre-release, published to the pre-release channel of the marketplaces. It works with the alpha 6.0.0-alpha.1 of the language server, on a Moose 13 image: run **Pharo: Install the last version of the language server** to get it.
 
+- **Pharo: Clone and Load Project…** clones a git repository (a URL, or `owner/repository` for GitHub) and loads its baseline in the image, so that Iceberg works in the clone; **Pharo: Load Project from Folder…** loads a working copy already on disk (#115). The project shows in the Projects view.
 - Breakpoints are debug points of the image (#94): line breakpoints in method editors with conditions, hit counts and log messages, function breakpoints on `Class>>selector`, and exception filters (unhandled errors, messages not understood, halts, deprecations). They stay installed without a debug session, the debug points set in Pharo show in VS Code, and a process that hits one opens the debugger. See [docs/debug-points.md](docs/debug-points.md).
 - The debugger shows the values of the variables at the end of the lines while stopped, opens a variable in the **Inspector** (**Open in Inspector**), separates the **Context** and **Receiver** scopes, and terminates a stopped process with **Terminate Thread** (#93).
 - Add a **Projects** view built on the Metacello baselines (project → package → tag → class), with pinning, a filter, Iceberg state, contextual actions and live update. It replaces the Image Browser view.
