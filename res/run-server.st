@@ -10,6 +10,10 @@
 		baseline: 'PharoLanguageServer';
 		load.
 
+	"The source of a tag does not carry its release number: remember the one loaded, for servers that can."
+	((Smalltalk at: #PLSServer) respondsTo: #version:) ifTrue: [
+		(Smalltalk at: #PLSServer) version: serverVersion ].
+
 	"Persist installation to avoid reloading on next start."
 	Smalltalk snapshot: true andQuit: false.
 ].
