@@ -127,6 +127,7 @@
 	"icons.mooseIcon.description": "Icône Moose",
 
 	"debuggers.pharodb.launch.program.description": "Chemin absolu vers un fichier texte.",
+	"debuggers.pharodb.attach.debugSessionId.description": "Identifiant du processus de l'image arrêté sur une exception, annoncé par le serveur de langage.",
 
 	"views.images.name": "Images Pharo",
 	"views.editorStack.name": "Pile d’éditeurs",

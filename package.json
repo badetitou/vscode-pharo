@@ -2041,6 +2041,17 @@
 								"default": "${workspaceFolder}/${command:AskForProgramName}"
 							}
 						}
+					},
+					"attach": {
+						"required": [
+							"debugSessionId"
+						],
+						"properties": {
+							"debugSessionId": {
+								"type": "number",
+								"description": "%debuggers.pharodb.attach.debugSessionId.description%"
+							}
+						}
 					}
 				}
 			}
