@@ -103,27 +103,70 @@ suite('Debugger-driven development', () => {
 });
 
 suite('Debug sessions of the stopped processes', () => {
-	function serverWith(): { server: DebugStoppedServer; notify(params: unknown): void } {
-		let handler: ((params: any) => void) | undefined;
+	function serverWith(): { server: DebugStoppedServer; requests: { method: string; params: any }[]; notify(params: unknown): Promise<void> } {
+		let handler: ((params: any) => any) | undefined;
+		const requests: { method: string; params: any }[] = [];
 		return {
-			server: { onNotification: (_method, h) => { handler = h; return new vscode.Disposable(() => undefined); } },
-			notify: (params) => handler?.(params)
+			requests,
+			server: {
+				onNotification: (_method, h) => { handler = h; return new vscode.Disposable(() => undefined); },
+				sendRequest: async (method, params) => { requests.push({ method, params }); return true; }
+			},
+			notify: async (params) => handler?.(params)
 		};
 	}
 
-	test('attaches a Pharo debug session to a process that stopped on an exception', () => {
-		const { server, notify } = serverWith();
+	async function run(params: unknown, answer: string | undefined, mode: 'notify' | 'debug' = 'notify') {
+		const { server, requests, notify } = serverWith();
 		const started: vscode.DebugConfiguration[] = [];
-		attachOnStop(server, async (configuration) => started.push(configuration));
-		notify({ id: 3, name: 'ZeroDivide', exception: 'ZeroDivide' });
-		assert.deepStrictEqual(started, [{ type: 'pharodb', request: 'attach', name: 'ZeroDivide', debugSessionId: 3 }]);
+		const offered: { message: string; actions: string[] }[] = [];
+		let created = 0;
+		attachOnStop(
+			server,
+			async (configuration) => started.push(configuration),
+			{ mode: () => mode, choose: async (message, actions) => { offered.push({ message, actions }); return answer; } },
+			async () => { created++; }
+		);
+		await notify(params);
+		return { started, offered, requests, created: () => created };
+	}
+
+	const zeroDivide = { id: 3, name: 'ZeroDivide', exception: 'ZeroDivide', frames: ['Foo>>bar'] };
+	const attach = { type: 'pharodb', request: 'attach', name: 'ZeroDivide', debugSessionId: 3 };
+
+	test('notifies first, with Debug and Dismiss on an ordinary error', async () => {
+		const result = await run(zeroDivide, undefined);
+		assert.deepStrictEqual(result.offered, [{ message: 'ZeroDivide in Foo>>bar', actions: ['Debug', 'Dismiss'] }]);
+		assert.strictEqual(result.started.length, 0);
 	});
 
-	test('ignores a notification without a session id', () => {
-		const { server, notify } = serverWith();
-		const started: vscode.DebugConfiguration[] = [];
-		attachOnStop(server, async (configuration) => started.push(configuration));
-		notify({ name: 'ZeroDivide' });
-		assert.strictEqual(started.length, 0);
+	test('Debug attaches a Pharo debug session to the stopped process', async () => {
+		const result = await run(zeroDivide, 'Debug');
+		assert.deepStrictEqual(result.started, [attach]);
+	});
+
+	test('offers Create method on a missing method and creates it in the debug session', async () => {
+		const result = await run({ ...zeroDivide, doesNotUnderstand: true }, 'Create method');
+		assert.deepStrictEqual(result.offered[0].actions, ['Debug', 'Create method', 'Dismiss']);
+		assert.deepStrictEqual(result.started, [attach]);
+		assert.strictEqual(result.created(), 1);
+	});
+
+	test('Dismiss ends the stopped process in the image', async () => {
+		const result = await run(zeroDivide, 'Dismiss');
+		assert.deepStrictEqual(result.requests, [{ method: 'pls-debug:dismiss', params: { aDebugSessionId: 3 } }]);
+		assert.strictEqual(result.started.length, 0);
+	});
+
+	test('opens the debugger at once when the setting says so', async () => {
+		const result = await run(zeroDivide, undefined, 'debug');
+		assert.deepStrictEqual(result.started, [attach]);
+		assert.strictEqual(result.offered.length, 0);
+	});
+
+	test('ignores a notification without a session id', async () => {
+		const result = await run({ name: 'ZeroDivide' }, 'Debug');
+		assert.strictEqual(result.started.length, 0);
+		assert.strictEqual(result.offered.length, 0);
 	});
 });

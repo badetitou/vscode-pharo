@@ -46,6 +46,12 @@ suite('Pharo Test Explorer results', () => {
 				params: { aTestURI: { path: '/Tests/TestCase.class.st', fragment: 'testExample' } }
 			});
 
+			await executePharoTest(client, test, true);
+			assert.deepStrictEqual(requests[1], {
+				method: 'pls:test-debug-test',
+				params: { aTestURI: { path: '/Tests/TestCase.class.st', fragment: 'testExample' } }
+			});
+
 			await assert.rejects(
 				executePharoTest({
 					...client,

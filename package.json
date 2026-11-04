@@ -431,6 +431,20 @@
 					"default": true,
 					"description": "%configuration.pharo.headless.description%"
 				},
+				"pharo.debug.onUnhandledError": {
+					"title": "Debug on unhandled error",
+					"type": "string",
+					"enum": [
+						"notify",
+						"debug"
+					],
+					"enumDescriptions": [
+						"%configuration.pharo.debug.onUnhandledError.notify%",
+						"%configuration.pharo.debug.onUnhandledError.debug%"
+					],
+					"default": "notify",
+					"description": "%configuration.pharo.debug.onUnhandledError.description%"
+				},
 				"pharo.debugMode": {
 					"title": "Debug mode",
 					"scope": "window",

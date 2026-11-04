@@ -164,7 +164,7 @@ class PharoDebugTracker implements vscode.DebugAdapterTrackerFactory {
 	createDebugAdapterTracker(session: vscode.DebugSession): vscode.DebugAdapterTracker {
 		return {
 			onDidSendMessage: (message: any) => {
-				if (message?.type === 'event' && message.event === 'stopped' && message.body?.reason === 'exception') {
+				if (session.configuration.request !== 'attach' && message?.type === 'event' && message.event === 'stopped' && message.body?.reason === 'exception') {
 					void offerCreate(session);
 				}
 			}
@@ -191,32 +191,92 @@ async function offerCreate(session: vscode.DebugSession): Promise<void> {
 
 /** The notification of the server when a process of the image stopped on an exception that nobody handled. */
 export const DEBUG_STOPPED_NOTIFICATION = 'pls-debug/stopped';
+export const DEBUG_DISMISS_REQUEST = 'pls-debug:dismiss';
 
-export interface DebugStoppedServer {
-	onNotification(method: string, handler: (params: { id?: unknown; name?: unknown }) => void): vscode.Disposable;
+export interface StoppedProcess {
+	id: number;
+	name?: string;
+	exception?: string;
+	description?: string;
+	receiverClass?: string;
+	doesNotUnderstand?: boolean;
+	subclassResponsibility?: boolean;
+	frames?: string[];
 }
 
-/** Open a debug session on every process of the image that stops on an exception, like the debugger of Pharo does. */
+export interface DebugStoppedServer {
+	onNotification(method: string, handler: (params: Partial<StoppedProcess>) => void): vscode.Disposable;
+	sendRequest(method: string, params?: unknown): PromiseLike<unknown>;
+}
+
+export interface StoppedProcessUi {
+	/** `notify` shows a notification first, `debug` opens the debugger at once. */
+	mode(): 'notify' | 'debug';
+	choose(message: string, actions: string[]): PromiseLike<string | undefined>;
+}
+
+export const DEBUG_ACTION = 'Debug';
+export const CREATE_ACTION = 'Create method';
+export const DISMISS_ACTION = 'Dismiss';
+
+export function stoppedProcessMessage(process: StoppedProcess): string {
+	const where = process.frames?.[0] ?? process.receiverClass;
+	return `${process.exception ?? process.name ?? 'Error'}${where ? ` in ${where}` : ''}`;
+}
+
+/**
+ * Offer a debugger on every process of the image that stops on an exception, like the debugger of Pharo does: a light
+ * notification with Debug, Create method (on a missing method) and Dismiss, or the debugger at once by setting.
+ */
 export function attachOnStop(
 	server: DebugStoppedServer,
-	start: (configuration: vscode.DebugConfiguration) => PromiseLike<unknown>
+	start: (configuration: vscode.DebugConfiguration) => PromiseLike<unknown>,
+	ui: StoppedProcessUi,
+	createMethod: () => PromiseLike<unknown>
 ): vscode.Disposable {
-	return server.onNotification(DEBUG_STOPPED_NOTIFICATION, (params) => {
+	return server.onNotification(DEBUG_STOPPED_NOTIFICATION, async (params) => {
 		if (typeof params?.id !== 'number') {
 			return;
 		}
-		void start({
-			type: DEBUG_TYPE,
-			request: 'attach',
-			name: typeof params.name === 'string' ? params.name : 'Pharo',
-			debugSessionId: params.id
-		});
+		const process = params as StoppedProcess;
+		const attach = () =>
+			start({ type: DEBUG_TYPE, request: 'attach', name: process.name ?? 'Pharo', debugSessionId: process.id });
+		if (ui.mode() === 'debug') {
+			await attach();
+			return;
+		}
+		const missing = process.doesNotUnderstand || process.subclassResponsibility;
+		const choice = await ui.choose(
+			stoppedProcessMessage(process),
+			missing ? [DEBUG_ACTION, CREATE_ACTION, DISMISS_ACTION] : [DEBUG_ACTION, DISMISS_ACTION]
+		);
+		if (choice === DEBUG_ACTION) {
+			await attach();
+		} else if (choice === CREATE_ACTION) {
+			await attach();
+			await createMethod();
+		} else if (choice === DISMISS_ACTION) {
+			await server.sendRequest(DEBUG_DISMISS_REQUEST, { aDebugSessionId: process.id });
+		}
 	});
 }
 
 export function activateLiveDebugging(context: vscode.ExtensionContext, server?: DebugStoppedServer): void {
 	if (server) {
-		context.subscriptions.push(attachOnStop(server, (configuration) => vscode.debug.startDebugging(undefined, configuration)));
+		context.subscriptions.push(
+			attachOnStop(
+				server,
+				(configuration) => vscode.debug.startDebugging(undefined, configuration),
+				{
+					mode: () => (vscode.workspace.getConfiguration('pharo').get<string>('debug.onUnhandledError') === 'debug' ? 'debug' : 'notify'),
+					choose: (message, actions) => vscode.window.showInformationMessage(message, ...actions)
+				},
+				async () => {
+					const session = pharoSession();
+					return session && createMissingMethod(session, vscodeUi);
+				}
+			)
+		);
 	}
 	context.subscriptions.push(
 		vscode.debug.registerDebugAdapterTrackerFactory(DEBUG_TYPE, new PharoDebugTracker()),

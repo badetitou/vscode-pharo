@@ -52,6 +52,12 @@ export function initTestController(
 		(request, token) => runTestHandler(testClient, request, token, testController, failedTests),
 		true
 	);
+	testController.createRunProfile(
+		'Debug Pharo Test',
+		vscode.TestRunProfileKind.Debug,
+		(request, token) => runTestHandler(testClient, request, token, testController, failedTests, true),
+		false
+	);
 
 	const refreshCommand = vscode.commands.registerCommand('pharo.tests.refresh', async () => {
 		testController.items.replace([]);
@@ -225,7 +231,8 @@ async function runTestHandler(
 	request: vscode.TestRunRequest,
 	token: vscode.CancellationToken,
 	testController: vscode.TestController,
-	failedTests: Map<string, vscode.TestItem>
+	failedTests: Map<string, vscode.TestItem>,
+	debug = false
 ): Promise<void> {
 	const run = testController.createTestRun(request);
 	const queue = [...(request.include ?? collectRootTests(testController))];
@@ -276,7 +283,7 @@ async function runTestHandler(
 			run.started(test);
 			const startedAt = Date.now();
 			try {
-				const result = await executePharoTest(testClient, test);
+				const result = await executePharoTest(testClient, test, debug);
 				const duration = Date.now() - startedAt;
 				switch (getTestOutcome(result)) {
 					case 'passed':
@@ -319,20 +326,22 @@ function collectRootTests(testController: vscode.TestController): vscode.TestIte
 
 export async function executePharoTest(
 	testClient: PharoTestClient,
-	test: vscode.TestItem
+	test: vscode.TestItem,
+	debug = false
 ): Promise<PharoTestResult> {
 	ensureClientRunning(testClient);
 	const uri = test.uri;
 	if (!uri) {
 		throw new Error('Pharo test item has no URI.');
 	}
-	const result = await testClient.sendRequest('pls:test-execute-test', {
+	const method = debug ? 'pls:test-debug-test' : 'pls:test-execute-test';
+	const result = await testClient.sendRequest(method, {
 		aTestURI: {
 			path: uri.path,
 			fragment: uri.fragment
 		}
 	});
-	return expectTestResult(result, 'pls:test-execute-test');
+	return expectTestResult(result, method);
 }
 
 async function testMessagesFor(test: vscode.TestItem, result: PharoTestResult): Promise<vscode.TestMessage[]> {

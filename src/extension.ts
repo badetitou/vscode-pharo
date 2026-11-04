@@ -207,7 +207,10 @@ export async function activate(context: ExtensionContext) {
 		// Create debugguer
 		let factory = new DebugAdapterFactory();
 		activateDebug(context, factory);
-		activateLiveDebugging(context, { onNotification: (method, handler) => client.onNotification(method, handler) });
+		activateLiveDebugging(context, {
+			onNotification: (method, handler) => client.onNotification(method, handler),
+			sendRequest: (method, params) => client.sendRequest(method, params)
+		});
 		context.subscriptions.push(workspace.registerNotebookSerializer('moosebook', new MoosebookSerializer()));
 		context.subscriptions.push(new MoosebookController());
 
