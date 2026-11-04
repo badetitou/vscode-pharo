@@ -4,7 +4,7 @@
 (Smalltalk at: #PLSServer ifAbsent: [ nil ]) ifNil: [
 	"The extension gives the release to load from its setting `pharo quick install.server version`."
 	serverVersion := Smalltalk os environment at: 'PLS_SERVER_VERSION' ifAbsent: [ '' ].
-	serverVersion isEmpty ifTrue: [ serverVersion := '6.0.0-alpha.1' ].
+	serverVersion isEmpty ifTrue: [ serverVersion := '6.0.0-alpha.2' ].
 	Metacello new
 		githubUser: 'badetitou' project: 'Pharo-LanguageServer' commitish: serverVersion path: 'src';
 		baseline: 'PharoLanguageServer';

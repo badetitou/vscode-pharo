@@ -1,25 +1,50 @@
 # Changelog
 
+## v2.4.1 (alpha)
+
+Pre-release, published to the pre-release channel of the marketplaces. It works with the alpha 6.0.0-alpha.2 of the language server, on a Moose 13 image: run **Pharo: Install the last version of the language server** to get it.
+
+**Debugger**
+
+- An unhandled error in the image (playground, test, agent) offers to **Debug** it, to **Create** the missing method of a message not understood, or to dismiss it; each process of the image that stops on an exception gets its own debug session. The Test Explorer has a **Debug** profile (#91).
+- Debugger-driven development (#92): **Create Method** on a message not understood or a `subclassResponsibility`, saving a method of the stack restarts its frame on the new code (edit-and-continue), and the restarts of the exception (Proceed, Retry, Return Value…, Resume With…) are offered in a Quick Pick.
+- While stopped, the values of the variables show at the end of the lines, a variable opens in the **Inspector** (**Open in Inspector**), the **Context** and **Receiver** scopes are separate, and **Terminate Thread** stops a process (#93).
+- Breakpoints are debug points of the image (#94): line breakpoints in method editors with conditions, hit counts and log messages, function breakpoints on `Class>>selector`, and exception filters (unhandled errors, messages not understood, halts, deprecations). They stay installed without a debug session, and the debug points set in Pharo show in VS Code. See [docs/debug-points.md](docs/debug-points.md).
+
+**Coding**
+
+- **Print it** shows its result after the code, without editing the document: hover it to see the full print string and to **Inspect**, **Copy** or **Insert** it. It goes away with the next edit of its line or with `Escape`; `pharo.printIt.insertResult` keeps the former behavior (#95).
+- In the playground, Inspect it opens the result in the **Inspector**, which replaces the **Variables** view; **Reset Variables** stays in the command palette.
+- The tools and the questions of the image show in VS Code (#104): `inspect` opens the **Inspector**, `browse` the editor of the class or method, `confirm:`, `request:` and `chooseFrom:` the dialogs, input boxes and Quick Picks of VS Code, and the jobs of the image the progress of VS Code. See [docs/ui.md](docs/ui.md).
+- System tools (#106): a **Processes** view lists the processes of the image with their state and stack, and terminates or debugs one; **Profile It** shows where the time of an expression goes as a flame graph and a table of hot methods; a **Chest** view keeps objects by name, stored from the inspector and inserted back as code. See [docs/system.md](docs/system.md).
+
+**Projects and images**
+
+- **Pharo: New Pharo Project…** creates a project with a baseline, a package, a test package, a smalltalkCI configuration and a GitHub Actions workflow, in a new git repository, and loads it in the image (#116).
+- **Pharo: Clone and Load Project…** clones a git repository (a URL, or `owner/repository` for GitHub) and loads its baseline in the image, so that Iceberg works in the clone; **Pharo: Load Project from Folder…** loads a working copy already on disk (#115).
+- The **Pharo Images** view reads the files of [Pharo Launcher](https://github.com/pharo-project/pharo-launcher): it lists the images of its images folder, most recently saved first, with their Pharo version and template, and marks the active one. **Use in This Window** switches the window to an image, **Open in New Window** keeps the previous behaviour, and **Reveal in File Explorer** / **Copy Image Path** complete the context menu. When `pharo.pathToVM` is not set, an image runs with the VM Pharo Launcher uses for it.
+- An image without the language server loads the release set in `pharo quick install.server version`, instead of a fixed 5.1.0.
+- **Pharo: Set Up Pharo Editor Profile** prepares a VS Code profile that only shows the Pharo views (#86).
+
+**Agents**
+
+- Agents in VS Code get **Pharo skills** (`pharo-live-image`, `pharo-verify`, `pharo-iceberg`) and a **Pharo** custom agent, offered while the image runs the MCP server. The `@pharo` chat participant, which VS Code deprecated, and the Language Model Tools of the extension are removed: agents use the tools of the MCP server of the image (#107).
+
+**Packaging**
+
+- The VSIX only contains the webpack bundle and the runtime assets.
+
 ## v2.4.0 (alpha)
 
 Pre-release, published to the pre-release channel of the marketplaces. It works with the alpha 6.0.0-alpha.1 of the language server, on a Moose 13 image: run **Pharo: Install the last version of the language server** to get it.
 
-- **Pharo: New Pharo Project…** creates a project with a baseline, a package, a test package, a smalltalkCI configuration and a GitHub Actions workflow, in a new git repository, and loads it in the image (#116).
-- **Pharo: Clone and Load Project…** clones a git repository (a URL, or `owner/repository` for GitHub) and loads its baseline in the image, so that Iceberg works in the clone; **Pharo: Load Project from Folder…** loads a working copy already on disk (#115). The project shows in the Projects view.
-- Breakpoints are debug points of the image (#94): line breakpoints in method editors with conditions, hit counts and log messages, function breakpoints on `Class>>selector`, and exception filters (unhandled errors, messages not understood, halts, deprecations). They stay installed without a debug session, the debug points set in Pharo show in VS Code, and a process that hits one opens the debugger. See [docs/debug-points.md](docs/debug-points.md).
-- The debugger shows the values of the variables at the end of the lines while stopped, opens a variable in the **Inspector** (**Open in Inspector**), separates the **Context** and **Receiver** scopes, and terminates a stopped process with **Terminate Thread** (#93).
 - Add a **Projects** view built on the Metacello baselines (project → package → tag → class), with pinning, a filter, Iceberg state, contextual actions and live update. It replaces the Image Browser view.
 - Agents work on the image of the window through the MCP server of [evref-BL/MCP](https://github.com/evref-BL/MCP), that the language server starts on a free port: Copilot sees its tools without configuration, the `@pharo` participant uses them, and **Pharo: Configure a CLI Agent…** connects Claude Code, Codex or OpenCode. The Language Model Tools it replaces are deprecated. See [docs/agents.md](docs/agents.md).
 - Navigate by messages: senders and references (`Shift+F12`), implementors (`Ctrl+F12`), call hierarchy and type hierarchy on entity editors and Tonel files, and from the context menus of the Projects view and the class panel. Results open in entity editors.
 - The critiques of Renraku show in the **Problems** panel on entity editors and Tonel files, as warnings and information apart from compilation errors. Quick fixes apply the transformation of the rule, or ignore the rule for the method, the class or the package (kept in the package manifest, as in Pharo). They are computed when a document opens or is saved; `pharo.critiques.enabled` turns them off.
-- Add a live **Playground** (**Pharo: New Playground**): pages bound to the active image and kept with it, Do it / Print it / Inspect it as Code Lens and with `Ctrl+D` / `Ctrl+P` / `Ctrl+I` (Inspect it opens the result in the **Inspector**), variables kept between evaluations with **Reset Variables**, the image `Transcript` in the **Pharo Transcript** output channel, and **Debug** on evaluation errors.
-- **Print it** shows its result after the code, without editing the document, instead of inserting it: hover it to see the full print string and to **Inspect**, **Copy** or **Insert** it. It goes away with the next edit of its line or with `Escape`; `pharo.printIt.insertResult` keeps the former behavior. Applies to the editors and the playground (Moosebook cells already show results as outputs).
+- Add a live **Playground** (**Pharo: New Playground**): pages bound to the active image and kept with it, Do it / Print it / Inspect it as Code Lens and with `Ctrl+D` / `Ctrl+P` / `Ctrl+I`, variables in the **Variables** view with reset, the image `Transcript` in the **Pharo Transcript** output channel, and **Debug** on evaluation errors.
 - Inspect objects of the image: **Inspect It** opens an **Inspector** view in the panel, which shows the Raw, Meta and textual or tabular inspections of the object, inspects its slots and rows page by page with a breadcrumb to go back, and evaluates code with `self` bound to the object. **Quick Inspect It** shows the result in a hover on the code. See [docs/inspector.md](docs/inspector.md).
 - **Show Method History** lists the versions of a method and compares each one with the method in the diff editor of VS Code; **Restore This Version** compiles it back. After a crash or a quit without saving, the changes Epicea kept appear in the Source Control view, where they can be compared, replayed or dismissed (**Recover Lost Changes**), and a notification offers to review them when the image starts.
-- System tools (#106): a **Processes** view lists the processes of the image with their state and stack, and terminates or debugs one; **Profile It** shows where the time of an expression goes as a flame graph and a table of hot methods, which open their method; a **Chest** view keeps objects by name, stored from the inspector and inserted back as code. See [docs/system.md](docs/system.md).
-- The tools and the questions of the image show in VS Code: `inspect` opens the **Inspector** view, `browse` the editor of the class or method, `confirm:`, `request:` and `chooseFrom:` the dialogs, input boxes and Quick Picks of VS Code, and the jobs of the image the progress of VS Code. See [docs/ui.md](docs/ui.md).
-- Agents in VS Code get **Pharo skills** (`pharo-live-image`, `pharo-verify`, `pharo-iceberg`) and a **Pharo** custom agent, offered while the image runs the MCP server. The `@pharo` chat participant, which VS Code deprecated, and the Language Model Tools of the extension are removed: the agents use the tools of the MCP server of the image.
-- The **Pharo Images** view reads the files of [Pharo Launcher](https://github.com/pharo-project/pharo-launcher): it lists the images of its images folder, most recently saved first, with their Pharo version and template, and marks the active one. **Use in This Window** switches the window to an image, **Open in New Window** keeps the previous behaviour, and **Reveal in File Explorer** / **Copy Image Path** complete the context menu. When `pharo.pathToVM` is not set, an image runs with the VM Pharo Launcher uses for it.
 
 ## v2.3.0
 
