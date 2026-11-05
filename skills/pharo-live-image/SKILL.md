@@ -11,6 +11,18 @@ The code of a Pharo project lives in a running **image**, not in files. The imag
 - The image is shared with the user: everything you compile or evaluate happens in their running system. Keep side effects to what the task needs.
 - Never save the image (`Smalltalk snapshot:…`) and never commit unless the user asks.
 
+## Find the tools first
+
+The server is declared to VS Code as **Pharo (*image name*)**, and VS Code names its tools after the server: `mcp_mcp_pharo_class_get`, `mcp_mcp_pharo_image_evaluate`… When your tools are loaded on demand, search them by their own name (`class_search`, `image_evaluate`, `tool_search`) or by `pharo`.
+
+If no tool of the Pharo MCP server is available, **do not answer from memory and do not ask the user to run code by hand**. Say that the Pharo MCP server is not reachable, and how to fix it:
+
+1. the Pharo language server runs: its item in the status bar shows the image, and **Pharo: Show Pharo Language Server Diagnostics** reports its state;
+2. the server is started in VS Code: **MCP: List Servers**, then **Pharo (*image name*)** → **Start Server** (or **Restart Server** after a restart of the image);
+3. its tools are enabled: **Configure Tools** in the chat input, under **Pharo (*image name*)**.
+
+Then stop, and let the user retry.
+
 ## Which tool
 
 The Pharo MCP server advertises a few tools and keeps the others discoverable: when a tool below is not in your list, find it with `tool_search` and run it with `tool_call` (`tool_get` gives its input schema).
