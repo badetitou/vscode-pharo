@@ -41,6 +41,7 @@ The request `pls:mcpEndpoint` answers the same object, or `null` when the MCP se
 - **Pharo: Configure a CLI Agent…** connects Claude Code, Codex or OpenCode to the image. In a folder without their configuration, it runs `npx @evref-bl/pharo-mcp install --host <host>`, which installs the guides, skills and MCP configuration of the agent; it then points the `pharo` server of that configuration at the port of the image.
 - The port changes at each start of the image: at each start, the extension moves the `pharo` server of `.mcp.json`, `.codex/config.toml` and `opencode.json` in the workspace folders to the new port, when it names a server of this machine.
 - The changes an agent makes go through the image: they reach the views and the editors through `pls-env/didChange` (see [the environment model](environment-model.md)).
+- Use the **Local** harness of the chat. The Copilot harness runs its agent in a sandbox that does not reach MCP servers on `127.0.0.1` (the server of the image fails with `error sending request for url`), and a Copilot session keeps the port of the image from when it started, while the port changes at each start of the image.
 - To control the effects of a tool, VS Code relies on the annotations of the MCP tools (`readOnlyHint`, `destructiveHint`) and asks for confirmation. The history of what an agent did is the Epicea history of the image (`history_entry_list`, `history_entry_revert`).
 
 ## Skills and agent

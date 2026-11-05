@@ -19,7 +19,8 @@ If no tool of the Pharo MCP server is available, **do not answer from memory and
 
 1. the Pharo language server runs: its item in the status bar shows the image, and **Pharo: Show Pharo Language Server Diagnostics** reports its state;
 2. the server is started in VS Code: **MCP: List Servers**, then **Pharo (*image name*)** → **Start Server** (or **Restart Server** after a restart of the image);
-3. its tools are enabled: **Configure Tools** in the chat input, under **Pharo (*image name*)**.
+3. its tools are enabled: **Configure Tools** in the chat input, under **Pharo (*image name*)**;
+4. the chat runs in the **Local** harness: the Copilot harness does not reach MCP servers on `127.0.0.1`, and keeps the port of the image from when its session started.
 
 Then stop, and let the user retry.
 
