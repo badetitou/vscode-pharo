@@ -49,6 +49,7 @@ export class Playground implements vscode.Disposable {
 	private features: PlaygroundFeatures = { transcript: false, resetBindings: false, inspectIt: false };
 	private inspector = false;
 	private evaluating = 0;
+	private interceptor: ((page: vscode.Uri, code: string) => Promise<boolean>) | undefined;
 	private readonly transcript: vscode.OutputChannel;
 	private readonly disposables: vscode.Disposable[] = [];
 
@@ -81,6 +82,16 @@ export class Playground implements vscode.Disposable {
 		if (features.transcript) {
 			this.disposables.push(server.onNotification('pls/transcript', (params) => this.showOnTranscript(params.text)));
 		}
+	}
+
+	/** Answer the server of the started image, or undefined before it starts. */
+	get attachedServer(): PlaygroundServer | undefined {
+		return this.server;
+	}
+
+	/** Let another tool handle an evaluation first: when the interceptor answers true, the code is not sent to the image. */
+	intercept(interceptor: (page: vscode.Uri, code: string) => Promise<boolean>): void {
+		this.interceptor = interceptor;
 	}
 
 	dispose(): void {
@@ -159,7 +170,7 @@ export class Playground implements vscode.Disposable {
 		const document = editor.document;
 		const target = range ?? evaluationRangeOf(document, editor.selection);
 		const code = document.getText(target);
-		if (code.trim().length === 0) {
+		if (code.trim().length === 0 || await this.interceptor?.(document.uri, code)) {
 			return;
 		}
 		const server = this.requireServer();

@@ -700,6 +700,30 @@
 				"icon": "$(clear-all)"
 			},
 			{
+				"command": "pharo.tutorial.open",
+				"title": "%commands.pharo.tutorial.open.title%",
+				"category": "Pharo",
+				"icon": "$(mortar-board)"
+			},
+			{
+				"command": "pharo.tutorial.next",
+				"title": "%commands.pharo.tutorial.next.title%",
+				"category": "Pharo",
+				"icon": "$(arrow-right)"
+			},
+			{
+				"command": "pharo.tutorial.previous",
+				"title": "%commands.pharo.tutorial.previous.title%",
+				"category": "Pharo",
+				"icon": "$(arrow-left)"
+			},
+			{
+				"command": "pharo.tutorial.restart",
+				"title": "%commands.pharo.tutorial.restart.title%",
+				"category": "Pharo",
+				"icon": "$(debug-restart)"
+			},
+			{
 				"command": "pharo.transcript.show",
 				"title": "%commands.pharo.transcript.show.title%",
 				"category": "Pharo",
@@ -1789,6 +1813,18 @@
 					"when": "pharo.playground.resetBindings"
 				},
 				{
+					"command": "pharo.tutorial.next",
+					"when": "resourceScheme == pharo-playground && resourceFilename == 'Learn Pharo.st'"
+				},
+				{
+					"command": "pharo.tutorial.previous",
+					"when": "resourceScheme == pharo-playground && resourceFilename == 'Learn Pharo.st'"
+				},
+				{
+					"command": "pharo.tutorial.restart",
+					"when": "resourceScheme == pharo-playground && resourceFilename == 'Learn Pharo.st'"
+				},
+				{
 					"command": "pharo.inspector.dive",
 					"when": "false"
 				},
@@ -2114,6 +2150,59 @@
 						},
 						"completionEvents": [
 							"onCommand:pharo.profile.setup"
+						]
+					}
+				]
+			},
+			{
+				"id": "learnPharo",
+				"title": "%walkthrough.learnPharo.title%",
+				"description": "%walkthrough.learnPharo.description%",
+				"steps": [
+					{
+						"id": "startImage",
+						"title": "%walkthrough.learnPharo.steps.startImage.title%",
+						"description": "%walkthrough.learnPharo.steps.startImage.description%",
+						"media": {
+							"markdown": "media/learn-pharo.md"
+						},
+						"completionEvents": [
+							"onCommand:pharo.images.download",
+							"onCommand:pharo.selectImage"
+						]
+					},
+					{
+						"id": "openLesson",
+						"title": "%walkthrough.learnPharo.steps.openLesson.title%",
+						"description": "%walkthrough.learnPharo.steps.openLesson.description%",
+						"media": {
+							"markdown": "media/learn-pharo.md"
+						},
+						"completionEvents": [
+							"onCommand:pharo.tutorial.open"
+						]
+					},
+					{
+						"id": "evaluate",
+						"title": "%walkthrough.learnPharo.steps.evaluate.title%",
+						"description": "%walkthrough.learnPharo.steps.evaluate.description%",
+						"media": {
+							"markdown": "media/learn-pharo.md"
+						},
+						"completionEvents": [
+							"onCommand:pharo.playground.printIt",
+							"onCommand:pharo.playground.doIt"
+						]
+					},
+					{
+						"id": "nextLesson",
+						"title": "%walkthrough.learnPharo.steps.nextLesson.title%",
+						"description": "%walkthrough.learnPharo.steps.nextLesson.description%",
+						"media": {
+							"markdown": "media/learn-pharo.md"
+						},
+						"completionEvents": [
+							"onCommand:pharo.tutorial.next"
 						]
 					}
 				]
