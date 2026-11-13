@@ -25,6 +25,7 @@ Pre-release, published to the pre-release channel of the marketplaces. It works 
 - The **Pharo Images** view reads the files of [Pharo Launcher](https://github.com/pharo-project/pharo-launcher): it lists the images of its images folder, most recently saved first, with their Pharo version and template, and marks the active one. **Use in This Window** switches the window to an image, **Open in New Window** keeps the previous behaviour, and **Reveal in File Explorer** / **Copy Image Path** complete the context menu. When `pharo.pathToVM` is not set, an image runs with the VM Pharo Launcher uses for it.
 - An image without the language server loads the release set in `pharo quick install.server version`, instead of a fixed 5.1.0.
 - **Pharo: Set Up Pharo Editor Profile** prepares a VS Code profile that only shows the Pharo views (#86).
+- A **Learn Pharo** walkthrough and command open the lessons of ProfStef, read from the image, one at a time in a playground page: `ProfStef next.` and the lenses of the page move between lessons, and the tutorial reopens at the last lesson (#119).
 
 **Agents**
 
